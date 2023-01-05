@@ -1,3 +1,5 @@
+use crate::stages::physics_stage;
+use crate::stages::physics_stage::PhysicsStage;
 use bevy_ecs::{
     schedule::{Schedule, Stage, SystemStage},
     system::Resource,
@@ -7,11 +9,9 @@ use std::time::Duration;
 
 const MICROS_TO_SECONDS: f64 = 1.0 / 1000000.0; // µs to s factor
 
-pub mod physics_engine;
-
 #[derive(Resource, Default)]
 pub struct DeltaTime {
-    seconds: f64,
+    pub seconds: f64,
 }
 
 impl From<Duration> for DeltaTime {
@@ -22,28 +22,29 @@ impl From<Duration> for DeltaTime {
     }
 }
 
-pub trait Engine {
+pub trait Runtime {
     fn load_world<T: Into<World>>(&mut self, world: T);
     fn step_simulation(&mut self, dt: Duration);
 }
 
-pub struct EngineImpl {
+pub struct RuntimeImpl {
     world: World,
     schedule: Schedule,
 }
 
-impl EngineImpl {
+impl RuntimeImpl {
     pub fn new(world: World) -> Self {
         let mut schedule = Schedule::default();
         schedule.add_stage(
-            "PhysicsEngine",
-            SystemStage::parallel().with_system(physics_engine::solve_movement),
+            PhysicsStage,
+            SystemStage::parallel().with_system(physics_stage::solve_movement),
         );
+
         Self { world, schedule }
     }
 }
 
-impl Engine for EngineImpl {
+impl Runtime for RuntimeImpl {
     fn load_world<T: Into<World>>(&mut self, world: T) {
         self.world = world.into();
     }
