@@ -1,4 +1,5 @@
-use cooltraption_playground::asset_manager::{Asset, AssetManager, FileAssetManager};
+use cooltraption_playground::asset_manager::file_asset_manager::FileAssetManager;
+use cooltraption_playground::asset_manager::{Asset, AssetManager};
 use std::path::PathBuf;
 
 fn main() {
