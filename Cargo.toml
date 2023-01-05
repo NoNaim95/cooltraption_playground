@@ -6,5 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+log = "0.4.17"
+env_logger = "0.10.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
 bevy_ecs = "*"
 glam = "*"
+
+[build-dependencies]
+copy_to_output = "2.0.0"
+glob = "0.3"
