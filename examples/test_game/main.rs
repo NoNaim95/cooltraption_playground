@@ -48,7 +48,7 @@ fn main() {
     vel.0.x = 3.0;
     vel.0.y = 1.0;
 
-    let mut engine = RuntimeImpl::new(world);
+    let mut engine = EngineImpl::new(world);
     for i in 0..3 {
         engine.step_simulation(Duration::from_secs(i));
     }
