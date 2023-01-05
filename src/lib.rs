@@ -1,3 +1,5 @@
+pub mod asset_manager;
+
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }

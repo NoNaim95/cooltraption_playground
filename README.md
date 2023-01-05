@@ -13,8 +13,7 @@ A coolbox for cooltraptions 😎
     - Input Events
     
 - Physics Engine
-- Assets Managing
+- ~~Assets Managing~~
   - Configuration Serialization and Deserialization
 - Rendering Framework
 - Server
-- 
