@@ -50,10 +50,6 @@ impl AssetManager for FileAssetManager {
     where
         T: AsRef<str>,
     {
-        if let Some(asset) = self.assets.get(name.as_ref()) {
-            return Some(asset);
-        }
-
-        None
+        return self.assets.get(name.as_ref());
     }
 }
