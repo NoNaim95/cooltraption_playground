@@ -1,11 +1,16 @@
 use cooltraption_playground::asset_manager::file_asset_manager::FileAssetManager;
 use cooltraption_playground::asset_manager::{Asset, AssetManager};
+use log::{info, warn};
 use std::env;
 use std::path::PathBuf;
 
 fn main() {
+    env::set_var("RUST_LOG", "test_game=debug");
+
+    env_logger::init();
+
     set_working_dir().expect("Could not set working dir");
-    println!(
+    info!(
         "Starting in {}",
         env::current_dir().unwrap().to_str().unwrap()
     );
@@ -13,10 +18,10 @@ fn main() {
     let manager = FileAssetManager::load(PathBuf::from("./assets"));
     match manager.get_asset("strings.yml").unwrap() {
         Asset::Strings(map) => {
-            println!("{}", map.get("greet").unwrap());
+            info!("{}", map.get("greet").unwrap());
         }
         _ => {
-            println!("Didn't find Strings asset");
+            warn!("Didn't find Strings asset");
         }
     }
 }
