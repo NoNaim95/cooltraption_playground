@@ -5,7 +5,7 @@ use bevy_ecs::{
 };
 use std::time::Duration;
 
-const US2S: f64 = 1.0 / 1000000.0; // µs to s factor
+const MICROS_TO_SECONDS: f64 = 1.0 / 1000000.0; // µs to s factor
 
 pub mod physics_engine;
 
@@ -17,7 +17,7 @@ pub struct DeltaTime {
 impl From<Duration> for DeltaTime {
     fn from(duration: Duration) -> Self {
         Self {
-            seconds: (duration.as_micros() as f64 * US2S),
+            seconds: (duration.as_micros() as f64 * MICROS_TO_SECONDS),
         }
     }
 }
