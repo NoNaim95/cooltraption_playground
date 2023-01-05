@@ -5,10 +5,10 @@ use std::env;
 use std::path::PathBuf;
 
 #[allow(unused, dead_code)]
-use cooltraption_playground::engine::physics_engine::*;
-use cooltraption_playground::engine::{Engine, EngineImpl};
+use cooltraption_playground::runtime::{Runtime, RuntimeImpl};
 
 use bevy_ecs::prelude::*;
+use cooltraption_playground::stages::physics_stage::{Acceleration, Position, Velocity};
 use std::time::Duration;
 
 mod entities;
@@ -48,7 +48,7 @@ fn main() {
     vel.0.x = 3.0;
     vel.0.y = 1.0;
 
-    let mut engine = EngineImpl::new(world);
+    let mut engine = RuntimeImpl::new(world);
     for i in 0..3 {
         engine.step_simulation(Duration::from_secs(i));
     }
