@@ -5,6 +5,8 @@ use bevy_ecs::{
 };
 use std::time::Duration;
 
+const US2S: f64 = 1.0 / 1000000.0; // µs to s factor
+
 pub mod physics_engine;
 
 #[derive(Resource, Default)]
@@ -15,7 +17,7 @@ pub struct DeltaTime {
 impl From<Duration> for DeltaTime {
     fn from(duration: Duration) -> Self {
         Self {
-            seconds: (duration.as_micros() as f64 / 1000000.0),
+            seconds: (duration.as_micros() as f64 * US2S),
         }
     }
 }
@@ -37,22 +39,7 @@ impl EngineImpl {
             "PhysicsEngine",
             SystemStage::parallel().with_system(physics_engine::solve_movement),
         );
-        return Self { world, schedule };
-    }
-}
-
-impl Default for EngineImpl {
-    fn default() -> Self {
-        let mut schedule = Schedule::default();
-        schedule.add_stage(
-            "PhysicsEngine",
-            SystemStage::parallel().with_system(physics_engine::solve_movement),
-        );
-
-        Self {
-            world: World::default(),
-            schedule,
-        }
+        Self { world, schedule }
     }
 }
 
