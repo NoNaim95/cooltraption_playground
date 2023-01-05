@@ -6,7 +6,6 @@ use std::path::PathBuf;
 
 fn main() {
     env::set_var("RUST_LOG", "test_game=debug");
-
     env_logger::init();
 
     set_working_dir().expect("Could not set working dir");
