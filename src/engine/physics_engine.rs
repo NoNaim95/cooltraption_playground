@@ -1,4 +1,4 @@
-use bevy_ecs::{system::Query, prelude::*};
+use bevy_ecs::{prelude::*, system::Query};
 use glam::f64::DVec2;
 
 use super::DeltaTime;
@@ -18,9 +18,11 @@ pub struct Weight(f64);
 #[derive(Component)]
 pub struct Force(f64);
 
-
-pub fn solve_movement(mut query: Query<(&mut Position, &mut Velocity, &mut Acceleration)>, dt: Res<DeltaTime>){
-    for (mut pos, mut vel, acc) in &mut query{
+pub fn solve_movement(
+    mut query: Query<(&mut Position, &mut Velocity, &mut Acceleration)>,
+    dt: Res<DeltaTime>,
+) {
+    for (mut pos, mut vel, acc) in &mut query {
         vel.0 += acc.0 * dt.seconds;
         pos.0 += vel.0 * dt.seconds;
         println!("Position of Entity: ({}|{})", pos.0.x, pos.0.y);
