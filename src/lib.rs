@@ -1,2 +1,2 @@
-pub mod asset_manager;
+pub mod assets;
 pub mod engine;

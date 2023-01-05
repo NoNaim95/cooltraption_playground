@@ -1,5 +1,5 @@
-use cooltraption_playground::asset_manager::file_asset_bundle::FileAssetBundle;
-use cooltraption_playground::asset_manager::{Asset, AssetBundle};
+use cooltraption_playground::assets::file_asset_bundle::FileAssetBundle;
+use cooltraption_playground::assets::{Asset, AssetBundle};
 use log::{info, warn};
 use std::env;
 use std::path::PathBuf;

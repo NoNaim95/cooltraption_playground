@@ -1,4 +1,4 @@
-use crate::asset_manager::{Asset, AssetBundle};
+use crate::assets::{Asset, AssetBundle};
 use bevy_ecs::prelude::Resource;
 use std::collections::HashMap;
 use std::fs;
