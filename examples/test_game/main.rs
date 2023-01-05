@@ -1,5 +1,5 @@
-use cooltraption_playground::asset_manager::file_asset_manager::FileAssetManager;
-use cooltraption_playground::asset_manager::{Asset, AssetManager};
+use cooltraption_playground::asset_manager::file_asset_bundle::FileAssetBundle;
+use cooltraption_playground::asset_manager::{Asset, AssetBundle};
 use log::{info, warn};
 use std::env;
 use std::path::PathBuf;
@@ -14,7 +14,7 @@ use std::time::Duration;
 mod entities;
 
 fn main() {
-    env::set_var("RUST_LOG", "test_game=debug");
+    env::set_var("RUST_LOG", "test_game=debug,cooltraption_playground=debug");
     env_logger::init();
 
     set_working_dir().expect("Could not set working dir");
@@ -23,14 +23,34 @@ fn main() {
         env::current_dir().unwrap().to_str().unwrap()
     );
 
-    let manager = FileAssetManager::load(PathBuf::from("./assets"));
-    match manager.get_asset("strings.yml").unwrap() {
+    let bundle = FileAssetBundle::load(PathBuf::from("./assets"));
+    match bundle.get_asset("strings").unwrap() {
         Asset::Strings(map) => {
             info!("{}", map.get("greet").unwrap());
         }
         _ => {
             warn!("Didn't find Strings asset");
         }
+    }
+
+    let mut world = World::new();
+    world.insert_resource(bundle);
+
+    let ent = world
+        .spawn((
+            Acceleration::default(),
+            Velocity::default(),
+            Position::default(),
+        ))
+        .id();
+    let mut ent_mut = world.get_entity_mut(ent).unwrap();
+    let mut vel = ent_mut.get_mut::<Velocity>().unwrap();
+    vel.0.x = 3.0;
+    vel.0.y = 1.0;
+
+    let mut engine = EngineImpl::new(world);
+    for i in 0..3 {
+        engine.step_simulation(Duration::from_secs(i));
     }
 }
 
@@ -49,22 +69,4 @@ fn set_working_dir() -> Result<(), Error> {
         .filter(|_| true)
         .ok_or(Error::GetError)?;
     env::set_current_dir(working_dir).or(Err(Error::SetError))
-    let mut world = World::new();
-
-    let ent = world
-        .spawn((
-            Acceleration::default(),
-            Velocity::default(),
-            Position::default(),
-        ))
-        .id();
-    let mut ent_mut = world.get_entity_mut(ent).unwrap();
-    let mut vel = ent_mut.get_mut::<Velocity>().unwrap();
-    vel.0.x = 3.0;
-    vel.0.y = 1.0;
-
-    let mut engine = EngineImpl::new(world);
-    for i in 0..3 {
-        engine.step_simulation(Duration::from_secs(i));
-    }
 }

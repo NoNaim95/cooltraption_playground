@@ -1,14 +1,10 @@
-pub mod file_asset_manager;
+pub mod file_asset_bundle;
 
+use bevy_ecs::system::Resource;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::path::Path;
 
-pub trait AssetManager {
-    fn load<T>(dir: T) -> Self
-    where
-        T: AsRef<Path>;
-
+pub trait AssetBundle: Resource {
     fn get_asset<T>(&self, name: T) -> Option<&Asset>
     where
         T: AsRef<str>;
