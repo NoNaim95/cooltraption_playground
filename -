@@ -1,0 +1,3 @@
+   Compiling cooltraption_playground v0.1.0 (/home/deni/programming/rust/cooltraption_playground)
+    Finished dev [unoptimized + debuginfo] target(s) in 1.22s
+     Running `target/debug/examples/test_game`
