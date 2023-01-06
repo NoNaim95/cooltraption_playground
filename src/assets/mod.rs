@@ -5,9 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub trait AssetBundle: Resource {
-    fn get_asset<T>(&self, name: T) -> Option<&Asset>
-    where
-        T: AsRef<str>;
+    fn get_asset(&self, name: &str) -> Option<&Asset>;
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]

@@ -34,10 +34,7 @@ impl FileAssetBundle {
 }
 
 impl AssetBundle for FileAssetBundle {
-    fn get_asset<T>(&self, name: T) -> Option<&Asset>
-    where
-        T: AsRef<str>,
-    {
-        return self.assets.get(name.as_ref());
+    fn get_asset(&self, name: &str) -> Option<&Asset> {
+        return self.assets.get(name);
     }
 }

@@ -1,19 +1,23 @@
-use cooltraption_playground::assets::file_asset_bundle::FileAssetBundle;
-
-use log::info;
 use std::env;
 use std::fmt::{Display, Formatter};
-use std::path::PathBuf;
-
-#[allow(unused, dead_code)]
-use cooltraption_playground::runtime::{Runtime, RuntimeImpl};
+use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use bevy_ecs::prelude::*;
+use cooltraption_playground::assets::{Asset, AssetBundle};
+use log::{info, warn};
+
+use cooltraption_playground::assets::file_asset_bundle::FileAssetBundle;
+#[allow(unused, dead_code)]
+use cooltraption_playground::runtime::{Runtime, RuntimeImpl};
+use cooltraption_playground::scene::file_loader::FileLoader;
+use cooltraption_playground::scene::{Load, Scene, SceneImpl};
+use cooltraption_playground::stages::physics_stage::{Acceleration, Position, Velocity};
 
 mod entities;
 
 fn main() {
-    env::set_var("RUST_LOG", "test_game=debug,cooltraption_playground=debug");
+    env::set_var("RUST_LOG", "coolbox=debug,cooltraption_playground=debug");
     env_logger::init();
 
     set_working_dir().expect("Could not set working dir");
@@ -23,52 +27,20 @@ fn main() {
     );
 
     let bundle = FileAssetBundle::load(PathBuf::from("./assets"));
-    /*match bundle.get_asset("strings").unwrap() {
+    match bundle.get_asset("strings").unwrap() {
         Asset::Strings(map) => {
             info!("{}", map.get("greet").unwrap());
         }
         _ => {
             warn!("Didn't find Strings asset");
         }
-    }*/
+    }
 
-    let mut world = World::new();
-    world.insert_resource(bundle);
-
-    /*let ent = world
-        .spawn((
-            Acceleration::default(),
-            Velocity::default(),
-            Position::default(),
-        ))
-        .id();
-    let mut ent_mut = world.get_entity_mut(ent).unwrap();
-    let mut vel = ent_mut.get_mut::<Velocity>().unwrap();
-    vel.0.x = 3.0;
-    vel.0.y = 1.0;*/
-
-    let mut runtime = RuntimeImpl::new(world);
-    /*for i in 0..3 {
+    let loader = FileLoader::from(PathBuf::from("./scenes/scene1"));
+    let mut runtime = RuntimeImpl::new(loader.load());
+    for i in 0..3 {
         runtime.step_simulation(Duration::from_secs(i));
-    }*/
-}
-
-fn play() {
-    env::set_var("RUST_LOG", "test_game=debug,cooltraption_playground=debug");
-    env_logger::init();
-
-    set_working_dir().expect("Could not set working dir");
-    info!(
-        "Starting in {}",
-        env::current_dir().unwrap().to_str().unwrap()
-    );
-
-    let bundle = FileAssetBundle::load(PathBuf::from("./assets"));
-
-    let mut world = World::new();
-    world.insert_resource(bundle);
-
-    let mut runtime = RuntimeImpl::new(world);
+    }
 }
 
 #[derive(Debug)]
