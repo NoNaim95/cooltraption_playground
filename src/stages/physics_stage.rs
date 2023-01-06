@@ -1,8 +1,10 @@
-use crate::runtime::DeltaTime;
+use std::ops::Deref;
+
 use bevy_ecs::{prelude::*, system::Query};
 use glam::f64::DVec2;
 use log::debug;
-use std::ops::Deref;
+
+use crate::runtime::DeltaTime;
 
 #[derive(StageLabel)]
 pub struct PhysicsStage;

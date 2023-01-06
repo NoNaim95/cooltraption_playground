@@ -1,5 +1,6 @@
-use copy_to_output::copy_to_output;
 use std::env;
+
+use copy_to_output::copy_to_output;
 
 fn main() {
     // Re-runs script if any files in assets are changed

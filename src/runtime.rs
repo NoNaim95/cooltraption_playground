@@ -1,11 +1,13 @@
-use crate::scene::Scene;
-use crate::stages::physics_stage;
-use crate::stages::physics_stage::PhysicsStage;
+use std::time::Duration;
+
 use bevy_ecs::{
     schedule::{Schedule, Stage, SystemStage},
     system::Resource,
 };
-use std::time::Duration;
+
+use crate::scene::Scene;
+use crate::stages::physics_stage;
+use crate::stages::physics_stage::PhysicsStage;
 
 const MICROS_TO_SECONDS: f64 = 1.0 / 1000000.0; // µs to s factor
 
@@ -24,8 +26,8 @@ impl From<Duration> for DeltaTime {
 
 pub trait Runtime<'r> {
     fn load_scene<T>(&mut self, scene: T)
-    where
-        T: Scene + 'r;
+        where
+            T: Scene + 'r;
     fn step_simulation(&mut self, dt: Duration);
 }
 
@@ -36,8 +38,8 @@ pub struct RuntimeImpl<'r> {
 
 impl<'r> RuntimeImpl<'r> {
     pub fn new<T>(scene: T) -> Self
-    where
-        T: Scene + 'r,
+        where
+            T: Scene + 'r,
     {
         let mut schedule = Schedule::default();
         schedule.add_stage(
@@ -54,8 +56,8 @@ impl<'r> RuntimeImpl<'r> {
 
 impl<'r> Runtime<'r> for RuntimeImpl<'r> {
     fn load_scene<T>(&mut self, scene: T)
-    where
-        T: Scene + 'r,
+        where
+            T: Scene + 'r,
     {
         self.scene = Box::new(scene);
     }

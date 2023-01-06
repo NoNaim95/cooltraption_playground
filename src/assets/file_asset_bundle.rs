@@ -1,8 +1,10 @@
-use crate::assets::{Asset, AssetBundle};
-use bevy_ecs::prelude::Resource;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+
+use bevy_ecs::prelude::Resource;
+
+use crate::assets::{Asset, AssetBundle};
 
 #[derive(Resource)]
 pub struct FileAssetBundle {

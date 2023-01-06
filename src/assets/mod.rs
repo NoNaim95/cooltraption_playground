@@ -1,8 +1,9 @@
-pub mod file_asset_bundle;
+use std::collections::BTreeMap;
 
 use bevy_ecs::system::Resource;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+
+pub mod file_asset_bundle;
 
 pub trait AssetBundle: Resource {
     fn get_asset(&self, name: &str) -> Option<&Asset>;
