@@ -1,6 +1,6 @@
-pub mod file_loader;
-
 use bevy_ecs::prelude::World;
+
+pub mod file_loader;
 
 pub trait Scene {
     fn world(&self) -> &World;
@@ -25,6 +25,6 @@ pub trait Load<T: Scene> {
     fn load(&self) -> T;
 }
 
-pub trait Save {
-    fn save(&self, scene: &dyn Scene);
+pub trait Save<T: Scene> {
+    fn save(&self, scene: T);
 }

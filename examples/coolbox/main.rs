@@ -1,18 +1,16 @@
 use std::env;
 use std::fmt::{Display, Formatter};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::Duration;
 
-use bevy_ecs::prelude::*;
-use cooltraption_playground::assets::{Asset, AssetBundle};
 use log::{info, warn};
 
 use cooltraption_playground::assets::file_asset_bundle::FileAssetBundle;
+use cooltraption_playground::assets::{Asset, AssetBundle};
 #[allow(unused, dead_code)]
 use cooltraption_playground::runtime::{Runtime, RuntimeImpl};
 use cooltraption_playground::scene::file_loader::FileLoader;
-use cooltraption_playground::scene::{Load, Scene, SceneImpl};
-use cooltraption_playground::stages::physics_stage::{Acceleration, Position, Velocity};
+use cooltraption_playground::scene::Load;
 
 mod entities;
 

@@ -1,11 +1,13 @@
-use crate::scene::Scene;
-use crate::stages::physics_stage;
-use crate::stages::physics_stage::PhysicsStage;
+use std::time::Duration;
+
 use bevy_ecs::{
     schedule::{Schedule, Stage, SystemStage},
     system::Resource,
 };
-use std::time::Duration;
+
+use crate::scene::Scene;
+use crate::stages::physics_stage;
+use crate::stages::physics_stage::PhysicsStage;
 
 const MICROS_TO_SECONDS: f64 = 1.0 / 1000000.0; // µs to s factor
 
