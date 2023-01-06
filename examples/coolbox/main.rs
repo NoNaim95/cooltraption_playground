@@ -7,6 +7,7 @@ use log::{info, warn};
 
 use cooltraption_playground::assets::{Asset, AssetBundle};
 use cooltraption_playground::assets::file_asset_bundle::FileAssetBundle;
+use cooltraption_playground::assets::{Asset, AssetBundle};
 #[allow(unused, dead_code)]
 use cooltraption_playground::runtime::{Runtime, RuntimeImpl};
 use cooltraption_playground::scene::file_loader::FileLoader;
