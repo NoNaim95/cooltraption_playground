@@ -4,7 +4,7 @@ use std::path::Path;
 
 use bevy_ecs::prelude::Resource;
 
-use crate::assets::{Asset, AssetBundle};
+use crate::asset_bundle::{Asset, AssetBundle};
 
 #[derive(Resource)]
 pub struct FileAssetBundle {
