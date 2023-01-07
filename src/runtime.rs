@@ -24,10 +24,14 @@ impl From<Duration> for DeltaTime {
     }
 }
 
+pub struct RuntimeOptions {
+    pub initial_scene: Box<dyn Scene>,
+}
+
 pub trait Runtime<'r> {
     fn load_scene<T>(&mut self, scene: T)
-        where
-            T: Scene + 'r;
+    where
+        T: Scene + 'r;
     fn step_simulation(&mut self, dt: Duration);
 }
 
@@ -37,10 +41,7 @@ pub struct RuntimeImpl<'r> {
 }
 
 impl<'r> RuntimeImpl<'r> {
-    pub fn new<T>(scene: T) -> Self
-        where
-            T: Scene + 'r,
-    {
+    pub fn new(options: RuntimeOptions) -> Self {
         let mut schedule = Schedule::default();
         schedule.add_stage(
             PhysicsStage,
@@ -48,7 +49,7 @@ impl<'r> RuntimeImpl<'r> {
         );
 
         Self {
-            scene: Box::new(scene),
+            scene: options.initial_scene,
             schedule,
         }
     }
@@ -56,8 +57,8 @@ impl<'r> RuntimeImpl<'r> {
 
 impl<'r> Runtime<'r> for RuntimeImpl<'r> {
     fn load_scene<T>(&mut self, scene: T)
-        where
-            T: Scene + 'r,
+    where
+        T: Scene + 'r,
     {
         self.scene = Box::new(scene);
     }
