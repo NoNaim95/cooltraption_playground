@@ -1,13 +1,19 @@
+use std::borrow::BorrowMut;
+use std::sync::Arc;
 use std::time::Duration;
 
+use crate::components::{Drawable, Position};
+use crate::render::RenderMachine;
+use bevy_ecs::prelude::Query;
 use bevy_ecs::{
     schedule::{Schedule, Stage, SystemStage},
     system::Resource,
 };
 
 use crate::scene::Scene;
-use crate::stages::physics_stage;
 use crate::stages::physics_stage::PhysicsStage;
+use crate::stages::render_stage::RenderStage;
+use crate::stages::{physics_stage, render_stage};
 
 const MICROS_TO_SECONDS: f64 = 1.0 / 1000000.0; // µs to s factor
 
@@ -38,6 +44,7 @@ pub trait Runtime<'r> {
 pub struct RuntimeImpl<'r> {
     scene: Box<dyn Scene + 'r>,
     schedule: Schedule,
+    render_machine: Arc<RenderMachine>,
 }
 
 impl<'r> RuntimeImpl<'r> {
@@ -48,9 +55,20 @@ impl<'r> RuntimeImpl<'r> {
             SystemStage::parallel().with_system(physics_stage::solve_movement),
         );
 
+        let mut render_machine = Arc::new(RenderMachine::default());
+
+        schedule.add_stage_after(
+            PhysicsStage,
+            RenderStage,
+            SystemStage::parallel().with_system(|query: Query<(&Position, &Drawable)>| {
+                render_machine.borrow_mut().update_state(query)
+            }),
+        );
+
         Self {
             scene: options.initial_scene,
             schedule,
+            render_machine,
         }
     }
 }
