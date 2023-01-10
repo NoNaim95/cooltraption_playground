@@ -1,36 +1,11 @@
-use std::ops::Deref;
-
+use crate::components::{Acceleration, Position, Velocity};
 use bevy_ecs::{prelude::*, system::Query};
-use glam::f64::DVec2;
 use log::debug;
 
 use crate::runtime::DeltaTime;
 
 #[derive(StageLabel)]
 pub struct PhysicsStage;
-
-#[derive(Component, Default)]
-pub struct Position(pub DVec2);
-
-#[derive(Component, Default)]
-pub struct Velocity(pub DVec2);
-
-#[derive(Component, Default)]
-pub struct Acceleration(pub DVec2);
-
-#[derive(Component)]
-pub struct Weight(pub f64);
-
-#[derive(Component)]
-pub struct Force(pub f64);
-
-impl Deref for Position {
-    type Target = DVec2;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 pub fn solve_movement(
     mut query: Query<(&mut Position, &mut Velocity, &mut Acceleration)>,

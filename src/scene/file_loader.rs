@@ -3,8 +3,8 @@ use std::path::{Path, PathBuf};
 use bevy_ecs::world::World;
 
 use crate::asset_bundle::file_asset_bundle::FileAssetBundle;
+use crate::components::{Acceleration, Position, Velocity};
 use crate::scene::{Load, SceneImpl};
-use crate::stages::physics_stage::{Acceleration, Position, Velocity};
 
 pub struct FileLoader {
     path: PathBuf,
