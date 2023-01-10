@@ -7,20 +7,20 @@ use fixed_macro::fixed;
 use nalgebra::Vector2;
 
 
-pub type float = I48F16;
-pub type Vec2f = Vector2<float>;
+pub type Float = I48F16;
+pub type Vec2f = Vector2<Float>;
 
-pub const MILLIS_TO_SECONDS: float = fixed!(0.001: I48F16); // µs to s factor
+pub const MILLIS_TO_SECONDS: Float = fixed!(0.001: I48F16); // µs to s factor
 
 #[derive(Resource, Default)]
 pub struct DeltaTime {
-    pub seconds: float,
+    pub seconds: Float,
 }
 
 impl From<Duration> for DeltaTime {
     fn from(duration: Duration) -> Self {
         let ret = Self {
-            seconds: (float::from_num(duration.as_millis()) * MILLIS_TO_SECONDS),
+            seconds: (Float::from_num(duration.as_millis()) * MILLIS_TO_SECONDS),
         };
         return ret;
     }
@@ -39,10 +39,10 @@ pub struct Velocity(pub Vec2f);
 pub struct Acceleration(pub Vec2f);
 
 #[derive(Component)]
-pub struct Weight(pub float);
+pub struct Weight(pub Float);
 
 #[derive(Component)]
-pub struct Force(pub float);
+pub struct Force(pub Float);
 
 impl Deref for Position {
     type Target = Vec2f;
