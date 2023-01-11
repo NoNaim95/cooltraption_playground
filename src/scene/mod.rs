@@ -21,8 +21,8 @@ impl Scene for SceneImpl {
     }
 }
 
-pub trait Load<T: Scene> {
-    fn load(&self) -> T;
+pub trait Load<T: Scene, E> {
+    fn load(&self) -> Result<T, E>;
 }
 
 pub trait Save<T: Scene> {
