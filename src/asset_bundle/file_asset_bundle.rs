@@ -53,12 +53,13 @@ impl FileAssetBundle {
     }
 }
 
-fn file_stem(file: &DirEntry) -> Option<&str> {
-    file.path().file_stem()?.to_str()
+fn file_stem(file: &DirEntry) -> Option<String> {
+    let path = file.path();
+    Some(String::from(path.file_stem()?.to_str()?))
 }
 
 impl AssetBundle for FileAssetBundle {
     fn get_asset(&self, name: &str) -> Option<&Asset> {
-        return self.assets.get(name);
+        self.assets.get(name)
     }
 }

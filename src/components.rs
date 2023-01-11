@@ -1,16 +1,15 @@
+use crate::stages::physics_stage::Vec2f;
 use bevy_ecs::prelude::*;
 use std::ops::Deref;
 
-use glam::DVec2;
+#[derive(Component, Default, Clone)]
+pub struct Position(pub Vec2f);
 
 #[derive(Component, Default, Clone)]
-pub struct Position(pub DVec2);
+pub struct Velocity(pub Vec2f);
 
 #[derive(Component, Default, Clone)]
-pub struct Velocity(pub DVec2);
-
-#[derive(Component, Default, Clone)]
-pub struct Acceleration(pub DVec2);
+pub struct Acceleration(pub Vec2f);
 
 #[derive(Component, Clone)]
 pub struct Weight(pub f64);
@@ -24,7 +23,7 @@ pub struct Drawable {
 }
 
 impl Deref for Position {
-    type Target = DVec2;
+    type Target = Vec2f;
 
     fn deref(&self) -> &Self::Target {
         &self.0
