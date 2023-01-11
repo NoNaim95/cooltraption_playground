@@ -4,7 +4,7 @@ use bevy_ecs::world::World;
 
 use crate::asset_bundle::file_asset_bundle::{FileAssetBundle, LoadAssetError};
 use crate::scene::{Load, SceneImpl};
-use crate::stages::physics_stage::{Acceleration, Position, Velocity};
+use crate::stages::physics_stage::{float, Acceleration, Position, Velocity};
 
 pub struct FileLoader {
     path: PathBuf,
@@ -55,8 +55,8 @@ impl Load<SceneImpl, LoadSceneError> for FileLoader {
             .id();
         let mut ent_mut = world.get_entity_mut(ent).unwrap();
         let mut vel = ent_mut.get_mut::<Velocity>().unwrap();
-        vel.0.x = 3.0;
-        vel.0.y = 1.0;
+        vel.0.x = float::from_num(3.0);
+        vel.0.y = float::from_num(1.0);
 
         Ok(SceneImpl { world })
 

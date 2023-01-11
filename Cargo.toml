@@ -12,7 +12,11 @@ serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 bevy_ecs = "*"
 bevy_reflect = "*"
-glam = "*"
+nalgebra = "0.31.4"
+simba = "0.7.3"
+fixed = "1.21.0"
+fixed-macro = "1.1"
+num-traits = "0.2.15"
 
 [build-dependencies]
 copy_to_output = "2.0.0"
