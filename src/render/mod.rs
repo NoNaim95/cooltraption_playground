@@ -1,3 +1,6 @@
+pub mod vertex;
+mod wgpu_state;
+
 use crate::components::{Drawable, Position};
 use bevy_ecs::prelude::*;
 use std::mem;
