@@ -2,7 +2,6 @@ use crate::components::{Drawable, Position};
 use bevy_ecs::prelude::*;
 use std::mem;
 
-
 #[derive(StageLabel)]
 pub struct RenderStage;
 
@@ -21,11 +20,9 @@ impl RenderMachine {
     pub fn update_state(&mut self, query: Query<(&Position, &Drawable)>) {
         self.previous = mem::take(&mut self.current);
 
-        for (position, drawable) in query.iter() {
-            self.current
-                .state
-                .push((position.clone(), drawable.clone()))
-        }
+        self.current = RenderWorld {
+            state: query.iter().map(|(p, d)| (p.clone(), d.clone())).collect(),
+        };
     }
 
     pub fn render(&self) {
