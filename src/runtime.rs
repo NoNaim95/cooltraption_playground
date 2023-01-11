@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -12,9 +10,9 @@ use bevy_ecs::{
 };
 
 use crate::scene::Scene;
+use crate::render::RenderStage;
 use crate::stages::physics_stage::PhysicsStage;
-use crate::stages::render_stage::RenderStage;
-use crate::stages::{physics_stage, render_stage};
+use crate::stages::physics_stage;
 
 const MICROS_TO_SECONDS: f64 = 1.0 / 1000000.0; // µs to s factor
 

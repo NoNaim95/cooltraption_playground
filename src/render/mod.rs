@@ -2,6 +2,10 @@ use crate::components::{Drawable, Position};
 use bevy_ecs::prelude::*;
 use std::mem;
 
+
+#[derive(StageLabel)]
+pub struct RenderStage;
+
 #[derive(Default)]
 pub struct RenderMachine {
     previous: RenderWorld,
