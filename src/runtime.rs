@@ -4,6 +4,10 @@ use std::time::Duration;
 use crate::scene::Scene;
 use crate::stages::physics_stage::{self, DeltaTime, PhysicsStage};
 
+pub struct RuntimeOptions {
+    pub initial_scene: Box<dyn Scene>,
+}
+
 pub trait Runtime<'r> {
     fn load_scene<T: Scene + 'r>(&mut self, scene: T);
     fn step_simulation(&mut self, dt: Duration);
@@ -15,7 +19,7 @@ pub struct RuntimeImpl<'r> {
 }
 
 impl<'r> RuntimeImpl<'r> {
-    pub fn new<T: Scene + 'r>(scene: T) -> Self {
+    pub fn new(options: RuntimeOptions) -> Self {
         let mut schedule = Schedule::default();
         schedule.add_stage(
             PhysicsStage,
@@ -23,7 +27,7 @@ impl<'r> RuntimeImpl<'r> {
         );
 
         Self {
-            scene: Box::new(scene),
+            scene: options.initial_scene,
             schedule,
         }
     }

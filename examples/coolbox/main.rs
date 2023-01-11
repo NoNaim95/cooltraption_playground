@@ -5,8 +5,9 @@ use std::time::Duration;
 
 use log::{info, warn};
 
-use cooltraption_playground::assets::file_asset_bundle::FileAssetBundle;
-use cooltraption_playground::assets::{Asset, AssetBundle};
+use cooltraption_playground::asset_bundle::file_asset_bundle::FileAssetBundle;
+use cooltraption_playground::asset_bundle::{Asset, AssetBundle};
+use cooltraption_playground::runtime::RuntimeOptions;
 #[allow(unused, dead_code)]
 use cooltraption_playground::runtime::{Runtime, RuntimeImpl};
 use cooltraption_playground::scene::file_loader::FileLoader;
@@ -35,7 +36,10 @@ fn main() {
     }
 
     let loader = FileLoader::from(PathBuf::from("./scenes/scene1"));
-    let mut runtime = RuntimeImpl::new(loader.load());
+    let options = RuntimeOptions {
+        initial_scene: Box::new(loader.load()),
+    };
+    let mut runtime = RuntimeImpl::new(options);
     for i in 0..3 {
         runtime.step_simulation(Duration::from_secs(i));
     }
