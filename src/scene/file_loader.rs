@@ -10,6 +10,23 @@ pub struct FileLoader {
     path: PathBuf,
 }
 
+pub enum LoadSceneError {
+    IOError(std::io::Error),
+    AssetError(LoadAssetError),
+}
+
+impl From<std::io::Error> for LoadSceneError {
+    fn from(e: std::io::Error) -> Self {
+        LoadSceneError::IOError(e)
+    }
+}
+
+impl From<LoadAssetError> for LoadSceneError {
+    fn from(e: LoadAssetError) -> Self {
+        LoadSceneError::AssetError(e)
+    }
+}
+
 impl<T: AsRef<Path>> From<T> for FileLoader {
     fn from(path: T) -> Self {
         FileLoader {
@@ -18,13 +35,16 @@ impl<T: AsRef<Path>> From<T> for FileLoader {
     }
 }
 
-impl Load<SceneImpl> for FileLoader {
-    fn load(&self) -> SceneImpl {
+impl Load<SceneImpl, LoadSceneError> for FileLoader {
+    fn load(&self) -> Result<SceneImpl, LoadSceneError> {
         // if let Ok(file_content) = fs::read_to_string(&self.path) {
-        let assets = FileAssetBundle::load(&self.path.join(PathBuf::from("assets/")));
+        let assets_path = &self.path.join(PathBuf::from("assets/"));
+        let assets = FileAssetBundle::load(assets_path)?;
 
         let mut world = World::new();
         world.insert_resource(assets);
+
+        //let deserialized_map: BTreeMap<String> = serde_yaml::from_str(&yaml)?;
 
         let ent = world
             .spawn((
@@ -35,10 +55,10 @@ impl Load<SceneImpl> for FileLoader {
             .id();
         let mut ent_mut = world.get_entity_mut(ent).unwrap();
         let mut vel = ent_mut.get_mut::<Velocity>().unwrap();
-        vel.0.x = 3.0;
-        vel.0.y = 1.0;
+        vel.0.x = float::from_num(3.0);
+        vel.0.y = float::from_num(1.0);
 
-        SceneImpl { world }
+        Ok(SceneImpl { world })
 
         /*let registration = TypeRegistration::of();
         let registry = TypeRegistry::new();

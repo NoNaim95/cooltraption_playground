@@ -34,9 +34,7 @@ pub struct RuntimeOptions {
 }
 
 pub trait Runtime<'r> {
-    fn load_scene<T>(&mut self, scene: T)
-    where
-        T: Scene + 'r;
+    fn load_scene<T: Scene + 'r>(&mut self, scene: T);
     fn step_simulation(&mut self, dt: Duration);
 }
 
@@ -76,10 +74,7 @@ impl<'r> RuntimeImpl<'r> {
 }
 
 impl<'r> Runtime<'r> for RuntimeImpl<'r> {
-    fn load_scene<T>(&mut self, scene: T)
-    where
-        T: Scene + 'r,
-    {
+    fn load_scene<T: Scene + 'r>(&mut self, scene: T) {
         self.scene = Box::new(scene);
     }
 
