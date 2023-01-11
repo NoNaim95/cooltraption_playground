@@ -11,6 +11,7 @@ pub struct FileLoader {
     path: PathBuf,
 }
 
+#[derive(Debug)]
 pub enum LoadSceneError {
     IOError(std::io::Error),
     AssetError(LoadAssetError),

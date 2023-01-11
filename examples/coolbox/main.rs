@@ -26,7 +26,7 @@ fn main() {
     );
 
     let bundle = FileAssetBundle::load(PathBuf::from("./assets"));
-    match bundle.get_asset("strings").unwrap() {
+    match bundle.unwrap().get_asset("strings").unwrap() {
         Asset::Strings(map) => {
             info!("{}", map.get("greet").unwrap());
         }
@@ -37,7 +37,7 @@ fn main() {
 
     let loader = FileLoader::from(PathBuf::from("./scenes/scene1"));
     let options = RuntimeOptions {
-        initial_scene: Box::new(loader.load()),
+        initial_scene: Box::new(loader.load().unwrap()),
     };
     let mut runtime = RuntimeImpl::new(options);
     for i in 0..3 {

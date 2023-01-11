@@ -7,6 +7,7 @@ use bevy_ecs::prelude::Resource;
 
 use crate::asset_bundle::{Asset, AssetBundle};
 
+#[derive(Debug)]
 pub enum LoadAssetError {
     IOError(std::io::Error),
     ParseError(serde_yaml::Error),

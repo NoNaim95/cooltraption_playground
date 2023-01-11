@@ -4,30 +4,12 @@ use std::time::Duration;
 use crate::components::{Drawable, Position};
 use crate::render::RenderMachine;
 use bevy_ecs::prelude::Query;
-use bevy_ecs::{
-    schedule::{Schedule, Stage, SystemStage},
-    system::Resource,
-};
+use bevy_ecs::schedule::{Schedule, Stage, SystemStage};
 
-use crate::scene::Scene;
 use crate::render::RenderStage;
-use crate::stages::physics_stage::PhysicsStage;
+use crate::scene::Scene;
 use crate::stages::physics_stage;
-
-const MICROS_TO_SECONDS: f64 = 1.0 / 1000000.0; // µs to s factor
-
-#[derive(Resource, Default)]
-pub struct DeltaTime {
-    pub seconds: f64,
-}
-
-impl From<Duration> for DeltaTime {
-    fn from(duration: Duration) -> Self {
-        Self {
-            seconds: (duration.as_micros() as f64 * MICROS_TO_SECONDS),
-        }
-    }
-}
+use crate::stages::physics_stage::{DeltaTime, PhysicsStage};
 
 pub struct RuntimeOptions {
     pub initial_scene: Box<dyn Scene>,

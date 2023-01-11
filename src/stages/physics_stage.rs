@@ -1,13 +1,10 @@
 use crate::components::{Acceleration, Position, Velocity};
 use bevy_ecs::{prelude::*, system::Query};
-use log::debug;
-use std::ops::Deref;
 use std::time::Duration;
 
 use fixed::types::I48F16;
 use fixed_macro::fixed;
 use nalgebra::Vector2;
-
 
 pub type Float = I48F16;
 pub type Vec2f = Vector2<Float>;
