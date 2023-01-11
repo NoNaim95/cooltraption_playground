@@ -58,14 +58,14 @@ impl<'r> RuntimeImpl<'r> {
 
         let render_machine = Arc::new(Mutex::new(RenderMachine::default()));
 
-        let mut render_machine_capture = Arc::clone(&render_machine);
+        let render_machine_capture = Arc::clone(&render_machine);
 
         schedule.add_stage_after(
             PhysicsStage,
             RenderStage,
             SystemStage::parallel().with_system(move |query: Query<(&Position, &Drawable)>| {
-                let x = Arc::get_mut(&mut render_machine_capture).unwrap();
-                x.get_mut().unwrap().update_state(query)
+                let mutex = Arc::as_ref(&render_machine_capture);
+                mutex.lock().unwrap().update_state(query)
             }),
         );
 
