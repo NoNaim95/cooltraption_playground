@@ -1,7 +1,9 @@
+use crate::components::{Acceleration, Position, Velocity};
+use bevy_ecs::{prelude::*, system::Query};
+use log::debug;
 use std::ops::Deref;
 use std::time::Duration;
 
-use bevy_ecs::{prelude::*, system::Query};
 use fixed::types::I48F16;
 use fixed_macro::fixed;
 use nalgebra::Vector2;
@@ -28,29 +30,6 @@ impl From<Duration> for DeltaTime {
 
 #[derive(StageLabel)]
 pub struct PhysicsStage;
-
-#[derive(Component, Default)]
-pub struct Position(pub Vec2f);
-
-#[derive(Component, Default)]
-pub struct Velocity(pub Vec2f);
-
-#[derive(Component, Default)]
-pub struct Acceleration(pub Vec2f);
-
-#[derive(Component)]
-pub struct Weight(pub Float);
-
-#[derive(Component)]
-pub struct Force(pub Float);
-
-impl Deref for Position {
-    type Target = Vec2f;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 pub fn solve_movement(
     mut query: Query<(&mut Position, &mut Velocity, &mut Acceleration)>,

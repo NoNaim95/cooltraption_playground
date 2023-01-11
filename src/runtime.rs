@@ -1,8 +1,33 @@
-use bevy_ecs::schedule::{Schedule, Stage, SystemStage};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use crate::components::{Drawable, Position};
+use crate::render::RenderMachine;
+use bevy_ecs::prelude::Query;
+use bevy_ecs::{
+    schedule::{Schedule, Stage, SystemStage},
+    system::Resource,
+};
+
 use crate::scene::Scene;
-use crate::stages::physics_stage::{self, DeltaTime, PhysicsStage};
+use crate::render::RenderStage;
+use crate::stages::physics_stage::PhysicsStage;
+use crate::stages::physics_stage;
+
+const MICROS_TO_SECONDS: f64 = 1.0 / 1000000.0; // µs to s factor
+
+#[derive(Resource, Default)]
+pub struct DeltaTime {
+    pub seconds: f64,
+}
+
+impl From<Duration> for DeltaTime {
+    fn from(duration: Duration) -> Self {
+        Self {
+            seconds: (duration.as_micros() as f64 * MICROS_TO_SECONDS),
+        }
+    }
+}
 
 pub struct RuntimeOptions {
     pub initial_scene: Box<dyn Scene>,
@@ -16,6 +41,7 @@ pub trait Runtime<'r> {
 pub struct RuntimeImpl<'r> {
     scene: Box<dyn Scene + 'r>,
     schedule: Schedule,
+    render_machine: Arc<Mutex<RenderMachine>>,
 }
 
 impl<'r> RuntimeImpl<'r> {
@@ -26,9 +52,23 @@ impl<'r> RuntimeImpl<'r> {
             SystemStage::parallel().with_system(physics_stage::solve_movement),
         );
 
+        let render_machine = Arc::new(Mutex::new(RenderMachine::default()));
+
+        let render_machine_capture = Arc::clone(&render_machine);
+
+        schedule.add_stage_after(
+            PhysicsStage,
+            RenderStage,
+            SystemStage::parallel().with_system(move |query: Query<(&Position, &Drawable)>| {
+                let mutex = Arc::as_ref(&render_machine_capture);
+                mutex.lock().unwrap().update_state(query)
+            }),
+        );
+
         Self {
             scene: options.initial_scene,
             schedule,
+            render_machine,
         }
     }
 }
