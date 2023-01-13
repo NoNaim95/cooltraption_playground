@@ -1,9 +1,7 @@
 use crate::render::vertex::{Vertex, INDICES, VERTICES};
-use std::io::Write;
 use wgpu::util::DeviceExt;
 use wgpu::{include_wgsl, CompositeAlphaMode};
-use winit::event::ElementState::Pressed;
-use winit::event::{KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event::WindowEvent;
 use winit::window::Window;
 
 pub struct WgpuState {
@@ -11,7 +9,7 @@ pub struct WgpuState {
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
-    pub size: winit::dpi::PhysicalSize<u32>,
+    size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
@@ -148,24 +146,7 @@ impl WgpuState {
 
     pub fn input(&mut self, event: &WindowEvent) -> bool {
         match event {
-            WindowEvent::KeyboardInput { input, .. } => {
-                if let KeyboardInput {
-                    virtual_keycode: Some(key),
-                    state,
-                    ..
-                } = input
-                {
-                    if *state == Pressed {
-                        match key {
-                            VirtualKeyCode::A => {
-                                print!("A");
-                                std::io::stdout().flush().unwrap();
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-            }
+            WindowEvent::KeyboardInput { .. } => {}
             WindowEvent::CursorMoved { .. } => {}
             WindowEvent::CursorEntered { .. } => {}
             WindowEvent::CursorLeft { .. } => {}
@@ -223,5 +204,21 @@ impl WgpuState {
         output.present();
 
         Ok(())
+    }
+
+    pub fn device(&self) -> &wgpu::Device {
+        &self.device
+    }
+
+    pub fn device_mut(&mut self) -> &mut wgpu::Device {
+        &mut self.device
+    }
+
+    pub fn queue(&self) -> &wgpu::Queue {
+        &self.queue
+    }
+
+    pub fn queue_mut(&mut self) -> &mut wgpu::Queue {
+        &mut self.queue
     }
 }

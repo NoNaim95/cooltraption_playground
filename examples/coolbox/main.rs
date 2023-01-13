@@ -6,7 +6,8 @@ use std::time::Duration;
 use log::{info, warn};
 
 use cooltraption_playground::asset_bundle::file_asset_bundle::FileAssetBundle;
-use cooltraption_playground::asset_bundle::{Asset, AssetBundle};
+use cooltraption_playground::asset_bundle::strings_asset::StringsAsset;
+use cooltraption_playground::asset_bundle::AssetBundle;
 use cooltraption_playground::runtime::RuntimeOptions;
 #[allow(unused, dead_code)]
 use cooltraption_playground::runtime::{Runtime, RuntimeImpl};
@@ -25,15 +26,14 @@ fn main() {
         env::current_dir().unwrap().to_str().unwrap()
     );
 
-    let bundle = FileAssetBundle::load(PathBuf::from("./assets"));
-    match bundle.unwrap().get_asset("strings").unwrap() {
-        Asset::Strings(map) => {
-            info!("{}", map.get("greet").unwrap());
-        }
-        _ => {
-            warn!("Didn't find Strings asset");
-        }
-    }
+    let bundle = FileAssetBundle::load(
+        PathBuf::from("./assets"), /* &cooltraption_playground::render::wgpu_state::WgpuState */
+    )
+    .expect("Could not load assets");
+    let strings: &StringsAsset = bundle
+        .get_asset("strings")
+        .expect("Could not find strings asset");
+    info!("{}", strings.map.get("greet").unwrap());
 
     let loader = FileLoader::from(PathBuf::from("./scenes/scene1"));
     let options = RuntimeOptions {

@@ -3,9 +3,10 @@ use std::fs;
 use std::fs::DirEntry;
 use std::path::Path;
 
-use bevy_ecs::prelude::Resource;
-
-use crate::asset_bundle::{Asset, AssetBundle};
+use crate::asset_bundle::strings_asset::StringsAsset;
+use crate::asset_bundle::texture_asset::TextureAsset;
+use crate::asset_bundle::*;
+use crate::render::wgpu_state::WgpuState;
 
 #[derive(Debug)]
 pub enum LoadAssetError {
@@ -26,13 +27,12 @@ impl From<serde_yaml::Error> for LoadAssetError {
     }
 }
 
-#[derive(Resource)]
 pub struct FileAssetBundle {
-    assets: HashMap<String, Asset>,
+    assets: HashMap<String, Box<dyn Asset>>,
 }
 
 impl FileAssetBundle {
-    pub fn load<T>(dir: T) -> Result<Self, LoadAssetError>
+    pub fn load<T>(dir: T, state: &WgpuState) -> Result<Self, LoadAssetError>
     where
         T: AsRef<Path>,
     {
@@ -44,8 +44,16 @@ impl FileAssetBundle {
         if dir.is_dir() {
             for file in fs::read_dir(dir)?.flatten() {
                 let file_content = fs::read_to_string(file.path())?;
-                let asset: Asset = serde_yaml::from_str(file_content.as_str())?;
+                let asset_config: AssetConfig = serde_yaml::from_str(file_content.as_str())?;
                 let asset_name = file_stem(&file).ok_or(LoadAssetError::PathError)?;
+
+                let asset: Box<dyn Asset> = match asset_config {
+                    AssetConfig::Texture(path) => Box::new(
+                        TextureAsset::load(path, state).expect("Error loading texture asset"),
+                    ),
+                    AssetConfig::Strings(map) => Box::new(StringsAsset::from(map)),
+                };
+
                 bundle.assets.insert(asset_name.to_owned(), asset);
             }
         }
@@ -60,7 +68,10 @@ fn file_stem(file: &DirEntry) -> Option<String> {
 }
 
 impl AssetBundle for FileAssetBundle {
-    fn get_asset(&self, name: &str) -> Option<&Asset> {
-        self.assets.get(name)
+    type AssetId = String;
+
+    fn get_asset<T: AsRef<Self::AssetId>, A: Asset>(&self, id: T) -> Option<&A> {
+        let asset = self.assets.get(id.as_ref())?.as_ref();
+        asset.as_any().downcast_ref()
     }
 }

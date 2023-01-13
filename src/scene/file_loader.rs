@@ -4,6 +4,7 @@ use bevy_ecs::world::World;
 
 use crate::asset_bundle::file_asset_bundle::{FileAssetBundle, LoadAssetError};
 use crate::components::{Acceleration, Position, Velocity};
+use crate::render::wgpu_state::WgpuState;
 use crate::scene::{Load, SceneImpl};
 use crate::stages::physics_stage::Float;
 
@@ -38,13 +39,14 @@ impl<T: AsRef<Path>> From<T> for FileLoader {
 }
 
 impl Load<SceneImpl, LoadSceneError> for FileLoader {
-    fn load(&self) -> Result<SceneImpl, LoadSceneError> {
+    fn load(&self, state: &WgpuState) -> Result<SceneImpl, LoadSceneError> {
         // if let Ok(file_content) = fs::read_to_string(&self.path) {
         let assets_path = &self.path.join(PathBuf::from("assets/"));
-        let assets = FileAssetBundle::load(assets_path)?;
+        let assets = FileAssetBundle::load(assets_path, state)?;
 
         let mut world = World::new();
-        world.insert_resource(assets);
+        // TODO: Think about how to achieve this
+        //world.insert_resource(assets);
 
         //let deserialized_map: BTreeMap<String> = serde_yaml::from_str(&yaml)?;
 

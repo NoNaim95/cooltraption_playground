@@ -1,16 +1,32 @@
+use as_any::AsAny;
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 
-use bevy_ecs::system::Resource;
 use serde::{Deserialize, Serialize};
 
 pub mod file_asset_bundle;
+pub mod strings_asset;
+pub mod texture_asset;
 
-pub trait AssetBundle: Resource {
-    fn get_asset(&self, name: &str) -> Option<&Asset>;
+pub trait AssetBundle {
+    type AssetId;
+
+    fn get_asset<T: AsRef<Self::AssetId>, A: Asset>(&self, id: T) -> Option<&A>;
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Asset {
-    Texture { path: String },
+enum AssetConfig {
+    Texture(TexturePath),
     Strings(BTreeMap<String, String>),
 }
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TexturePath(pub String);
+
+impl TexturePath {
+    pub fn as_path(&self) -> PathBuf {
+        PathBuf::from(&self.0)
+    }
+}
+
+pub trait Asset: AsAny {}

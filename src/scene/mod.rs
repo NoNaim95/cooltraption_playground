@@ -1,3 +1,4 @@
+use crate::render::wgpu_state::WgpuState;
 use bevy_ecs::prelude::World;
 
 pub mod file_loader;
@@ -22,7 +23,7 @@ impl Scene for SceneImpl {
 }
 
 pub trait Load<T: Scene, E> {
-    fn load(&self) -> Result<T, E>;
+    fn load(&self, state: &WgpuState) -> Result<T, E>;
 }
 
 pub trait Save<T: Scene> {
