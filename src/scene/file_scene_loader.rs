@@ -1,14 +1,15 @@
 use std::path::{Path, PathBuf};
 
 use bevy_ecs::world::World;
+use log::info;
 
 use crate::asset_bundle::file_asset_bundle::{FileAssetBundle, LoadAssetError};
 use crate::components::{Acceleration, Position, Velocity};
 use crate::render::wgpu_state::WgpuState;
-use crate::scene::{Load, SceneImpl};
+use crate::scene::{LoadScene, SceneImpl};
 use crate::stages::physics_stage::Float;
 
-pub struct FileLoader {
+pub struct MockFileSceneLoader {
     path: PathBuf,
 }
 
@@ -30,22 +31,26 @@ impl From<LoadAssetError> for LoadSceneError {
     }
 }
 
-impl<T: AsRef<Path>> From<T> for FileLoader {
+impl<T: AsRef<Path>> From<T> for MockFileSceneLoader {
     fn from(path: T) -> Self {
-        FileLoader {
+        MockFileSceneLoader {
             path: path.as_ref().to_path_buf(),
         }
     }
 }
 
-impl Load<SceneImpl, LoadSceneError> for FileLoader {
+impl LoadScene<SceneImpl, LoadSceneError> for MockFileSceneLoader {
     fn load(&self, state: &WgpuState) -> Result<SceneImpl, LoadSceneError> {
+        info!(
+            "Mock file loader used to load {}",
+            self.path.to_str().unwrap_or("None")
+        );
+
         // if let Ok(file_content) = fs::read_to_string(&self.path) {
         let assets_path = &self.path.join(PathBuf::from("assets/"));
         let assets = FileAssetBundle::load(assets_path, state)?;
 
         let mut world = World::new();
-        todo!("Think about how to store assets in a scene");
         //world.insert_resource(assets);
 
         //let deserialized_map: BTreeMap<String> = serde_yaml::from_str(&yaml)?;
@@ -62,7 +67,7 @@ impl Load<SceneImpl, LoadSceneError> for FileLoader {
         vel.0.x = Float::from_num(3.0);
         vel.0.y = Float::from_num(1.0);
 
-        Ok(SceneImpl { world })
+        Ok(SceneImpl { world, assets })
 
         /*let registration = TypeRegistration::of();
         let registry = TypeRegistry::new();

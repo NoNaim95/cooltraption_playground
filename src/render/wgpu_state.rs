@@ -161,8 +161,6 @@ impl WgpuState {
         false
     }
 
-    pub fn update(&mut self) {}
-
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output
@@ -220,5 +218,9 @@ impl WgpuState {
 
     pub fn queue_mut(&mut self) -> &mut wgpu::Queue {
         &mut self.queue
+    }
+
+    pub fn size(&self) -> winit::dpi::PhysicalSize<u32> {
+        self.size
     }
 }
