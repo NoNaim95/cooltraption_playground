@@ -1,6 +1,5 @@
 use crate::asset_bundle::{Asset, TexturePath};
 use crate::render::wgpu_state::WgpuState;
-use std::any::Any;
 use std::fs;
 
 pub struct TextureAsset {

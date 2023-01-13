@@ -3,18 +3,20 @@ use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::time::Duration;
 
-use log::{info, warn};
+use log::info;
+use winit::event_loop::EventLoop;
+use winit::window::Window;
 
 use cooltraption_playground::asset_bundle::file_asset_bundle::FileAssetBundle;
 use cooltraption_playground::asset_bundle::strings_asset::StringsAsset;
 use cooltraption_playground::asset_bundle::AssetBundle;
+use cooltraption_playground::render::wgpu_state::WgpuState;
 use cooltraption_playground::runtime::RuntimeOptions;
-#[allow(unused, dead_code)]
-use cooltraption_playground::runtime::{Runtime, RuntimeImpl};
 use cooltraption_playground::scene::file_loader::FileLoader;
 use cooltraption_playground::scene::Load;
-
 mod entities;
+
+use cooltraption_playground::runtime::{Runtime, RuntimeImpl};
 
 fn main() {
     env::set_var("RUST_LOG", "coolbox=debug,cooltraption_playground=debug");
@@ -26,10 +28,13 @@ fn main() {
         env::current_dir().unwrap().to_str().unwrap()
     );
 
-    let bundle = FileAssetBundle::load(
-        PathBuf::from("./assets"), /* &cooltraption_playground::render::wgpu_state::WgpuState */
-    )
-    .expect("Could not load assets");
+    let event_loop = EventLoop::default();
+    let window = Window::new(&event_loop).expect("Could not create window");
+    todo!("tokio?");
+    let wgpu_state = WgpuState::new(&window).await;
+
+    let bundle = FileAssetBundle::load(PathBuf::from("./assets"), &wgpu_state)
+        .expect("Could not load assets");
     let strings: &StringsAsset = bundle
         .get_asset("strings")
         .expect("Could not find strings asset");
@@ -37,7 +42,7 @@ fn main() {
 
     let loader = FileLoader::from(PathBuf::from("./scenes/scene1"));
     let options = RuntimeOptions {
-        initial_scene: Box::new(loader.load().unwrap()),
+        initial_scene: Box::new(loader.load(&wgpu_state).unwrap()),
     };
     let mut runtime = RuntimeImpl::new(options);
     for i in 0..3 {

@@ -11,7 +11,7 @@ pub mod texture_asset;
 pub trait AssetBundle {
     type AssetId;
 
-    fn get_asset<T: AsRef<Self::AssetId>, A: Asset>(&self, id: T) -> Option<&A>;
+    fn get_asset<T: Into<Self::AssetId>, A: Asset>(&self, id: T) -> Option<&A>;
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]

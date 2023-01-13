@@ -45,7 +45,7 @@ impl Load<SceneImpl, LoadSceneError> for FileLoader {
         let assets = FileAssetBundle::load(assets_path, state)?;
 
         let mut world = World::new();
-        // TODO: Think about how to achieve this
+        todo!("Think about how to store assets in a scene");
         //world.insert_resource(assets);
 
         //let deserialized_map: BTreeMap<String> = serde_yaml::from_str(&yaml)?;
