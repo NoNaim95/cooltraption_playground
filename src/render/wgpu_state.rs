@@ -14,6 +14,7 @@ pub struct WgpuState {
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     num_indices: u32,
+    diffuse_bind_group: wgpu::BindGroup,
 }
 
 impl WgpuState {
@@ -64,10 +65,51 @@ impl WgpuState {
 
         let shader = device.create_shader_module(include_wgsl!("shader.wgsl"));
 
+        let texture_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        // This should match the filterable field of the
+                        // corresponding Texture entry above.
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("texture_bind_group_layout"),
+            });
+
+        let diffuse_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &texture_bind_group_layout,
+            entries: &[
+                // TODO: Load texture assets
+                /*wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&diffuse_texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&diffuse_sampler),
+                }*/
+            ],
+            label: Some("diffuse_bind_group"),
+        });
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[],
+                bind_group_layouts: &[&texture_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -75,6 +117,7 @@ impl WgpuState {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
+                // TODO: Load shaders from assets
                 module: &shader,
                 entry_point: "vs_main",
                 buffers: &[Vertex::desc()],
@@ -132,6 +175,7 @@ impl WgpuState {
             vertex_buffer,
             index_buffer,
             num_indices,
+            diffuse_bind_group,
         }
     }
 
@@ -193,8 +237,10 @@ impl WgpuState {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
         }
 
