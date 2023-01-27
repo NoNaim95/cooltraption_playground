@@ -1,3 +1,5 @@
+use std::error::Error;
+use std::fmt::{Debug, Display, Formatter};
 use std::path::{Path, PathBuf};
 
 use bevy_ecs::world::World;
@@ -18,6 +20,19 @@ pub enum LoadSceneError {
     IOError(std::io::Error),
     AssetError(LoadAssetError),
 }
+
+impl Display for LoadSceneError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LoadSceneError::IOError(e) => write!(f, "IO error occurred during scene load: {}", e),
+            LoadSceneError::AssetError(e) => {
+                write!(f, "an asset returned an error during loading {}", e)
+            }
+        }
+    }
+}
+
+impl Error for LoadSceneError {}
 
 impl From<std::io::Error> for LoadSceneError {
     fn from(e: std::io::Error) -> Self {
@@ -40,15 +55,17 @@ impl<T: AsRef<Path>> From<T> for MockFileSceneLoader {
 }
 
 impl LoadScene<SceneImpl, LoadSceneError> for MockFileSceneLoader {
-    fn load(&self, state: &WgpuState) -> Result<SceneImpl, LoadSceneError> {
+    fn load(&self, state: &mut WgpuState) -> Result<SceneImpl, LoadSceneError> {
         info!(
             "Mock file loader used to load {}",
             self.path.to_str().unwrap_or("None")
         );
 
         // if let Ok(file_content) = fs::read_to_string(&self.path) {
+        // TODO: Load from scene path
         let assets_path = &self.path.join(PathBuf::from("assets/"));
         let assets = FileAssetBundle::load(assets_path, state)?;
+        //let assets = FileAssetBundle::load("./assets", state)?;
 
         let mut world = World::new();
         //world.insert_resource(assets);

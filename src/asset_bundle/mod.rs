@@ -1,11 +1,10 @@
-use as_any::AsAny;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
+use as_any::AsAny;
 use serde::{Deserialize, Serialize};
 
 pub mod file_asset_bundle;
-pub mod shader_asset;
 pub mod strings_asset;
 pub mod texture_asset;
 
@@ -18,7 +17,6 @@ pub trait AssetBundle {
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 enum AssetConfig {
     Texture(TexturePath),
-    Shader(ShaderPath),
     Strings(BTreeMap<String, String>),
 }
 
@@ -26,15 +24,6 @@ enum AssetConfig {
 pub struct TexturePath(pub String);
 
 impl TexturePath {
-    pub fn as_path(&self) -> PathBuf {
-        PathBuf::from(&self.0)
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ShaderPath(pub String);
-
-impl ShaderPath {
     pub fn as_path(&self) -> PathBuf {
         PathBuf::from(&self.0)
     }

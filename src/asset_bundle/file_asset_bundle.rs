@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::error::Error;
+use std::fmt::{write, Display, Formatter};
 use std::fs;
 use std::fs::DirEntry;
 use std::path::Path;
@@ -15,6 +17,21 @@ pub enum LoadAssetError {
     PathError,
     TextureError(LoadTextureError),
 }
+
+impl Display for LoadAssetError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LoadAssetError::IOError(e) => write!(f, "io error occured during asset loading: {}", e),
+            LoadAssetError::ParseError(e) => {
+                write!(f, "could not parse content of asset file: {}", e)
+            }
+            LoadAssetError::PathError => write!(f, "the asset path does not exist"),
+            LoadAssetError::TextureError(e) => write!(f, "texture could not be loaded: {}", e),
+        }
+    }
+}
+
+impl Error for LoadAssetError {}
 
 impl From<std::io::Error> for LoadAssetError {
     fn from(e: std::io::Error) -> Self {
@@ -39,7 +56,7 @@ pub struct FileAssetBundle {
 }
 
 impl FileAssetBundle {
-    pub fn load<T>(dir: T, state: &WgpuState) -> Result<Self, LoadAssetError>
+    pub fn load<T>(dir: T, state: &mut WgpuState) -> Result<Self, LoadAssetError>
     where
         T: AsRef<Path>,
     {
@@ -55,7 +72,11 @@ impl FileAssetBundle {
                 let asset_name = file_stem(&file).ok_or(LoadAssetError::PathError)?;
 
                 let asset: Box<dyn Asset> = match asset_config {
-                    AssetConfig::Texture(path) => Box::new(TextureAsset::load(path, state)?),
+                    AssetConfig::Texture(path) => {
+                        let texture = TextureAsset::load(path, state)?;
+                        state.add_texture(&texture);
+                        Box::new(texture)
+                    }
                     AssetConfig::Strings(map) => Box::new(StringsAsset::from(map)),
                 };
 

@@ -1,18 +1,19 @@
+use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use crate::components::{Drawable, Position};
-use crate::render::RenderMachine;
 use bevy_ecs::prelude::Query;
 use bevy_ecs::schedule::{Schedule, Stage, SystemStage};
 
+use crate::components::{Drawable, Position};
+use crate::render::RenderMachine;
 use crate::render::RenderStage;
-use crate::scene::Scene;
+use crate::scene::{LoadScene, Scene};
 use crate::stages::physics_stage;
 use crate::stages::physics_stage::{DeltaTime, PhysicsStage};
 
-pub struct RuntimeOptions {
-    pub initial_scene: Box<dyn Scene>,
+pub struct RuntimeOptions<S: Scene, E: Error> {
+    pub scene_loader: Box<dyn LoadScene<S, E>>,
 }
 
 pub trait Runtime<'r> {
@@ -23,35 +24,34 @@ pub trait Runtime<'r> {
 pub struct RuntimeImpl<'r> {
     scene: Box<dyn Scene + 'r>,
     schedule: Schedule,
-    render_machine: Arc<Mutex<RenderMachine>>,
 }
 
 impl<'r> RuntimeImpl<'r> {
-    pub fn new(options: RuntimeOptions) -> Self {
+    pub async fn start<S: Scene, E: Error>(options: &'r RuntimeOptions<S, E>) -> RuntimeImpl<'r> {
         let mut schedule = Schedule::default();
         schedule.add_stage(
             PhysicsStage,
             SystemStage::parallel().with_system(physics_stage::solve_movement),
         );
 
-        let render_machine = Arc::new(Mutex::new(RenderMachine::default()));
+        let mut render_machine = RenderMachine::create_window().await;
 
-        let render_machine_capture = Arc::clone(&render_machine);
+        let scene = Box::new(
+            options
+                .scene_loader
+                .load(render_machine.wgpu_state_mut())
+                .expect("valid scene object"),
+        );
 
         schedule.add_stage_after(
             PhysicsStage,
             RenderStage,
             SystemStage::parallel().with_system(move |query: Query<(&Position, &Drawable)>| {
-                let mutex = Arc::as_ref(&render_machine_capture);
-                mutex.lock().unwrap().update_state(query)
+                render_machine.update_state(query);
             }),
         );
 
-        Self {
-            scene: options.initial_scene,
-            schedule,
-            render_machine,
-        }
+        Self { scene, schedule }
     }
 }
 

@@ -1,5 +1,7 @@
 use crate::asset_bundle::{Asset, TexturePath};
 use crate::render::wgpu_state::WgpuState;
+use std::error::Error;
+use std::fmt::{Display, Formatter};
 use std::fs;
 
 pub struct TextureAsset {
@@ -13,6 +15,21 @@ pub enum LoadTextureError {
     IOError(std::io::Error),
     DecodeError(image::ImageError),
 }
+
+impl Display for LoadTextureError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LoadTextureError::IOError(e) => {
+                write!(f, "io error occured during texture loading: {}", e)
+            }
+            LoadTextureError::DecodeError(e) => {
+                write!(f, "could not decode texture from file: {}", e)
+            }
+        }
+    }
+}
+
+impl Error for LoadTextureError {}
 
 impl From<std::io::Error> for LoadTextureError {
     fn from(e: std::io::Error) -> Self {

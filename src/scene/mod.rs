@@ -1,6 +1,8 @@
+use bevy_ecs::prelude::World;
+use std::error::Error;
+
 use crate::asset_bundle::file_asset_bundle::FileAssetBundle;
 use crate::render::wgpu_state::WgpuState;
-use bevy_ecs::prelude::World;
 
 pub mod file_scene_loader;
 
@@ -24,8 +26,8 @@ impl Scene for SceneImpl {
     }
 }
 
-pub trait LoadScene<T: Scene, E> {
-    fn load(&self, state: &WgpuState) -> Result<T, E>;
+pub trait LoadScene<T: Scene, E: Error> {
+    fn load(&self, state: &mut WgpuState) -> Result<T, E>;
 }
 
 pub trait SaveScene<T: Scene> {
