@@ -1,11 +1,5 @@
 use bevy_ecs::prelude::*;
-use log::debug;
-use tokio::sync::mpsc::UnboundedReceiver;
-use tokio::sync::{mpsc, oneshot};
-use tokio::task;
-use winit::event::Event;
-use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
-use winit::platform::unix::EventLoopBuilderExtUnix;
+use winit::event_loop::{EventLoop, EventLoopBuilder};
 use winit::window::Window;
 
 use crate::components::{Drawable, Position};
@@ -26,6 +20,7 @@ pub struct RenderWorld {
 
 pub struct RenderMachine {
     state: [RenderWorld; 2],
+    window: Window,
     wgpu_state: WgpuState,
 }
 
@@ -38,6 +33,7 @@ impl RenderMachine {
         (
             Self {
                 state: [RenderWorld::default(), RenderWorld::default()],
+                window,
                 wgpu_state,
             },
             event_loop,

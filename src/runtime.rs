@@ -17,17 +17,17 @@ pub struct RuntimeOptions<S: Scene, E: Error> {
     pub scene_loader: Box<dyn LoadScene<S, E>>,
 }
 
-pub trait Runtime {
-    fn load_scene<T: Scene + 'static>(&mut self, scene: T);
+pub trait Runtime<'r> {
+    fn load_scene<T: Scene + 'r>(&mut self, scene: T);
     fn step_simulation(&mut self, dt: Duration);
 }
 
-pub struct RuntimeImpl {
-    scene: Box<dyn Scene + 'static>,
+pub struct RuntimeImpl<'r> {
+    scene: Box<dyn Scene + 'r>,
     schedule: Schedule,
 }
 
-impl RuntimeImpl {
+impl RuntimeImpl<'static> {
     pub async fn run<S: Scene + 'static, E: Error>(options: &RuntimeOptions<S, E>) {
         let mut schedule = Schedule::default();
         schedule.add_stage(
@@ -49,12 +49,11 @@ impl RuntimeImpl {
             RenderStage,
             SystemStage::parallel().with_system(move |query: Query<(&Position, &Drawable)>| {
                 render_machine.update_state(query);
+                render_machine.render();
             }),
         );
 
-        let runtime = RuntimeImpl { scene, schedule };
-
-        runtime.run_event_loop(event_loop);
+        RuntimeImpl { scene, schedule }.run_event_loop(event_loop);
     }
 
     fn run_event_loop(mut self, event_loop: EventLoop<()>) {
@@ -77,8 +76,8 @@ impl RuntimeImpl {
     }
 }
 
-impl Runtime for RuntimeImpl {
-    fn load_scene<T: Scene + 'static>(&mut self, scene: T) {
+impl<'r> Runtime<'r> for RuntimeImpl<'r> {
+    fn load_scene<T: Scene + 'r>(&mut self, scene: T) {
         self.scene = Box::new(scene);
     }
 
