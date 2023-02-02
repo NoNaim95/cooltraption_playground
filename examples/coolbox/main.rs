@@ -1,20 +1,12 @@
 use std::env;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
-use std::time::Instant;
 
 use log::info;
-use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
-use winit::event_loop::{ControlFlow, EventLoop};
 
-use cooltraption_playground::asset_bundle::file_asset_bundle::FileAssetBundle;
-use cooltraption_playground::asset_bundle::strings_asset::StringsAsset;
-use cooltraption_playground::asset_bundle::AssetBundle;
 use cooltraption_playground::runtime::RuntimeImpl;
 use cooltraption_playground::runtime::RuntimeOptions;
 use cooltraption_playground::scene::file_scene_loader::MockFileSceneLoader;
-use cooltraption_playground::scene::LoadScene;
 
 mod entities;
 
@@ -34,7 +26,7 @@ async fn main() {
         scene_loader: Box::new(loader),
     };
 
-    let runtime = RuntimeImpl::start(&options).await;
+    RuntimeImpl::run(&options).await;
     /*
     let bundle = FileAssetBundle::load(PathBuf::from("./assets"), &mut wgpu_state)
         .expect("Could not load assets");
