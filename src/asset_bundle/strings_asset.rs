@@ -1,6 +1,7 @@
 use crate::asset_bundle::Asset;
 use std::collections::BTreeMap;
 
+#[derive(Debug)]
 pub struct StringsAsset {
     pub map: BTreeMap<String, String>,
 }

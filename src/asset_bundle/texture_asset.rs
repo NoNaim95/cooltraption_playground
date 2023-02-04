@@ -1,9 +1,11 @@
-use crate::asset_bundle::{Asset, TexturePath};
+use crate::asset_bundle::Asset;
 use crate::render::wgpu_state::WgpuState;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::fs;
+use std::path::PathBuf;
 
+#[derive(Debug)]
 pub struct TextureAsset {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
@@ -46,8 +48,8 @@ impl From<image::ImageError> for LoadTextureError {
 impl Asset for TextureAsset {}
 
 impl TextureAsset {
-    pub fn load(path: TexturePath, state: &WgpuState) -> Result<Self, LoadTextureError> {
-        let diffuse_bytes = fs::read(path.as_path())?;
+    pub fn load(path: PathBuf, state: &WgpuState) -> Result<Self, LoadTextureError> {
+        let diffuse_bytes = fs::read(path)?;
         let diffuse_image = image::load_from_memory(diffuse_bytes.as_slice())?;
         let diffuse_rgba = diffuse_image.to_rgba8();
 

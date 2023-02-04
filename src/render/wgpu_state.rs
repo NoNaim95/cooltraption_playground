@@ -1,9 +1,9 @@
-use cgmath::{Quaternion, Vector3};
 use cgmath::prelude::*;
+use cgmath::{Quaternion, Vector3};
 use fixed::FixedI64;
 use log::warn;
-use wgpu::*;
 use wgpu::util::DeviceExt;
+use wgpu::*;
 use winit::event::WindowEvent;
 use winit::window::Window;
 
@@ -11,7 +11,7 @@ use crate::asset_bundle::texture_asset::TextureAsset;
 use crate::components::{Drawable, Position};
 use crate::render::camera::{Camera, CameraUniform};
 use crate::render::instance::{Instance, InstanceRaw};
-use crate::render::vertex::{INDICES, Vertex, VERTICES};
+use crate::render::vertex::{Vertex, INDICES, VERTICES};
 
 pub struct WgpuState {
     surface: Surface,
@@ -92,7 +92,6 @@ impl WgpuState {
             // which way is "up"
             up: Vector3::unit_y(),
             aspect: config.width as f32 / config.height as f32,
-            fovy: 45.0,
             znear: 0.1,
             zfar: 100.0,
         };

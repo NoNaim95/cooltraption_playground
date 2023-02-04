@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::fmt::Debug;
 use std::path::PathBuf;
 
 use as_any::AsAny;
@@ -16,17 +17,8 @@ pub trait AssetBundle {
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 enum AssetConfig {
-    Texture(TexturePath),
+    Texture(String),
     Strings(BTreeMap<String, String>),
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TexturePath(pub String);
-
-impl TexturePath {
-    pub fn as_path(&self) -> PathBuf {
-        PathBuf::from(&self.0)
-    }
-}
-
-pub trait Asset: AsAny {}
+pub trait Asset: AsAny + Debug {}

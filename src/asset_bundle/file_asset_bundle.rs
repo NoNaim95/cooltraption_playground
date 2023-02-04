@@ -1,5 +1,7 @@
+use log::{debug, info};
 use std::collections::HashMap;
 use std::error::Error;
+use std::ffi::OsStr;
 use std::fmt::{write, Display, Formatter};
 use std::fs;
 use std::fs::DirEntry;
@@ -60,31 +62,50 @@ impl FileAssetBundle {
     where
         T: AsRef<Path>,
     {
-        let mut bundle = FileAssetBundle {
-            assets: HashMap::new(),
-        };
-
         let dir = dir.as_ref();
+
+        debug!("Loading assets from {:?}", dir);
+
         if dir.is_dir() {
-            for file in fs::read_dir(dir)?.flat_map(|r| r.ok()) {
+            let mut bundle = FileAssetBundle {
+                assets: HashMap::new(),
+            };
+
+            // Load all yml files
+            for file in fs::read_dir(dir)?.flat_map(|r| r.ok()).filter(|f| {
+                return if let Some(ext) = f.path().extension() {
+                    [OsStr::new("yml"), OsStr::new("yaml")].contains(&ext)
+                } else {
+                    false
+                };
+            }) {
                 let file_content = fs::read_to_string(file.path())?;
                 let asset_config: AssetConfig = serde_yaml::from_str(file_content.as_str())?;
                 let asset_name = file_stem(&file).ok_or(LoadAssetError::PathError)?;
 
                 let asset: Box<dyn Asset> = match asset_config {
                     AssetConfig::Texture(path) => {
-                        let texture = TextureAsset::load(path, state)?;
+                        let texture_path = file
+                            .path()
+                            .parent()
+                            .ok_or(LoadAssetError::PathError)?
+                            .join(path);
+                        let texture = TextureAsset::load(texture_path, state)?;
                         state.add_texture(&texture);
                         Box::new(texture)
                     }
                     AssetConfig::Strings(map) => Box::new(StringsAsset::from(map)),
                 };
 
+                debug!("Loaded asset {} {:?}", asset_name, asset);
+
                 bundle.assets.insert(asset_name.to_owned(), asset);
             }
+
+            return Ok(bundle);
         }
 
-        Ok(bundle)
+        Err(LoadAssetError::PathError)
     }
 }
 

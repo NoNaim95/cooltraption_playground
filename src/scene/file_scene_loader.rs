@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::path::{Path, PathBuf};
 
 use bevy_ecs::world::World;
-use log::info;
+use log::{info, warn};
 
 use crate::asset_bundle::file_asset_bundle::{FileAssetBundle, LoadAssetError};
 use crate::components::{Acceleration, Drawable, Position, Velocity};
@@ -56,14 +56,15 @@ impl<T: AsRef<Path>> From<T> for MockFileSceneLoader {
 
 impl LoadScene<SceneImpl, LoadSceneError> for MockFileSceneLoader {
     fn load(&self, state: &mut WgpuState) -> Result<SceneImpl, LoadSceneError> {
-        info!(
+        warn!(
             "Mock file loader used to load {}",
             self.path.to_str().unwrap_or("None")
         );
 
         // if let Ok(file_content) = fs::read_to_string(&self.path) {
-        // TODO: Load from scene path
-        let assets_path = &self.path.join(PathBuf::from("assets/"));
+        //let assets_path = &self.path.join(PathBuf::from("assets/"));
+        // TODO: Load from scene path; ^ will do v is just to debug
+        let assets_path = PathBuf::from("./assets/");
         let assets = FileAssetBundle::load(assets_path, state)?;
         //let assets = FileAssetBundle::load("./assets", state)?;
 
