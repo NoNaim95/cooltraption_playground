@@ -18,7 +18,7 @@ pub struct Camera {
 impl Camera {
     fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
         let view = cgmath::Matrix4::look_at_rh(self.eye, self.target, self.up);
-        let proj = cgmath::ortho(-1.0, 1.0, -1.0, 1.0, self.znear, self.zfar);
+        let proj = cgmath::ortho(-self.aspect, self.aspect, -1.0, 1.0, self.znear, self.zfar);
 
         OPENGL_TO_WGPU_MATRIX * proj * view
     }

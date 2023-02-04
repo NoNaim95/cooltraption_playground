@@ -85,8 +85,8 @@ impl LoadScene<SceneImpl, LoadSceneError> for MockFileSceneLoader {
             .id();
         let mut ent_mut = world.get_entity_mut(ent).unwrap();
         let mut vel = ent_mut.get_mut::<Velocity>().unwrap();
-        vel.0.x = Float::from_num(3.0);
-        vel.0.y = Float::from_num(1.0);
+        vel.0.x = Float::from_num(0.003);
+        vel.0.y = Float::from_num(0.001);
 
         Ok(SceneImpl { world, assets })
 
