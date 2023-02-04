@@ -24,7 +24,6 @@ struct VertexOutput {
 };
 
 @vertex
-@vertex
 fn vs_main(
     model: VertexInput,
     instance: InstanceInput,
