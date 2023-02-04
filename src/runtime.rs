@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 
 use bevy_ecs::prelude::Query;
 use bevy_ecs::schedule::{Schedule, Stage, SystemStage};
+use fixed_macro::fixed;
 use log::debug;
 use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -77,7 +78,8 @@ impl RuntimeImpl<'static> {
     }
 
     fn run_event_loop(mut self, event_loop: EventLoop<()>) {
-        let start_time = Instant::now();
+        let mut start_time = Instant::now();
+        let mut frame_time = start_time - Instant::now();
         let window_id = render_machine!(self).window_id();
 
         event_loop.run(move |event, _, control_flow| {
@@ -114,14 +116,15 @@ impl RuntimeImpl<'static> {
                         }
                     }
                 }
-
-                Event::MainEventsCleared => {
+                Event::RedrawRequested(event_window_id) if window_id == event_window_id => {
                     render_machine!(self).request_redraw_window();
                 }
-                Event::RedrawRequested(_) => {
-                    self.step_simulation(Instant::now() - start_time);
+                Event::RedrawEventsCleared => {
+                    self.step_simulation(frame_time);
+                    frame_time = Instant::now() - start_time;
+                    start_time = Instant::now();
                 }
-                Event::RedrawEventsCleared => {}
+                Event::MainEventsCleared => {}
                 Event::DeviceEvent { .. } => {}
                 Event::UserEvent(_) => {}
                 Event::NewEvents(_) => {}

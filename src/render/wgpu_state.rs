@@ -1,5 +1,5 @@
 use cgmath::prelude::*;
-use cgmath::{Quaternion, Vector3};
+use cgmath::{Deg, Quaternion, Vector3};
 use fixed::FixedI64;
 use log::warn;
 use wgpu::util::DeviceExt;
@@ -210,12 +210,9 @@ impl WgpuState {
                     let rotation = if position.is_zero() {
                         // this is needed so an object at (0, 0, 0) won't get scaled to zero
                         // as Quaternions can effect scale if they're not created correctly
-                        cgmath::Quaternion::from_axis_angle(
-                            cgmath::Vector3::unit_z(),
-                            cgmath::Deg(0.0),
-                        )
+                        Quaternion::from_axis_angle(Vector3::unit_z(), Deg(0.0))
                     } else {
-                        cgmath::Quaternion::from_axis_angle(position.normalize(), cgmath::Deg(45.0))
+                        Quaternion::from_axis_angle(position.normalize(), Deg(45.0))
                     };
 
                     Instance { position, rotation }
@@ -383,10 +380,16 @@ impl WgpuState {
                     FixedI64::to_num(position.y),
                     0.0,
                 );
-                render_set.instances = vec![Instance {
-                    position,
-                    rotation: Quaternion::zero(),
-                }];
+                render_set.instances = vec![
+                    Instance {
+                        position,
+                        rotation: Quaternion::zero(),
+                    }, /*,
+                       Instance { // Renders the same object a second time but rotated by 45°
+                           position: position + Vector3::new(1.0, 0.0, 0.0),
+                           rotation: Quaternion::from_angle_z(Deg(45.0)),
+                       },*/
+                ];
 
                 let instance_data = render_set
                     .instances
