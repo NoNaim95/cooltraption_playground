@@ -1,6 +1,6 @@
 use bevy_ecs::prelude::*;
 use winit::event_loop::{EventLoop, EventLoopBuilder};
-use winit::window::Window;
+use winit::window::{Window, WindowId};
 
 use crate::components::{Drawable, Position};
 use crate::render::wgpu_state::WgpuState;
@@ -40,6 +40,14 @@ impl RenderMachine {
         )
     }
 
+    pub fn request_redraw_window(&self) {
+        self.window.request_redraw();
+    }
+
+    pub fn resize_window(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+        self.wgpu_state.resize(new_size);
+    }
+
     pub fn update_state(&mut self, query: Query<(&Position, &Drawable)>) {
         self.state.swap(0, 1);
 
@@ -54,6 +62,10 @@ impl RenderMachine {
         for (position, drawable) in &self.state[0].state {
             self.wgpu_state.render_object(position, drawable);
         }
+    }
+
+    pub fn window_id(&self) -> WindowId {
+        self.window.id()
     }
 
     pub fn wgpu_state(&self) -> &WgpuState {

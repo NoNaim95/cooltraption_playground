@@ -6,7 +6,7 @@ use bevy_ecs::world::World;
 use log::info;
 
 use crate::asset_bundle::file_asset_bundle::{FileAssetBundle, LoadAssetError};
-use crate::components::{Acceleration, Position, Velocity};
+use crate::components::{Acceleration, Drawable, Position, Velocity};
 use crate::render::wgpu_state::WgpuState;
 use crate::scene::{LoadScene, SceneImpl};
 use crate::stages::physics_stage::Float;
@@ -77,6 +77,9 @@ impl LoadScene<SceneImpl, LoadSceneError> for MockFileSceneLoader {
                 Acceleration::default(),
                 Velocity::default(),
                 Position::default(),
+                Drawable {
+                    asset: "test".to_string(),
+                },
             ))
             .id();
         let mut ent_mut = world.get_entity_mut(ent).unwrap();
