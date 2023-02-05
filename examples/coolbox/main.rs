@@ -1,6 +1,7 @@
 use std::env;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
+use std::sync::mpsc;
 
 use cooltraption_playground::asset_bundle::file_asset_loader::FileAssetLoader;
 use cooltraption_playground::render::{RenderMachine, RenderMachineOptions, RenderWorld};
@@ -23,7 +24,7 @@ async fn main() {
         env::current_dir().unwrap().to_str().unwrap()
     );
 
-    let (state_send, state_recv) = tokio::sync::mpsc::channel::<RenderWorld>(1);
+    let (state_send, state_recv) = mpsc::sync_channel::<RenderWorld>(1);
 
     tokio::spawn(async {
         let simulation_loader = MockFileSimulationLoader::from(PathBuf::from("./scenes/scene1"));

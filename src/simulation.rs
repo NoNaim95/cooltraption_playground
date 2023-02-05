@@ -1,13 +1,11 @@
 use std::error::Error;
+use std::sync::mpsc::SyncSender;
 use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use bevy_ecs::prelude::Query;
 use bevy_ecs::schedule::{Schedule, Stage, SystemStage};
-use log::debug;
-use tokio::sync::mpsc::{Sender, UnboundedSender};
-use tokio::time::sleep_until;
 use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 
@@ -22,7 +20,7 @@ pub mod simulation_state;
 
 pub struct SimulationOptions<S: SimulationState, E: Error> {
     pub simulation_loader: Box<dyn LoadSimulation<S, E>>,
-    pub state_send: Sender<RenderWorld>,
+    pub state_send: SyncSender<RenderWorld>,
 }
 
 pub trait Simulation<'r> {

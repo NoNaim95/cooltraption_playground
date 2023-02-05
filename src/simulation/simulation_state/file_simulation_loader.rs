@@ -80,7 +80,7 @@ impl LoadSimulation<SimulationStateImpl, LoadSimulationError> for MockFileSimula
                 Velocity::default(),
                 Position::default(),
                 Drawable {
-                    asset: "test".to_string(),
+                    asset: "texture".to_string(),
                 },
             ))
             .id();

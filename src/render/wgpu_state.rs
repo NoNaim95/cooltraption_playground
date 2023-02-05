@@ -174,7 +174,6 @@ impl WgpuState {
         let diffuse_bind_group = self.device.create_bind_group(&BindGroupDescriptor {
             layout: &texture_bind_group_layout,
             entries: &[
-                // TODO: Load texture assets
                 BindGroupEntry {
                     binding: 0,
                     resource: BindingResource::TextureView(&texture.view),
