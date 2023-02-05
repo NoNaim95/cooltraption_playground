@@ -1,9 +1,6 @@
 use bevy_ecs::prelude::World;
 use std::error::Error;
 
-use crate::asset_bundle::file_asset_bundle::FileAssetBundle;
-use crate::render::wgpu_state::WgpuState;
-
 pub mod file_simulation_loader;
 
 pub trait SimulationState {
@@ -13,7 +10,6 @@ pub trait SimulationState {
 
 pub struct SimulationStateImpl {
     pub world: World,
-    pub assets: FileAssetBundle,
 }
 
 impl SimulationState for SimulationStateImpl {
@@ -27,7 +23,7 @@ impl SimulationState for SimulationStateImpl {
 }
 
 pub trait LoadSimulation<T: SimulationState, E: Error> {
-    fn load(&self, state: &mut WgpuState) -> Result<T, E>;
+    fn load(&self) -> Result<T, E>;
 }
 
 pub trait SaveSimulation<T: SimulationState> {

@@ -2,11 +2,13 @@ use std::env;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 
+use cooltraption_playground::asset_bundle::file_asset_loader::FileAssetLoader;
+use cooltraption_playground::render::RenderMachine;
 use log::info;
 
 use cooltraption_playground::simulation::simulation_state::file_simulation_loader::MockFileSimulationLoader;
-use cooltraption_playground::simulation::RuntimeOptions;
 use cooltraption_playground::simulation::SimulationImpl;
+use cooltraption_playground::simulation::SimulationOptions;
 
 mod entities;
 
@@ -21,12 +23,17 @@ async fn main() {
         env::current_dir().unwrap().to_str().unwrap()
     );
 
-    let loader = MockFileSimulationLoader::from(PathBuf::from("./scenes/scene1"));
-    let options = RuntimeOptions {
-        simulation_loader: Box::new(loader),
-    };
+    tokio::spawn(async {
+        let simulation_loader = MockFileSimulationLoader::from(PathBuf::from("./scenes/scene1"));
+        let options = SimulationOptions {
+            simulation_loader: Box::new(simulation_loader),
+        };
 
-    SimulationImpl::run(&options).await;
+        SimulationImpl::new(&options).run();
+    });
+
+    let asset_loader = FileAssetLoader::new("./assets".into());
+    RenderMachine::run(&asset_loader).await;
     /*
     let bundle = FileAssetBundle::load(PathBuf::from("./assets"), &mut wgpu_state)
         .expect("Could not load assets");

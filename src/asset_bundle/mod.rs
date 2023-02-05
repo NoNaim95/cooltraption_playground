@@ -1,18 +1,25 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
+use std::error::Error;
 use std::fmt::Debug;
-use std::path::PathBuf;
+use std::hash::Hash;
 
+use crate::render::wgpu_state::WgpuState;
 use as_any::AsAny;
 use serde::{Deserialize, Serialize};
 
-pub mod file_asset_bundle;
+pub mod file_asset_loader;
 pub mod strings_asset;
 pub mod texture_asset;
 
-pub trait AssetBundle {
-    type AssetId;
+pub struct AssetBundle<Id: Eq + Hash> {
+    assets: HashMap<Id, Box<dyn Asset>>,
+}
 
-    fn get_asset<T: Into<Self::AssetId>, A: Asset>(&self, id: T) -> Option<&A>;
+impl<Id: Eq + Hash> AssetBundle<Id> {
+    fn get_asset<T: Into<Id>, A: Asset>(&self, id: Id) -> Option<&A> {
+        let asset = self.assets.get(&id.into())?.as_ref();
+        asset.as_any().downcast_ref()
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -22,3 +29,7 @@ enum AssetConfig {
 }
 
 pub trait Asset: AsAny + Debug {}
+
+pub trait LoadAssetBundle<Id: Eq + Hash, E: Error> {
+    fn load<T>(&self, state: &mut WgpuState) -> Result<AssetBundle<Id>, E>;
+}

@@ -5,9 +5,8 @@ use std::path::{Path, PathBuf};
 use bevy_ecs::world::World;
 use log::warn;
 
-use crate::asset_bundle::file_asset_bundle::{FileAssetBundle, LoadAssetError};
+use crate::asset_bundle::file_asset_loader::LoadAssetError;
 use crate::components::{Acceleration, Drawable, Position, Velocity};
-use crate::render::wgpu_state::WgpuState;
 use crate::simulation::simulation_state::{LoadSimulation, SimulationStateImpl};
 use crate::stages::physics_stage::Float;
 
@@ -57,7 +56,7 @@ impl<T: AsRef<Path>> From<T> for MockFileSimulationLoader {
 }
 
 impl LoadSimulation<SimulationStateImpl, LoadSimulationError> for MockFileSimulationLoader {
-    fn load(&self, state: &mut WgpuState) -> Result<SimulationStateImpl, LoadSimulationError> {
+    fn load(&self) -> Result<SimulationStateImpl, LoadSimulationError> {
         warn!(
             "Mock file loader used to load {}",
             self.path.to_str().unwrap_or("None")
@@ -66,8 +65,8 @@ impl LoadSimulation<SimulationStateImpl, LoadSimulationError> for MockFileSimula
         // if let Ok(file_content) = fs::read_to_string(&self.path) {
         //let assets_path = &self.path.join(PathBuf::from("assets/"));
         // TODO: Load from simulation path; ^ will do v is just to debug
-        let assets_path = PathBuf::from("./assets/");
-        let assets = FileAssetBundle::load(assets_path, state)?;
+        /*let assets_path = PathBuf::from("./assets/");
+        let assets = FileAssetBundle::load(assets_path, state)?;*/
         //let assets = FileAssetBundle::load("./assets", state)?;
 
         let mut world = World::new();
@@ -90,7 +89,7 @@ impl LoadSimulation<SimulationStateImpl, LoadSimulationError> for MockFileSimula
         vel.0.x = Float::from_num(0.3);
         vel.0.y = Float::from_num(0.1);
 
-        Ok(SimulationStateImpl { world, assets })
+        Ok(SimulationStateImpl { world })
 
         /*let registration = TypeRegistration::of();
         let registry = TypeRegistry::new();
