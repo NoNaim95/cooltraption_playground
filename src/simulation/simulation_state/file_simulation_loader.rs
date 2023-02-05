@@ -3,59 +3,61 @@ use std::fmt::{Debug, Display, Formatter};
 use std::path::{Path, PathBuf};
 
 use bevy_ecs::world::World;
-use log::{info, warn};
+use log::warn;
 
 use crate::asset_bundle::file_asset_bundle::{FileAssetBundle, LoadAssetError};
 use crate::components::{Acceleration, Drawable, Position, Velocity};
 use crate::render::wgpu_state::WgpuState;
-use crate::scene::{LoadScene, SceneImpl};
+use crate::simulation::simulation_state::{LoadSimulation, SimulationStateImpl};
 use crate::stages::physics_stage::Float;
 
-pub struct MockFileSceneLoader {
+pub struct MockFileSimulationLoader {
     path: PathBuf,
 }
 
 #[derive(Debug)]
-pub enum LoadSceneError {
+pub enum LoadSimulationError {
     IOError(std::io::Error),
     AssetError(LoadAssetError),
 }
 
-impl Display for LoadSceneError {
+impl Display for LoadSimulationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            LoadSceneError::IOError(e) => write!(f, "IO error occurred during scene load: {}", e),
-            LoadSceneError::AssetError(e) => {
+            LoadSimulationError::IOError(e) => {
+                write!(f, "IO error occurred during simulation load: {}", e)
+            }
+            LoadSimulationError::AssetError(e) => {
                 write!(f, "an asset returned an error during loading {}", e)
             }
         }
     }
 }
 
-impl Error for LoadSceneError {}
+impl Error for LoadSimulationError {}
 
-impl From<std::io::Error> for LoadSceneError {
+impl From<std::io::Error> for LoadSimulationError {
     fn from(e: std::io::Error) -> Self {
-        LoadSceneError::IOError(e)
+        LoadSimulationError::IOError(e)
     }
 }
 
-impl From<LoadAssetError> for LoadSceneError {
+impl From<LoadAssetError> for LoadSimulationError {
     fn from(e: LoadAssetError) -> Self {
-        LoadSceneError::AssetError(e)
+        LoadSimulationError::AssetError(e)
     }
 }
 
-impl<T: AsRef<Path>> From<T> for MockFileSceneLoader {
+impl<T: AsRef<Path>> From<T> for MockFileSimulationLoader {
     fn from(path: T) -> Self {
-        MockFileSceneLoader {
+        MockFileSimulationLoader {
             path: path.as_ref().to_path_buf(),
         }
     }
 }
 
-impl LoadScene<SceneImpl, LoadSceneError> for MockFileSceneLoader {
-    fn load(&self, state: &mut WgpuState) -> Result<SceneImpl, LoadSceneError> {
+impl LoadSimulation<SimulationStateImpl, LoadSimulationError> for MockFileSimulationLoader {
+    fn load(&self, state: &mut WgpuState) -> Result<SimulationStateImpl, LoadSimulationError> {
         warn!(
             "Mock file loader used to load {}",
             self.path.to_str().unwrap_or("None")
@@ -63,7 +65,7 @@ impl LoadScene<SceneImpl, LoadSceneError> for MockFileSceneLoader {
 
         // if let Ok(file_content) = fs::read_to_string(&self.path) {
         //let assets_path = &self.path.join(PathBuf::from("assets/"));
-        // TODO: Load from scene path; ^ will do v is just to debug
+        // TODO: Load from simulation path; ^ will do v is just to debug
         let assets_path = PathBuf::from("./assets/");
         let assets = FileAssetBundle::load(assets_path, state)?;
         //let assets = FileAssetBundle::load("./assets", state)?;
@@ -88,7 +90,7 @@ impl LoadScene<SceneImpl, LoadSceneError> for MockFileSceneLoader {
         vel.0.x = Float::from_num(0.3);
         vel.0.y = Float::from_num(0.1);
 
-        Ok(SceneImpl { world, assets })
+        Ok(SimulationStateImpl { world, assets })
 
         /*let registration = TypeRegistration::of();
         let registry = TypeRegistry::new();

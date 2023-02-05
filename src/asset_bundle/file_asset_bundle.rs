@@ -1,8 +1,8 @@
-use log::{debug, info};
+use log::debug;
 use std::collections::HashMap;
 use std::error::Error;
 use std::ffi::OsStr;
-use std::fmt::{write, Display, Formatter};
+use std::fmt::{Display, Formatter};
 use std::fs;
 use std::fs::DirEntry;
 use std::path::Path;

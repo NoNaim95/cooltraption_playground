@@ -1,10 +1,11 @@
+pub mod simulation_state;
+
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use bevy_ecs::prelude::Query;
 use bevy_ecs::schedule::{Schedule, Stage, SystemStage};
-use fixed_macro::fixed;
 use log::debug;
 use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -14,7 +15,7 @@ use winit::event::ElementState::Pressed;
 use crate::components::{Drawable, Position};
 use crate::render::RenderMachine;
 use crate::render::RenderStage;
-use crate::scene::{LoadScene, Scene};
+use crate::simulation::simulation_state::{LoadSimulation, SimulationState};
 use crate::stages::physics_stage;
 use crate::stages::physics_stage::{DeltaTime, PhysicsStage};
 
@@ -24,30 +25,30 @@ macro_rules! render_machine {
     };
 }
 
-pub struct RuntimeOptions<S: Scene, E: Error> {
-    pub scene_loader: Box<dyn LoadScene<S, E>>,
+pub struct RuntimeOptions<S: SimulationState, E: Error> {
+    pub simulation_loader: Box<dyn LoadSimulation<S, E>>,
 }
 
-pub trait Runtime<'r> {
-    fn load_scene<T: Scene + 'r>(&mut self, scene: T);
+pub trait Simulation<'r> {
+    fn load_simulation<T: SimulationState + 'r>(&mut self, simulation: T);
     fn step_simulation(&mut self, dt: Duration);
 }
 
-pub struct RuntimeImpl<'r> {
-    scene: Box<dyn Scene + 'r>,
+pub struct SimulationImpl<'r> {
+    simulation: Box<dyn SimulationState + 'r>,
     render_machine: Arc<Mutex<RenderMachine>>,
     schedule: Schedule,
 }
 
-impl RuntimeImpl<'static> {
-    pub async fn run<S: Scene + 'static, E: Error>(options: &RuntimeOptions<S, E>) {
+impl SimulationImpl<'static> {
+    pub async fn run<S: SimulationState + 'static, E: Error>(options: &RuntimeOptions<S, E>) {
         let (mut render_machine, event_loop) = RenderMachine::create_window().await;
 
-        let scene = Box::new(
+        let simulation = Box::new(
             options
-                .scene_loader
+                .simulation_loader
                 .load(render_machine.wgpu_state_mut())
-                .expect("valid scene object"),
+                .expect("valid simulation object"),
         );
 
         let mut schedule = Schedule::default();
@@ -69,8 +70,8 @@ impl RuntimeImpl<'static> {
             }),
         );
 
-        RuntimeImpl {
-            scene,
+        SimulationImpl {
+            simulation: simulation,
             render_machine,
             schedule,
         }
@@ -134,13 +135,15 @@ impl RuntimeImpl<'static> {
     }
 }
 
-impl<'r> Runtime<'r> for RuntimeImpl<'r> {
-    fn load_scene<T: Scene + 'r>(&mut self, scene: T) {
-        self.scene = Box::new(scene);
+impl<'r> Simulation<'r> for SimulationImpl<'r> {
+    fn load_simulation<T: SimulationState + 'r>(&mut self, simulation: T) {
+        self.simulation = Box::new(simulation);
     }
 
     fn step_simulation(&mut self, dt: Duration) {
-        self.scene.world_mut().insert_resource(DeltaTime::from(dt));
-        self.schedule.run(self.scene.world_mut());
+        self.simulation
+            .world_mut()
+            .insert_resource(DeltaTime::from(dt));
+        self.schedule.run(self.simulation.world_mut());
     }
 }

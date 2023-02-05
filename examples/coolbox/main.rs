@@ -4,9 +4,9 @@ use std::path::PathBuf;
 
 use log::info;
 
-use cooltraption_playground::runtime::RuntimeImpl;
-use cooltraption_playground::runtime::RuntimeOptions;
-use cooltraption_playground::scene::file_scene_loader::MockFileSceneLoader;
+use cooltraption_playground::simulation::simulation_state::file_simulation_loader::MockFileSimulationLoader;
+use cooltraption_playground::simulation::RuntimeOptions;
+use cooltraption_playground::simulation::SimulationImpl;
 
 mod entities;
 
@@ -21,12 +21,12 @@ async fn main() {
         env::current_dir().unwrap().to_str().unwrap()
     );
 
-    let loader = MockFileSceneLoader::from(PathBuf::from("./scenes/scene1"));
+    let loader = MockFileSimulationLoader::from(PathBuf::from("./scenes/scene1"));
     let options = RuntimeOptions {
-        scene_loader: Box::new(loader),
+        simulation_loader: Box::new(loader),
     };
 
-    RuntimeImpl::run(&options).await;
+    SimulationImpl::run(&options).await;
     /*
     let bundle = FileAssetBundle::load(PathBuf::from("./assets"), &mut wgpu_state)
         .expect("Could not load assets");

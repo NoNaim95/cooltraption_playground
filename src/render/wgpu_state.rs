@@ -192,7 +192,7 @@ impl WgpuState {
             .create_shader_module(include_wgsl!("shader.wgsl"));
 
         const NUM_INSTANCES_PER_ROW: u32 = 10;
-        const INSTANCE_DISPLACEMENT: cgmath::Vector3<f32> = cgmath::Vector3::new(
+        const INSTANCE_DISPLACEMENT: Vector3<f32> = Vector3::new(
             NUM_INSTANCES_PER_ROW as f32 * 0.5,
             0.0,
             NUM_INSTANCES_PER_ROW as f32 * 0.5,
@@ -201,7 +201,7 @@ impl WgpuState {
         let instances = (0..NUM_INSTANCES_PER_ROW)
             .flat_map(|z| {
                 (0..NUM_INSTANCES_PER_ROW).map(move |x| {
-                    let position = cgmath::Vector3 {
+                    let position = Vector3 {
                         x: x as f32,
                         y: 0.0,
                         z: z as f32,
