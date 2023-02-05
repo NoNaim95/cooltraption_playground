@@ -17,7 +17,7 @@ pub struct AssetBundle<Id: Eq + Hash> {
 
 impl<Id: Eq + Hash> AssetBundle<Id> {
     fn get_asset<T: Into<Id>, A: Asset>(&self, id: Id) -> Option<&A> {
-        let asset = self.assets.get(&id.into())?.as_ref();
+        let asset = self.assets.get(&id)?.as_ref();
         asset.as_any().downcast_ref()
     }
 }
@@ -31,5 +31,5 @@ enum AssetConfig {
 pub trait Asset: AsAny + Debug {}
 
 pub trait LoadAssetBundle<Id: Eq + Hash, E: Error> {
-    fn load<T>(&self, state: &mut WgpuState) -> Result<AssetBundle<Id>, E>;
+    fn load(&self, state: &mut WgpuState) -> Result<AssetBundle<Id>, E>;
 }

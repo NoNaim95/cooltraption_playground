@@ -64,7 +64,7 @@ impl FileAssetLoader {
 }
 
 impl LoadAssetBundle<String, LoadAssetError> for FileAssetLoader {
-    fn load<T>(&self, state: &mut WgpuState) -> Result<AssetBundle<String>, LoadAssetError> {
+    fn load(&self, state: &mut WgpuState) -> Result<AssetBundle<String>, LoadAssetError> {
         debug!("Loading assets from {:?}", self.path);
 
         if self.path.is_dir() {

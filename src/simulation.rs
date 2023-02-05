@@ -1,16 +1,19 @@
 use std::error::Error;
 use std::sync::{Arc, Mutex};
+use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use bevy_ecs::prelude::Query;
 use bevy_ecs::schedule::{Schedule, Stage, SystemStage};
 use log::debug;
+use tokio::sync::mpsc::{Sender, UnboundedSender};
+use tokio::time::sleep_until;
 use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 
 use crate::components::{Drawable, Position};
-use crate::render::RenderMachine;
 use crate::render::RenderStage;
+use crate::render::{RenderMachine, RenderWorld};
 use crate::simulation::simulation_state::{LoadSimulation, SimulationState};
 use crate::stages::physics_stage;
 use crate::stages::physics_stage::{DeltaTime, PhysicsStage};
@@ -19,6 +22,7 @@ pub mod simulation_state;
 
 pub struct SimulationOptions<S: SimulationState, E: Error> {
     pub simulation_loader: Box<dyn LoadSimulation<S, E>>,
+    pub state_send: Sender<RenderWorld>,
 }
 
 pub trait Simulation<'r> {
@@ -32,7 +36,7 @@ pub struct SimulationImpl<'r> {
 }
 
 impl SimulationImpl<'static> {
-    pub fn new<S: SimulationState + 'static, E: Error>(options: &SimulationOptions<S, E>) -> Self {
+    pub fn new<S: SimulationState + 'static, E: Error>(options: SimulationOptions<S, E>) -> Self {
         let simulation = Box::new(
             options
                 .simulation_loader
@@ -44,6 +48,14 @@ impl SimulationImpl<'static> {
         schedule.add_stage(
             PhysicsStage,
             SystemStage::parallel().with_system(physics_stage::solve_movement),
+        );
+
+        schedule.add_stage_after(
+            PhysicsStage,
+            RenderStage,
+            SystemStage::parallel().with_system(move |query: Query<(&Position, &Drawable)>| {
+                let _ = options.state_send.try_send(RenderWorld::new(query));
+            }),
         );
 
         Self {
@@ -60,6 +72,8 @@ impl SimulationImpl<'static> {
             self.step_simulation(frame_time);
             frame_time = Instant::now() - start_time;
             start_time = Instant::now();
+
+            sleep(Duration::from_secs_f64(1.0 / 1000.0));
         }
     }
 }

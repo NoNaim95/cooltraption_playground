@@ -1,11 +1,9 @@
-use crate::asset_bundle;
-use crate::asset_bundle::file_asset_loader::FileAssetLoader;
 use crate::asset_bundle::{AssetBundle, LoadAssetBundle};
 use bevy_ecs::prelude::*;
 use log::debug;
 use std::error::Error;
-use std::hash::Hash;
 use std::time::Instant;
+use tokio::sync::mpsc::{Receiver, UnboundedReceiver};
 use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Window, WindowId};
@@ -21,31 +19,47 @@ pub mod wgpu_state;
 #[derive(StageLabel)]
 pub struct RenderStage;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct RenderWorld {
     state: Vec<(Position, Drawable)>,
 }
 
+impl RenderWorld {
+    pub fn new(query: Query<(&Position, &Drawable)>) -> Self {
+        RenderWorld {
+            state: query.iter().map(|(p, d)| (p.clone(), d.clone())).collect(),
+        }
+    }
+}
+
+pub struct RenderMachineOptions<E: Error> {
+    pub asset_loader: Box<dyn LoadAssetBundle<String, E>>,
+    pub state_recv: Receiver<RenderWorld>,
+}
+
 pub struct RenderMachine {
     state: [RenderWorld; 2],
+    state_recv: Receiver<RenderWorld>,
     window: Window,
     wgpu_state: WgpuState,
     assets: Box<AssetBundle<String>>,
 }
 
 impl RenderMachine {
-    pub async fn run<T: LoadAssetBundle<String, E>, E: Error>(asset_loader: &T) {
+    pub async fn run<E: Error>(options: RenderMachineOptions<E>) {
         let event_loop = EventLoopBuilder::new().build();
         let window = Window::new(&event_loop).expect("Could not create window");
         let mut wgpu_state = WgpuState::new(&window).await;
         let assets = Box::new(
-            asset_loader
-                .load::<String>(&mut wgpu_state)
+            options
+                .asset_loader
+                .load(&mut wgpu_state)
                 .expect("load assets"),
         );
 
         Self {
             state: [RenderWorld::default(), RenderWorld::default()],
+            state_recv: options.state_recv,
             window,
             wgpu_state,
             assets,
@@ -61,12 +75,10 @@ impl RenderMachine {
         self.wgpu_state.resize(new_size);
     }
 
-    pub fn update_state(&mut self, query: Query<(&Position, &Drawable)>) {
+    pub fn update_state(&mut self, new_state: RenderWorld) {
         self.state.swap(0, 1);
 
-        self.state[0] = RenderWorld {
-            state: query.iter().map(|(p, d)| (p.clone(), d.clone())).collect(),
-        };
+        self.state[0] = new_state;
     }
 
     pub fn render(&mut self) {
@@ -78,8 +90,6 @@ impl RenderMachine {
     }
 
     fn run_event_loop(mut self, event_loop: EventLoop<()>) {
-        let mut start_time = Instant::now();
-        let mut frame_time = start_time - Instant::now();
         let window_id = self.window.id();
 
         event_loop.run(move |event, _, control_flow| {
@@ -116,6 +126,10 @@ impl RenderMachine {
                     self.request_redraw_window();
                 }
                 Event::RedrawEventsCleared => {
+                    while let Ok(state) = self.state_recv.try_recv() {
+                        self.update_state(state);
+                    }
+
                     self.render();
                 }
                 Event::MainEventsCleared => {}

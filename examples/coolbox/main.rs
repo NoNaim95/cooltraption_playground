@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 
 use cooltraption_playground::asset_bundle::file_asset_loader::FileAssetLoader;
-use cooltraption_playground::render::RenderMachine;
+use cooltraption_playground::render::{RenderMachine, RenderMachineOptions, RenderWorld};
 use log::info;
 
 use cooltraption_playground::simulation::simulation_state::file_simulation_loader::MockFileSimulationLoader;
@@ -23,17 +23,24 @@ async fn main() {
         env::current_dir().unwrap().to_str().unwrap()
     );
 
+    let (state_send, state_recv) = tokio::sync::mpsc::channel::<RenderWorld>(1);
+
     tokio::spawn(async {
         let simulation_loader = MockFileSimulationLoader::from(PathBuf::from("./scenes/scene1"));
         let options = SimulationOptions {
             simulation_loader: Box::new(simulation_loader),
+            state_send,
         };
 
-        SimulationImpl::new(&options).run();
+        SimulationImpl::new(options).run();
     });
 
     let asset_loader = FileAssetLoader::new("./assets".into());
-    RenderMachine::run(&asset_loader).await;
+    let options = RenderMachineOptions {
+        asset_loader: Box::new(asset_loader),
+        state_recv,
+    };
+    RenderMachine::run(options).await;
     /*
     let bundle = FileAssetBundle::load(PathBuf::from("./assets"), &mut wgpu_state)
         .expect("Could not load assets");
