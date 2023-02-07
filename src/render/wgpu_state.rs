@@ -318,25 +318,8 @@ impl WgpuState {
         }
     }
 
-    pub fn input(&mut self, event: &WindowEvent) -> bool {
-        match event {
-            WindowEvent::KeyboardInput { .. } => {}
-            WindowEvent::CursorMoved { .. } => {}
-            WindowEvent::CursorEntered { .. } => {}
-            WindowEvent::CursorLeft { .. } => {}
-            WindowEvent::MouseWheel { .. } => {}
-            WindowEvent::MouseInput { .. } => {}
-            WindowEvent::TouchpadPressure { .. } => {}
-            WindowEvent::AxisMotion { .. } => {}
-            WindowEvent::Touch(_) => {}
-            _ => {}
-        }
-
-        false
-    }
-
-    pub fn render_object(&mut self, position: &Position, drawable: &Drawable) {
-        let output = self.surface.get_current_texture().unwrap();
+    pub fn render_all(&mut self, drawables: &[(Position, Drawable)]) -> Result<(), SurfaceError> {
+        let output = self.surface.get_current_texture()?;
         let view = output
             .texture
             .create_view(&TextureViewDescriptor::default());
@@ -367,28 +350,13 @@ impl WgpuState {
                     depth_stencil_attachment: None,
                 });
 
-                /*render_set.instances = query
-                .iter()
-                .map(|p| Instance {
-                    position: Vector3::new(FixedI64::to_num(p.x), FixedI64::to_num(p.y), 0.0),
-                    rotation: Quaternion::zero(),
-                })
-                .collect();*/
-                let position = Vector3::new(
-                    FixedI64::to_num(position.x),
-                    FixedI64::to_num(position.y),
-                    0.0,
-                );
-                render_set.instances = vec![
-                    Instance {
-                        position,
+                render_set.instances = drawables
+                    .iter()
+                    .map(|(p, _)| Instance {
+                        position: Vector3::new(FixedI64::to_num(p.x), FixedI64::to_num(p.y), 0.0),
                         rotation: Quaternion::zero(),
-                    }, /*,
-                       Instance { // Renders the same object a second time but rotated by 45°
-                           position: position + Vector3::new(1.0, 0.0, 0.0),
-                           rotation: Quaternion::from_angle_z(Deg(45.0)),
-                       },*/
-                ];
+                    })
+                    .collect();
 
                 let instance_data = render_set
                     .instances
@@ -422,58 +390,9 @@ impl WgpuState {
         } else {
             warn!("No render sets to render!");
         }
-    }
-
-    /*pub fn render(&mut self) -> Result<(), SurfaceError> {
-        let output = self.surface.get_current_texture()?;
-        let view = output
-            .texture
-            .create_view(&TextureViewDescriptor::default());
-
-        let mut encoder = self
-            .device
-            .create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            });
-
-        for render_set in &self.render_sets {
-            let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: Operations {
-                        load: LoadOp::Clear(Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
-                            a: 1.0,
-                        }),
-                        store: true,
-                    },
-                })],
-                depth_stencil_attachment: None,
-            });
-
-            render_pass.set_pipeline(&render_set.render_pipeline);
-            render_pass.set_bind_group(0, &render_set.diffuse_bind_group, &[]);
-            render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
-            render_pass.set_vertex_buffer(0, render_set.vertex_buffer.slice(..));
-            render_pass.set_vertex_buffer(1, render_set.instance_buffer.slice(..));
-            render_pass.set_index_buffer(render_set.index_buffer.slice(..), IndexFormat::Uint16);
-
-            render_pass.draw_indexed(
-                0..render_set.num_indices,
-                0,
-                0..render_set.instances.len() as _,
-            );
-        }
-
-        self.queue.submit(std::iter::once(encoder.finish()));
-        output.present();
 
         Ok(())
-    }*/
+    }
 
     pub fn device(&self) -> &Device {
         &self.device

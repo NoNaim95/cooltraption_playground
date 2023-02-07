@@ -1,9 +1,10 @@
 use crate::asset_bundle::{AssetBundle, LoadAssetBundle};
 use bevy_ecs::prelude::*;
-use log::debug;
+use log::{debug, error};
 use std::error::Error;
 use std::sync::mpsc::Receiver;
 use std::time::Instant;
+use wgpu::SurfaceError;
 use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Window, WindowId};
@@ -84,8 +85,10 @@ impl RenderMachine {
     pub fn render(&mut self) {
         // TODO: Identify different render sets and render them one by one
 
-        for (position, drawable) in &self.state[0].state {
-            self.wgpu_state.render_object(position, drawable);
+        match self.wgpu_state.render_all(&self.state[0].state) {
+            Ok(_) => {}
+            Err(SurfaceError::Lost) => self.wgpu_state.resize(self.wgpu_state.size()),
+            Err(e) => error!("{}", e),
         }
     }
 
@@ -99,29 +102,25 @@ impl RenderMachine {
                 Event::WindowEvent {
                     ref event,
                     window_id: event_window_id,
-                } if event_window_id == window_id => {
-                    if self.wgpu_state.input(event) {
-                        match event {
-                            WindowEvent::CloseRequested
-                            | WindowEvent::KeyboardInput {
-                                input:
-                                    KeyboardInput {
-                                        state: winit::event::ElementState::Pressed,
-                                        virtual_keycode: Some(VirtualKeyCode::Escape),
-                                        ..
-                                    },
+                } if event_window_id == window_id => match event {
+                    WindowEvent::CloseRequested
+                    | WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                state: winit::event::ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
                                 ..
-                            } => *control_flow = ControlFlow::Exit,
-                            WindowEvent::Resized(physical_size) => {
-                                self.wgpu_state.resize(*physical_size);
-                            }
-                            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                                self.wgpu_state.resize(**new_inner_size);
-                            }
-                            _ => {}
-                        }
+                            },
+                        ..
+                    } => *control_flow = ControlFlow::Exit,
+                    WindowEvent::Resized(physical_size) => {
+                        self.wgpu_state.resize(*physical_size);
                     }
-                }
+                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                        self.wgpu_state.resize(**new_inner_size);
+                    }
+                    _ => {}
+                },
                 Event::RedrawRequested(event_window_id) if window_id == event_window_id => {
                     self.request_redraw_window();
                 }
