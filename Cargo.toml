@@ -3,35 +3,7 @@ name = "cooltraption_playground"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-log = "0.4"
-env_logger = "0.10"
-bevy_ecs = "0.9"
-bevy_reflect = "0.9"
-cgmath = "0.18"
-nalgebra = "0.32"
-simba = "0.7"
-fixed = "1.21"
-fixed-macro = "1.1"
-num-traits = "0.2"
-tokio = { version = "1", features = ["full"] }
-quinn = "0.9.3"
-
-# assets
-serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.9"
-image = "0.24"
-as-any = "0.3"
-
-# rendering
-wgpu = "0.14"
-pollster = "0.2"
-winit = "0.27"
-bytemuck = { version = "1.4", features = [ "derive" ] }
-guillotiere = "0.6.2" # texture atlas
-
-[build-dependencies]
-copy_to_output = "2.0"
-glob = "0.3"
+[workspace]
+members = [
+    "crates/*"
+]
