@@ -1,6 +1,8 @@
 use bevy_ecs::prelude::World;
 use std::error::Error;
 
+use super::action::Action;
+
 pub mod file_simulation_loader;
 
 pub trait SimulationState {
@@ -10,6 +12,7 @@ pub trait SimulationState {
 
 pub struct SimulationStateImpl {
     pub world: World,
+    pub actions: Vec<Action>
 }
 
 impl SimulationState for SimulationStateImpl {

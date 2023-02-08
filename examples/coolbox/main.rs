@@ -10,6 +10,7 @@ use cooltraption_playground::simulation::simulation_state::file_simulation_loade
 use cooltraption_playground::simulation::SimulationImpl;
 use cooltraption_playground::simulation::SimulationOptions;
 
+use cooltraption_playground::networking;
 mod entities;
 
 #[tokio::main]

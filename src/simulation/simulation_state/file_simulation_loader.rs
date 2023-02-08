@@ -89,7 +89,7 @@ impl LoadSimulation<SimulationStateImpl, LoadSimulationError> for MockFileSimula
         vel.0.x = Float::from_num(0.3);
         vel.0.y = Float::from_num(0.1);
 
-        Ok(SimulationStateImpl { world })
+        Ok(SimulationStateImpl { world, actions: Default::default() })
 
         /*let registration = TypeRegistration::of();
         let registry = TypeRegistry::new();

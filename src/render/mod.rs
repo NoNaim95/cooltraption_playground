@@ -15,6 +15,7 @@ use crate::render::wgpu_state::WgpuState;
 
 mod camera;
 mod instance;
+
 pub mod vertex;
 pub mod wgpu_state;
 
