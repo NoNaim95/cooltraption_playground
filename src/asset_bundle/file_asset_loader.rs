@@ -10,7 +10,6 @@ use std::path::PathBuf;
 use crate::asset_bundle::strings_asset::StringsAsset;
 use crate::asset_bundle::texture_asset::{LoadTextureError, TextureAsset};
 use crate::asset_bundle::*;
-use crate::render::wgpu_state::WgpuState;
 
 #[derive(Debug)]
 pub enum LoadAssetError {
@@ -64,7 +63,10 @@ impl FileAssetLoader {
 }
 
 impl LoadAssetBundle<String, LoadAssetError> for FileAssetLoader {
-    fn load(&self, state: &mut WgpuState) -> Result<AssetBundle<String>, LoadAssetError> {
+    fn load(
+        &self,
+        atlas_builder: &mut TextureAtlasBuilder,
+    ) -> Result<AssetBundle<String>, LoadAssetError> {
         debug!("Loading assets from {:?}", self.path);
 
         if self.path.is_dir() {
@@ -91,8 +93,8 @@ impl LoadAssetBundle<String, LoadAssetError> for FileAssetLoader {
                             .parent()
                             .ok_or(LoadAssetError::PathError)?
                             .join(path);
-                        let texture = TextureAsset::load(texture_path, state)?;
-                        state.add_texture(&texture);
+                        let texture = TextureAsset::load(texture_path, atlas_builder)?;
+                        atlas_builder.add_texture(&texture);
                         Box::new(texture)
                     }
                     AssetConfig::Strings(map) => Box::new(StringsAsset::from(map)),
