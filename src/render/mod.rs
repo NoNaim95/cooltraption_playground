@@ -10,15 +10,10 @@ use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Window, WindowId};
 
 use crate::components::{Drawable, Position};
-use crate::render::texture_atlas_builder::TextureAtlasBuilder;
-use crate::render::uninitialized_wgpu_state::UninitializedWgpuState;
 use crate::render::wgpu_state::WgpuState;
 
 mod camera;
 mod instance;
-mod render_batch;
-pub mod texture_atlas_builder;
-pub mod uninitialized_wgpu_state;
 pub mod vertex;
 pub mod wgpu_state;
 
@@ -55,20 +50,13 @@ impl RenderMachine {
     pub async fn run<E: Error>(options: RenderMachineOptions<E>) {
         let event_loop = EventLoopBuilder::new().build();
         let window = Window::new(&event_loop).expect("Could not create window");
-
-        let mut uninitialized_wgpu_state = UninitializedWgpuState::new(&window).await;
-        let mut atlas_builder = TextureAtlasBuilder::new(
-            &mut uninitialized_wgpu_state.device,
-            &mut uninitialized_wgpu_state.queue,
-        );
-
+        let mut wgpu_state = WgpuState::new(&window).await;
         let assets = Box::new(
             options
                 .asset_loader
-                .load(&mut atlas_builder)
+                .load(&mut wgpu_state)
                 .expect("load assets"),
         );
-        let wgpu_state = WgpuState::from(uninitialized_wgpu_state);
 
         Self {
             state: [RenderWorld::default(), RenderWorld::default()],
