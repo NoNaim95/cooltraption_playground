@@ -1,7 +1,7 @@
 use crate::asset_bundle::texture_asset::TextureAsset;
 use crate::render::instance::InstanceRaw;
 use crate::render::vertex::{Vertex, INDICES, VERTICES};
-use crate::render::wgpu_state::{RenderBatch, WgpuState};
+use crate::render::wgpu_state::WgpuState;
 use wgpu::util::DeviceExt;
 use wgpu::*;
 use winit::window::Window;

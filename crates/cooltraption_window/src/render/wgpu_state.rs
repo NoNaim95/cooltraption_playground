@@ -15,11 +15,11 @@ use wgpu::{
     SurfaceConfiguration, SurfaceError, TextureViewDescriptor,
 };
 
-use crate::components::{Drawable, Position};
 use crate::render::camera::{Camera, CameraUniform};
 use crate::render::instance::Instance;
 use crate::render::render_batch::RenderBatch;
 use crate::render::uninitialized_wgpu_state::UninitializedWgpuState;
+use crate::render::{Drawable, Position};
 
 pub struct WgpuState {
     surface: Surface,

@@ -3,15 +3,10 @@ use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::sync::mpsc;
 
-use cooltraption_playground::asset_bundle::file_asset_loader::FileAssetLoader;
-use cooltraption_playground::render::{RenderMachine, RenderMachineOptions, RenderWorld};
+use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
+use cooltraption_window::render::{RenderMachine, RenderMachineOptions, RenderWorld};
 use log::info;
 
-use cooltraption_playground::simulation::simulation_state::file_simulation_loader::MockFileSimulationLoader;
-use cooltraption_playground::simulation::SimulationImpl;
-use cooltraption_playground::simulation::SimulationOptions;
-
-use cooltraption_playground::networking;
 mod entities;
 
 #[tokio::main]
