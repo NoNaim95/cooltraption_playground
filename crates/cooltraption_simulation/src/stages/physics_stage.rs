@@ -4,7 +4,6 @@ use std::time::Duration;
 
 use fixed::types::I48F16;
 use fixed_macro::fixed;
-use log::debug;
 use nalgebra::Vector2;
 
 pub type Float = I48F16;

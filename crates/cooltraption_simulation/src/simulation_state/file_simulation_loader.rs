@@ -5,9 +5,8 @@ use std::path::{Path, PathBuf};
 use bevy_ecs::world::World;
 use log::warn;
 
-use crate::asset_bundle::file_asset_loader::LoadAssetError;
 use crate::components::{Acceleration, Drawable, Position, Velocity};
-use crate::simulation::simulation_state::{LoadSimulation, SimulationStateImpl};
+use crate::simulation_state::{LoadSimulation, SimulationStateImpl};
 use crate::stages::physics_stage::Float;
 
 pub struct MockFileSimulationLoader {
@@ -17,7 +16,6 @@ pub struct MockFileSimulationLoader {
 #[derive(Debug)]
 pub enum LoadSimulationError {
     IOError(std::io::Error),
-    AssetError(LoadAssetError),
 }
 
 impl Display for LoadSimulationError {
@@ -25,9 +23,6 @@ impl Display for LoadSimulationError {
         match self {
             LoadSimulationError::IOError(e) => {
                 write!(f, "IO error occurred during simulation load: {}", e)
-            }
-            LoadSimulationError::AssetError(e) => {
-                write!(f, "an asset returned an error during loading {}", e)
             }
         }
     }
@@ -38,12 +33,6 @@ impl Error for LoadSimulationError {}
 impl From<std::io::Error> for LoadSimulationError {
     fn from(e: std::io::Error) -> Self {
         LoadSimulationError::IOError(e)
-    }
-}
-
-impl From<LoadAssetError> for LoadSimulationError {
-    fn from(e: LoadAssetError) -> Self {
-        LoadSimulationError::AssetError(e)
     }
 }
 

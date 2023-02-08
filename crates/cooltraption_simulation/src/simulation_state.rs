@@ -1,7 +1,7 @@
-use bevy_ecs::prelude::World;
 use std::error::Error;
+use bevy_ecs::prelude::World;
 
-use super::action::Action;
+use crate::action::Action;
 
 pub mod file_simulation_loader;
 
