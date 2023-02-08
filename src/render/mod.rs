@@ -1,52 +1,78 @@
-use crate::asset_bundle;
-use crate::asset_bundle::file_asset_loader::FileAssetLoader;
 use crate::asset_bundle::{AssetBundle, LoadAssetBundle};
 use bevy_ecs::prelude::*;
-use log::debug;
+use log::{debug, error};
 use std::error::Error;
-use std::hash::Hash;
+use std::sync::mpsc::Receiver;
 use std::time::Instant;
+use wgpu::SurfaceError;
 use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Window, WindowId};
 
 use crate::components::{Drawable, Position};
+use crate::render::texture_atlas_builder::TextureAtlasBuilder;
+use crate::render::uninitialized_wgpu_state::UninitializedWgpuState;
 use crate::render::wgpu_state::WgpuState;
 
 mod camera;
 mod instance;
-
+mod render_batch;
+pub mod texture_atlas_builder;
+pub mod uninitialized_wgpu_state;
 pub mod vertex;
 pub mod wgpu_state;
 
 #[derive(StageLabel)]
 pub struct RenderStage;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct RenderWorld {
     state: Vec<(Position, Drawable)>,
 }
 
+impl RenderWorld {
+    pub fn new(query: Query<(&Position, &Drawable)>) -> Self {
+        RenderWorld {
+            state: query.iter().map(|(p, d)| (p.clone(), d.clone())).collect(),
+        }
+    }
+}
+
+pub struct RenderMachineOptions<E: Error> {
+    pub asset_loader: Box<dyn LoadAssetBundle<String, E>>,
+    pub state_recv: Receiver<RenderWorld>,
+}
+
 pub struct RenderMachine {
     state: [RenderWorld; 2],
+    state_recv: Receiver<RenderWorld>,
     window: Window,
     wgpu_state: WgpuState,
     assets: Box<AssetBundle<String>>,
 }
 
 impl RenderMachine {
-    pub async fn run<T: LoadAssetBundle<String, E>, E: Error>(asset_loader: &T) {
+    pub async fn run<E: Error>(options: RenderMachineOptions<E>) {
         let event_loop = EventLoopBuilder::new().build();
         let window = Window::new(&event_loop).expect("Could not create window");
-        let mut wgpu_state = WgpuState::new(&window).await;
+
+        let mut uninitialized_wgpu_state = UninitializedWgpuState::new(&window).await;
+        let mut atlas_builder = TextureAtlasBuilder::new(
+            &mut uninitialized_wgpu_state.device,
+            &mut uninitialized_wgpu_state.queue,
+        );
+
         let assets = Box::new(
-            asset_loader
-                .load::<String>(&mut wgpu_state)
+            options
+                .asset_loader
+                .load(&mut atlas_builder)
                 .expect("load assets"),
         );
+        let wgpu_state = WgpuState::from(uninitialized_wgpu_state);
 
         Self {
             state: [RenderWorld::default(), RenderWorld::default()],
+            state_recv: options.state_recv,
             window,
             wgpu_state,
             assets,
@@ -62,25 +88,23 @@ impl RenderMachine {
         self.wgpu_state.resize(new_size);
     }
 
-    pub fn update_state(&mut self, query: Query<(&Position, &Drawable)>) {
+    pub fn update_state(&mut self, new_state: RenderWorld) {
         self.state.swap(0, 1);
 
-        self.state[0] = RenderWorld {
-            state: query.iter().map(|(p, d)| (p.clone(), d.clone())).collect(),
-        };
+        self.state[0] = new_state;
     }
 
     pub fn render(&mut self) {
         // TODO: Identify different render sets and render them one by one
 
-        for (position, drawable) in &self.state[0].state {
-            self.wgpu_state.render_object(position, drawable);
+        match self.wgpu_state.render_all(&self.state[0].state) {
+            Ok(_) => {}
+            Err(SurfaceError::Lost) => self.wgpu_state.resize(self.wgpu_state.size()),
+            Err(e) => error!("{}", e),
         }
     }
 
     fn run_event_loop(mut self, event_loop: EventLoop<()>) {
-        let mut start_time = Instant::now();
-        let mut frame_time = start_time - Instant::now();
         let window_id = self.window.id();
 
         event_loop.run(move |event, _, control_flow| {
@@ -90,33 +114,33 @@ impl RenderMachine {
                 Event::WindowEvent {
                     ref event,
                     window_id: event_window_id,
-                } if event_window_id == window_id => {
-                    if self.wgpu_state.input(event) {
-                        match event {
-                            WindowEvent::CloseRequested
-                            | WindowEvent::KeyboardInput {
-                                input:
-                                    KeyboardInput {
-                                        state: winit::event::ElementState::Pressed,
-                                        virtual_keycode: Some(VirtualKeyCode::Escape),
-                                        ..
-                                    },
+                } if event_window_id == window_id => match event {
+                    WindowEvent::CloseRequested
+                    | WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                state: winit::event::ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
                                 ..
-                            } => *control_flow = ControlFlow::Exit,
-                            WindowEvent::Resized(physical_size) => {
-                                self.wgpu_state.resize(*physical_size);
-                            }
-                            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                                self.wgpu_state.resize(**new_inner_size);
-                            }
-                            _ => {}
-                        }
+                            },
+                        ..
+                    } => *control_flow = ControlFlow::Exit,
+                    WindowEvent::Resized(physical_size) => {
+                        self.wgpu_state.resize(*physical_size);
                     }
-                }
+                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                        self.wgpu_state.resize(**new_inner_size);
+                    }
+                    _ => {}
+                },
                 Event::RedrawRequested(event_window_id) if window_id == event_window_id => {
                     self.request_redraw_window();
                 }
                 Event::RedrawEventsCleared => {
+                    while let Ok(state) = self.state_recv.try_recv() {
+                        self.update_state(state);
+                    }
+
                     self.render();
                 }
                 Event::MainEventsCleared => {}

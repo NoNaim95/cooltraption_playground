@@ -80,13 +80,28 @@ impl LoadSimulation<SimulationStateImpl, LoadSimulationError> for MockFileSimula
                 Velocity::default(),
                 Position::default(),
                 Drawable {
-                    asset: "test".to_string(),
+                    asset: "texture".to_string(),
                 },
             ))
             .id();
         let mut ent_mut = world.get_entity_mut(ent).unwrap();
         let mut vel = ent_mut.get_mut::<Velocity>().unwrap();
-        vel.0.x = Float::from_num(0.3);
+        vel.0.x = Float::from_num(0.02);
+        vel.0.y = Float::from_num(0.05);
+
+        let ent = world
+            .spawn((
+                Acceleration::default(),
+                Velocity::default(),
+                Position::default(),
+                Drawable {
+                    asset: "texture".to_string(),
+                },
+            ))
+            .id();
+        let mut ent_mut = world.get_entity_mut(ent).unwrap();
+        let mut vel = ent_mut.get_mut::<Velocity>().unwrap();
+        vel.0.x = Float::from_num(-0.05);
         vel.0.y = Float::from_num(0.1);
 
         Ok(SimulationStateImpl { world, actions: Default::default() })

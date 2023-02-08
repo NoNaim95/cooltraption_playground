@@ -1,5 +1,5 @@
 use crate::asset_bundle::Asset;
-use crate::render::wgpu_state::WgpuState;
+use crate::render::texture_atlas_builder::TextureAtlasBuilder;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::fs;
@@ -48,7 +48,10 @@ impl From<image::ImageError> for LoadTextureError {
 impl Asset for TextureAsset {}
 
 impl TextureAsset {
-    pub fn load(path: PathBuf, state: &WgpuState) -> Result<Self, LoadTextureError> {
+    pub fn load(
+        path: PathBuf,
+        atlas_builder: &TextureAtlasBuilder,
+    ) -> Result<Self, LoadTextureError> {
         let diffuse_bytes = fs::read(path)?;
         let diffuse_image = image::load_from_memory(diffuse_bytes.as_slice())?;
         let diffuse_rgba = diffuse_image.to_rgba8();
@@ -60,17 +63,19 @@ impl TextureAsset {
         };
 
         // TODO: Make properties configurable using yaml
-        let diffuse_texture = state.device().create_texture(&wgpu::TextureDescriptor {
-            size: texture_size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            label: Some("diffuse_texture"),
-        });
+        let diffuse_texture = atlas_builder
+            .device()
+            .create_texture(&wgpu::TextureDescriptor {
+                size: texture_size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                label: Some("diffuse_texture"),
+            });
 
-        state.queue().write_texture(
+        atlas_builder.queue().write_texture(
             wgpu::ImageCopyTexture {
                 texture: &diffuse_texture,
                 mip_level: 0,
@@ -88,15 +93,17 @@ impl TextureAsset {
 
         let diffuse_texture_view =
             diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let diffuse_sampler = state.device().create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::Repeat,
-            address_mode_v: wgpu::AddressMode::Repeat,
-            address_mode_w: wgpu::AddressMode::Repeat,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            ..Default::default()
-        });
+        let diffuse_sampler = atlas_builder
+            .device()
+            .create_sampler(&wgpu::SamplerDescriptor {
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                mag_filter: wgpu::FilterMode::Nearest,
+                min_filter: wgpu::FilterMode::Nearest,
+                mipmap_filter: wgpu::FilterMode::Nearest,
+                ..Default::default()
+            });
 
         Ok(Self {
             texture: diffuse_texture,

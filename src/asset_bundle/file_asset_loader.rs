@@ -5,12 +5,11 @@ use std::ffi::OsStr;
 use std::fmt::{Display, Formatter};
 use std::fs;
 use std::fs::DirEntry;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use crate::asset_bundle::strings_asset::StringsAsset;
 use crate::asset_bundle::texture_asset::{LoadTextureError, TextureAsset};
 use crate::asset_bundle::*;
-use crate::render::wgpu_state::WgpuState;
 
 #[derive(Debug)]
 pub enum LoadAssetError {
@@ -64,7 +63,10 @@ impl FileAssetLoader {
 }
 
 impl LoadAssetBundle<String, LoadAssetError> for FileAssetLoader {
-    fn load<T>(&self, state: &mut WgpuState) -> Result<AssetBundle<String>, LoadAssetError> {
+    fn load(
+        &self,
+        atlas_builder: &mut TextureAtlasBuilder,
+    ) -> Result<AssetBundle<String>, LoadAssetError> {
         debug!("Loading assets from {:?}", self.path);
 
         if self.path.is_dir() {
@@ -91,8 +93,8 @@ impl LoadAssetBundle<String, LoadAssetError> for FileAssetLoader {
                             .parent()
                             .ok_or(LoadAssetError::PathError)?
                             .join(path);
-                        let texture = TextureAsset::load(texture_path, state)?;
-                        state.add_texture(&texture);
+                        let texture = TextureAsset::load(texture_path, atlas_builder)?;
+                        atlas_builder.add_texture(&texture);
                         Box::new(texture)
                     }
                     AssetConfig::Strings(map) => Box::new(StringsAsset::from(map)),
@@ -108,55 +110,6 @@ impl LoadAssetBundle<String, LoadAssetError> for FileAssetLoader {
 
         Err(LoadAssetError::PathError)
     }
-    /*fn load<T>(dir: T, state: &mut WgpuState) -> Result<Self, LoadAssetError>
-    where
-        T: AsRef<Path>,
-    {
-        let dir = dir.as_ref();
-
-        debug!("Loading assets from {:?}", dir);
-
-        if dir.is_dir() {
-            let mut bundle = AssetBundle {
-                assets: HashMap::new(),
-            };
-
-            // Load all yml files
-            for file in fs::read_dir(dir)?.flat_map(|r| r.ok()).filter(|f| {
-                return if let Some(ext) = f.path().extension() {
-                    [OsStr::new("yml"), OsStr::new("yaml")].contains(&ext)
-                } else {
-                    false
-                };
-            }) {
-                let file_content = fs::read_to_string(file.path())?;
-                let asset_config: AssetConfig = serde_yaml::from_str(file_content.as_str())?;
-                let asset_name = file_stem(&file).ok_or(LoadAssetError::PathError)?;
-
-                let asset: Box<dyn Asset> = match asset_config {
-                    AssetConfig::Texture(path) => {
-                        let texture_path = file
-                            .path()
-                            .parent()
-                            .ok_or(LoadAssetError::PathError)?
-                            .join(path);
-                        let texture = TextureAsset::load(texture_path, state)?;
-                        state.add_texture(&texture);
-                        Box::new(texture)
-                    }
-                    AssetConfig::Strings(map) => Box::new(StringsAsset::from(map)),
-                };
-
-                debug!("Loaded asset {} {:?}", asset_name, asset);
-
-                bundle.assets.insert(asset_name.to_owned(), asset);
-            }
-
-            return Ok(bundle);
-        }
-
-        Err(LoadAssetError::PathError)
-    }*/
 }
 
 fn file_stem(file: &DirEntry) -> Option<String> {

@@ -1,29 +1,25 @@
 use std::collections::HashMap;
 use std::error::Error;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{Receiver, Sender, SyncSender};
 use std::time::{Duration, Instant};
 
 use bevy_ecs::schedule::{Schedule, Stage, SystemStage};
 use bevy_ecs::system::Resource;
+use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event_loop::{ControlFlow, EventLoop};
 
-use crate::components::Position;
+use crate::components::{Drawable, Position};
+use crate::render::RenderStage;
+use crate::render::{RenderMachine, RenderWorld};
 use crate::simulation::simulation_state::{LoadSimulation, SimulationState};
-use crate::stages::physics_stage::{self, Vec2f};
+use crate::stages::physics_stage;
 use crate::stages::physics_stage::{DeltaTime, PhysicsStage};
 
-use self::action::{Action, ActionPacket, ActionRequest};
-
-pub mod action;
 pub mod simulation_state;
-
-#[derive(Debug, Resource, Clone)]
-pub struct Tick(u64);
-
-#[derive(Resource, Clone)]
-pub struct Actions(Vec<Action>);
 
 pub struct SimulationOptions<S: SimulationState, E: Error> {
     pub simulation_loader: Box<dyn LoadSimulation<S, E>>,
+    pub state_send: SyncSender<RenderWorld>,
 }
 
 pub trait Simulation<T: SimulationState> {
@@ -89,6 +85,14 @@ impl<T: SimulationState + 'static> SimulationImpl<T> {
             SystemStage::parallel().with_system(physics_stage::solve_movement),
         );
 
+        schedule.add_stage_after(
+            PhysicsStage,
+            RenderStage,
+            SystemStage::parallel().with_system(move |query: Query<(&Position, &Drawable)>| {
+                let _ = options.state_send.try_send(RenderWorld::new(query));
+            }),
+        );
+
         Self {
             simulation_state: simulation,
             schedule,
@@ -106,6 +110,8 @@ impl<T: SimulationState + 'static> SimulationImpl<T> {
             self.step_simulation(frame_time);
             frame_time = Instant::now() - start_time;
             start_time = Instant::now();
+
+            sleep(Duration::from_secs_f64(1.0 / 1000.0));
         }
     }
 }

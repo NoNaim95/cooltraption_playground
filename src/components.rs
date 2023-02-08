@@ -2,7 +2,7 @@ use crate::stages::physics_stage::Vec2f;
 use bevy_ecs::prelude::*;
 use std::ops::Deref;
 
-#[derive(Component, Default, Clone)]
+#[derive(Component, Default, Clone, Debug)]
 pub struct Position(pub Vec2f);
 
 #[derive(Component, Default, Clone)]
@@ -17,7 +17,7 @@ pub struct Weight(pub f64);
 #[derive(Component, Clone)]
 pub struct Force(pub f64);
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct Drawable {
     pub asset: String,
 }

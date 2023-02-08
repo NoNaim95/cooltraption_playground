@@ -30,6 +30,7 @@ wgpu = "0.14"
 pollster = "0.2"
 winit = "0.27"
 bytemuck = { version = "1.4", features = [ "derive" ] }
+guillotiere = "0.6.2" # texture atlas
 
 [build-dependencies]
 copy_to_output = "2.0"
