@@ -1,6 +1,8 @@
+use bevy_ecs::prelude::Query;
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::mpsc::{Receiver, Sender, SyncSender};
+use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use bevy_ecs::schedule::{Schedule, Stage, SystemStage};
@@ -11,11 +13,19 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use crate::components::{Drawable, Position};
 use crate::render::RenderStage;
 use crate::render::{RenderMachine, RenderWorld};
+use crate::simulation::action::{Action, ActionPacket, ActionRequest};
 use crate::simulation::simulation_state::{LoadSimulation, SimulationState};
 use crate::stages::physics_stage;
-use crate::stages::physics_stage::{DeltaTime, PhysicsStage};
+use crate::stages::physics_stage::{DeltaTime, PhysicsStage, Vec2f};
 
+pub mod action;
 pub mod simulation_state;
+
+#[derive(Debug, Resource, Clone)]
+pub struct Tick(u64);
+
+#[derive(Resource, Clone)]
+pub struct Actions(Vec<Action>);
 
 pub struct SimulationOptions<S: SimulationState, E: Error> {
     pub simulation_loader: Box<dyn LoadSimulation<S, E>>,
@@ -73,7 +83,7 @@ impl ActionHandler {
 }
 
 impl<T: SimulationState + 'static> SimulationImpl<T> {
-    pub fn new<E: Error>(options: &SimulationOptions<T, E>) -> Self {
+    pub fn new<E: Error>(options: SimulationOptions<T, E>) -> Self {
         let simulation = options
             .simulation_loader
             .load()
