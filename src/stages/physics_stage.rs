@@ -10,7 +10,7 @@ use nalgebra::Vector2;
 pub type Float = I48F16;
 pub type Vec2f = Vector2<Float>;
 
-pub const MILLIS_TO_SECONDS: Float = fixed!(0.001: I48F16); // µs to s factor
+pub const MILLIS_TO_SECONDS: Float = fixed!(0.001: I48F16); // ms to s factor
 
 #[derive(Resource, Default)]
 pub struct DeltaTime {
