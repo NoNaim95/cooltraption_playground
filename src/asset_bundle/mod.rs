@@ -1,16 +1,35 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
+use std::error::Error;
+use std::fmt::Debug;
+use std::hash::Hash;
 
-use bevy_ecs::system::Resource;
+use crate::render::wgpu_state::WgpuState;
+use as_any::AsAny;
 use serde::{Deserialize, Serialize};
 
-pub mod file_asset_bundle;
+pub mod file_asset_loader;
+pub mod strings_asset;
+pub mod texture_asset;
 
-pub trait AssetBundle: Resource {
-    fn get_asset(&self, name: &str) -> Option<&Asset>;
+pub struct AssetBundle<Id: Eq + Hash> {
+    assets: HashMap<Id, Box<dyn Asset>>,
+}
+
+impl<Id: Eq + Hash> AssetBundle<Id> {
+    fn get_asset<T: Into<Id>, A: Asset>(&self, id: Id) -> Option<&A> {
+        let asset = self.assets.get(&id.into())?.as_ref();
+        asset.as_any().downcast_ref()
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Asset {
-    Texture { path: String },
+enum AssetConfig {
+    Texture(String),
     Strings(BTreeMap<String, String>),
+}
+
+pub trait Asset: AsAny + Debug {}
+
+pub trait LoadAssetBundle<Id: Eq + Hash, E: Error> {
+    fn load<T>(&self, state: &mut WgpuState) -> Result<AssetBundle<Id>, E>;
 }

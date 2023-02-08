@@ -1,21 +1,20 @@
 use std::env;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
-use std::time::Duration;
 
-use log::{info, warn};
+use cooltraption_playground::asset_bundle::file_asset_loader::FileAssetLoader;
+use cooltraption_playground::render::RenderMachine;
+use log::info;
 
-use cooltraption_playground::asset_bundle::file_asset_bundle::FileAssetBundle;
-use cooltraption_playground::asset_bundle::{Asset, AssetBundle};
-use cooltraption_playground::runtime::RuntimeOptions;
-#[allow(unused, dead_code)]
-use cooltraption_playground::runtime::{Runtime, RuntimeImpl};
-use cooltraption_playground::scene::file_loader::FileLoader;
-use cooltraption_playground::scene::Load;
+use cooltraption_playground::simulation::simulation_state::file_simulation_loader::MockFileSimulationLoader;
+use cooltraption_playground::simulation::SimulationImpl;
+use cooltraption_playground::simulation::SimulationOptions;
 
+use cooltraption_playground::networking;
 mod entities;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     env::set_var("RUST_LOG", "coolbox=debug,cooltraption_playground=debug");
     env_logger::init();
 
@@ -25,24 +24,24 @@ fn main() {
         env::current_dir().unwrap().to_str().unwrap()
     );
 
-    let bundle = FileAssetBundle::load(PathBuf::from("./assets"));
-    match bundle.unwrap().get_asset("strings").unwrap() {
-        Asset::Strings(map) => {
-            info!("{}", map.get("greet").unwrap());
-        }
-        _ => {
-            warn!("Didn't find Strings asset");
-        }
-    }
+    tokio::spawn(async {
+        let simulation_loader = MockFileSimulationLoader::from(PathBuf::from("./scenes/scene1"));
+        let options = SimulationOptions {
+            simulation_loader: Box::new(simulation_loader),
+        };
 
-    let loader = FileLoader::from(PathBuf::from("./scenes/scene1"));
-    let options = RuntimeOptions {
-        initial_scene: Box::new(loader.load().unwrap()),
-    };
-    let mut runtime = RuntimeImpl::new(options);
-    for i in 0..3 {
-        runtime.step_simulation(Duration::from_secs(i));
-    }
+        SimulationImpl::new(&options).run();
+    });
+
+    let asset_loader = FileAssetLoader::new("./assets".into());
+    RenderMachine::run(&asset_loader).await;
+    /*
+    let bundle = FileAssetBundle::load(PathBuf::from("./assets"), &mut wgpu_state)
+        .expect("Could not load assets");
+    let strings: &StringsAsset = bundle
+        .get_asset("strings")
+        .expect("Could not find strings asset");
+    info!("{}", strings.map.get("greet").unwrap());*/
 }
 
 #[derive(Debug)]
