@@ -1,10 +1,11 @@
 use cgmath::{Matrix4, Quaternion, Vector3};
-use guillotiere::euclid::Rect;
+use guillotiere::Rectangle;
 
+#[derive(Debug)]
 pub struct Instance {
     pub position: Vector3<f32>,
     pub rotation: Quaternion<f32>,
-    pub atlas_region: Rect<u32, u32>,
+    pub atlas_region: Rectangle,
 }
 
 impl Instance {

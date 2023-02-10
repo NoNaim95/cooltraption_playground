@@ -1,7 +1,8 @@
 use crate::asset_bundle::{AssetBundle, LoadAssetBundle};
-use crate::render::texture_atlas_builder::TextureAtlasBuilder;
-use crate::render::uninitialized_wgpu_state::UninitializedWgpuState;
-use bevy_ecs::prelude::*;
+use crate::render::instance::Instance;
+use crate::render::instance_renderer::InstanceRenderer;
+use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
+use crate::render::wgpu_state::WgpuState;
 use cgmath::Vector2;
 use log::{debug, error};
 use std::error::Error;
@@ -9,17 +10,15 @@ use std::sync::mpsc::Receiver;
 use wgpu::SurfaceError;
 use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
-use winit::window::{Window, WindowId};
-
-use crate::render::wgpu_state::WgpuState;
+use winit::window::Window;
 
 mod camera;
 mod instance;
-mod render_batch;
-pub mod texture_atlas_builder;
-mod uninitialized_wgpu_state;
+mod instance_renderer;
+pub mod keyboard_state;
+pub mod texture_atlas;
 pub mod vertex;
-pub mod wgpu_state;
+mod wgpu_state;
 
 #[derive(Clone, Debug)]
 pub struct Position(pub Vector2<f64>);
@@ -37,61 +36,52 @@ pub struct Drawable {
     pub asset: String,
 }
 
-#[derive(StageLabel)]
-pub struct RenderStage;
-
 #[derive(Default, Debug)]
-pub struct RenderWorld {
-    state: Vec<(Position, Drawable)>,
+pub struct WorldState {
+    state: Vec<Instance>,
 }
 
-impl RenderWorld {
-    pub fn new<'a, T: Iterator<Item = (&'a Position, &'a Drawable)>>(drawables: T) -> Self {
-        RenderWorld {
-            state: drawables.map(|(p, d)| (p.clone(), d.clone())).collect(),
-        }
-    }
-}
-
-pub struct RenderMachineOptions<E: Error> {
+pub struct WgpuWindowConfig<E: Error> {
     pub asset_loader: Box<dyn LoadAssetBundle<String, E>>,
-    pub state_recv: Receiver<RenderWorld>,
+    pub state_recv: Receiver<WorldState>,
 }
 
-pub struct RenderMachine {
-    state: [RenderWorld; 2],
-    state_recv: Receiver<RenderWorld>,
-    window: Window,
+pub struct WgpuWindow {
+    world_state: [WorldState; 2],
     wgpu_state: WgpuState,
+    renderer: InstanceRenderer,
+    state_recv: Receiver<WorldState>,
+    window: Window,
     assets: Box<AssetBundle<String>>,
 }
 
-impl RenderMachine {
-    pub async fn run<E: Error>(options: RenderMachineOptions<E>) {
+impl WgpuWindow {
+    pub async fn run<E: Error>(options: WgpuWindowConfig<E>) {
         let event_loop = EventLoopBuilder::new().build();
-        let window = Window::new(&event_loop).expect("Could not create window");
+        let window = Window::new(&event_loop).expect("create window");
 
-        let mut uninitialized_wgpu_state = UninitializedWgpuState::new(&window).await;
+        let mut wgpu_state = WgpuState::new(&window).await;
 
-        let mut atlas_builder = TextureAtlasBuilder::new(
-            &mut uninitialized_wgpu_state.device,
-            &mut uninitialized_wgpu_state.queue,
-        );
+        let mut texture_atlas_builder =
+            TextureAtlasBuilder::new(&mut wgpu_state.device, &mut wgpu_state.queue);
         let assets = Box::new(
             options
                 .asset_loader
-                .load(&mut atlas_builder)
+                .load(&mut texture_atlas_builder)
                 .expect("load assets"),
         );
 
-        let wgpu_state = WgpuState::from(uninitialized_wgpu_state);
+        let texture_atlas = texture_atlas_builder.build();
+
+        let renderer = InstanceRenderer::new(&wgpu_state, texture_atlas);
 
         Self {
-            state: [RenderWorld::default(), RenderWorld::default()],
+            world_state: [WorldState::default(), WorldState::default()],
             state_recv: options.state_recv,
             window,
-            wgpu_state,
+            renderer,
             assets,
+            wgpu_state,
         }
         .run_event_loop(event_loop);
     }
@@ -100,22 +90,36 @@ impl RenderMachine {
         self.window.request_redraw();
     }
 
-    pub fn resize_window(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        self.wgpu_state.resize(new_size);
+    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+        if new_size.width > 0 && new_size.height > 0 {
+            self.wgpu_state.size = new_size;
+            self.wgpu_state.config.width = new_size.width;
+            self.wgpu_state.config.height = new_size.height;
+            self.wgpu_state
+                .surface
+                .configure(&self.wgpu_state.device, &self.wgpu_state.config);
+        }
     }
 
-    pub fn update_state(&mut self, new_state: RenderWorld) {
-        self.state.swap(0, 1);
+    pub fn reset_size(&mut self) {
+        self.resize(self.wgpu_state.size);
+    }
 
-        self.state[0] = new_state;
+    pub fn update_state(&mut self, new_state: WorldState) {
+        self.world_state.swap(0, 1);
+
+        self.world_state[0] = new_state;
     }
 
     pub fn render(&mut self) {
         // TODO: Identify different render sets and render them one by one
 
-        match self.wgpu_state.render_all(&self.state[0].state) {
+        match self
+            .renderer
+            .render_all(&self.world_state[0].state, &self.wgpu_state)
+        {
             Ok(_) => {}
-            Err(SurfaceError::Lost) => self.wgpu_state.resize(self.wgpu_state.size()),
+            Err(SurfaceError::Lost) => self.reset_size(),
             Err(e) => error!("{}", e),
         }
     }
@@ -142,10 +146,10 @@ impl RenderMachine {
                         ..
                     } => *control_flow = ControlFlow::Exit,
                     WindowEvent::Resized(physical_size) => {
-                        self.wgpu_state.resize(*physical_size);
+                        self.resize(*physical_size);
                     }
                     WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        self.wgpu_state.resize(**new_inner_size);
+                        self.resize(**new_inner_size);
                     }
                     _ => {}
                 },
@@ -166,17 +170,5 @@ impl RenderMachine {
                 _ => debug!("Received event: {:?}", &event),
             }
         });
-    }
-
-    pub fn window_id(&self) -> WindowId {
-        self.window.id()
-    }
-
-    pub fn wgpu_state(&self) -> &WgpuState {
-        &self.wgpu_state
-    }
-
-    pub fn wgpu_state_mut(&mut self) -> &mut WgpuState {
-        &mut self.wgpu_state
     }
 }

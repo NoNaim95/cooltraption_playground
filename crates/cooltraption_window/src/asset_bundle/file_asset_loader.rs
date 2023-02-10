@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use crate::asset_bundle::strings_asset::StringsAsset;
 use crate::asset_bundle::texture_asset::{LoadTextureError, TextureAsset};
 use crate::asset_bundle::*;
-use crate::render::texture_atlas_builder::TextureAtlasBuilder;
+use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 
 #[derive(Debug)]
 pub enum LoadAssetError {
@@ -95,7 +95,6 @@ impl LoadAssetBundle<String, LoadAssetError> for FileAssetLoader {
                             .ok_or(LoadAssetError::PathError)?
                             .join(path);
                         let texture = TextureAsset::load(texture_path, atlas_builder)?;
-                        atlas_builder.add_texture(&texture);
                         Box::new(texture)
                     }
                     AssetConfig::Strings(map) => Box::new(StringsAsset::from(map)),

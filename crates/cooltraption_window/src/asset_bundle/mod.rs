@@ -3,7 +3,7 @@ use std::error::Error;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use crate::render::texture_atlas_builder::TextureAtlasBuilder;
+use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 use as_any::AsAny;
 use serde::{Deserialize, Serialize};
 
