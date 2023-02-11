@@ -19,7 +19,7 @@ impl<'a> TextureAtlasBuilder<'a> {
         Self {
             device,
             queue,
-            atlas_allocator: AtlasAllocator::new(size2(5000, 5000)),
+            atlas_allocator: AtlasAllocator::new(size2(1000, 1000)),
             alloc_map: HashMap::new(),
         }
     }

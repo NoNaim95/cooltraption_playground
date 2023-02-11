@@ -26,7 +26,7 @@ impl WgpuState {
 
         // The instance is a handle to our GPU
         // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU
-        let instance = wgpu::Instance::new(Backends::all());
+        let instance = Instance::new(Backends::all());
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
             .request_adapter(&RequestAdapterOptions {
@@ -66,13 +66,7 @@ impl WgpuState {
         surface.configure(&device, &config);
 
         let camera = Camera {
-            // position the camera one unit up and 2 units back
-            // +z is out of the screen
-            eye: (0.0, 1.0, 2.0).into(),
-            // have it look at the origin
             target: (0.0, 0.0, 0.0).into(),
-            // which way is "up"
-            up: Vector3::unit_y(),
             aspect: config.width as f32 / config.height as f32,
             z_near: 0.1,
             z_far: 100.0,

@@ -1,5 +1,6 @@
 use crate::asset_bundle::texture_asset::TextureAsset;
 use crate::asset_bundle::{AssetBundle, LoadAssetBundle};
+use crate::render::camera::Camera;
 use crate::render::instance::Instance;
 use crate::render::instance_renderer::InstanceRenderer;
 use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
@@ -10,9 +11,10 @@ use log::{debug, error};
 use std::error::Error;
 use std::sync::mpsc::Receiver;
 use wgpu::SurfaceError;
+use winit::dpi::{PhysicalSize, Size};
 use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
-use winit::window::Window;
+use winit::window::{Window, WindowBuilder};
 
 mod camera;
 mod instance;
@@ -59,7 +61,10 @@ pub struct WgpuWindow {
 impl WgpuWindow {
     pub async fn run<E: Error>(options: WgpuWindowConfig<E>) {
         let event_loop = EventLoopBuilder::new().build();
-        let window = Window::new(&event_loop).expect("create window");
+        let window = WindowBuilder::new()
+            .with_inner_size(PhysicalSize::new(1200, 800))
+            .build(&event_loop)
+            .expect("create window");
 
         let mut wgpu_state = WgpuState::new(&window).await;
 
