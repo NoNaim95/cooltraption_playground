@@ -9,13 +9,13 @@ use bevy_ecs::system::Resource;
 
 use action::{Action, ActionPacket, ActionRequest};
 use components::Position;
-use simulation_state::{LoadSimulation, SimulationState};
+use simulation_state::SimulationState;
 use stages::physics_stage::{self, DeltaTime, PhysicsStage, Vec2f};
 
-mod action;
+pub mod action;
 mod components;
-mod simulation_state;
-mod stages;
+pub mod simulation_state;
+pub mod stages;
 
 #[derive(Debug, Resource, Clone)]
 pub struct Tick(u64);
@@ -23,21 +23,21 @@ pub struct Tick(u64);
 #[derive(Resource, Clone)]
 pub struct Actions(Vec<Action>);
 
-pub struct SimulationOptions<S: SimulationState, E: Error> {
-    pub simulation_loader: Box<dyn LoadSimulation<S, E>>,
+#[derive(Default)]
+pub struct SimulationOptions<S: SimulationState> {
+    state: S,
 }
 
 pub trait Simulation<T: SimulationState> {
-    fn set_simulation_state(&mut self, simulation: T);
     fn step_simulation(&mut self, dt: Duration);
 }
 
+#[derive(Default)]
 pub struct SimulationImpl<T: SimulationState> {
     simulation_state: T,
     schedule: Schedule,
     current_tick: u64,
     action_table: HashMap<u64, Vec<Action>>,
-    action_handler: ActionHandler,
 }
 
 pub struct ActionHandler {
@@ -78,12 +78,7 @@ impl ActionHandler {
 }
 
 impl<T: SimulationState + 'static> SimulationImpl<T> {
-    pub fn new<E: Error>(options: SimulationOptions<T, E>, action_handler: ActionHandler) -> Self {
-        let simulation = options
-            .simulation_loader
-            .load()
-            .expect("valid simulation object");
-
+    pub fn new(options: SimulationOptions<T>) -> Self {
         let mut schedule = Schedule::default();
         schedule.add_stage(
             PhysicsStage,
@@ -91,10 +86,9 @@ impl<T: SimulationState + 'static> SimulationImpl<T> {
         );
 
         Self {
-            simulation_state: simulation,
+            simulation_state: options.state,
             schedule,
             current_tick: 0,
-            action_handler,
             action_table: HashMap::default(),
         }
     }
@@ -111,19 +105,13 @@ impl<T: SimulationState + 'static> SimulationImpl<T> {
             sleep(Duration::from_secs_f64(1.0 / 1000.0));
         }
     }
+    pub fn state(&self) -> &T {
+        &self.simulation_state
+    }
 }
 
 impl<T: SimulationState> Simulation<T> for SimulationImpl<T> {
-    fn set_simulation_state(&mut self, simulation_state: T) {
-        self.simulation_state = simulation_state;
-    }
-
     fn step_simulation(&mut self, dt: Duration) {
-        let action_packets = self.action_handler.load_action_packets(self.current_tick);
-        for ActionPacket { tick_no, action } in action_packets {
-            self.action_table.entry(tick_no).or_default().push(action);
-        }
-
         self.simulation_state
             .world_mut()
             .insert_resource(Tick(self.current_tick));
