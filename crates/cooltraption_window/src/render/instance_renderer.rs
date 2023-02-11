@@ -2,8 +2,6 @@ use crate::render::instance::{Instance, InstanceRaw};
 use crate::render::texture_atlas::TextureAtlas;
 use crate::render::vertex::{INDICES, VERTICES};
 use crate::render::wgpu_state::WgpuState;
-use cgmath::Vector3;
-use log::warn;
 use wgpu::util::DeviceExt;
 use wgpu::{
     include_wgsl, util, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
@@ -18,7 +16,6 @@ pub struct InstanceRenderer {
     index_buffer: Buffer,
     num_indices: u32,
     diffuse_bind_group: BindGroup,
-    instances: Vec<Instance>,
     instance_buffer: Buffer,
     texture_atlas: TextureAtlas,
 }
@@ -45,7 +42,7 @@ impl InstanceRenderer {
                             visibility: ShaderStages::FRAGMENT,
                             // This should match the filterable field of the
                             // corresponding Texture entry above.
-                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                            ty: BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                             count: None,
                         },
                     ],
@@ -57,11 +54,11 @@ impl InstanceRenderer {
             entries: &[
                 BindGroupEntry {
                     binding: 0,
-                    resource: BindingResource::TextureView(&texture_atlas.view()),
+                    resource: BindingResource::TextureView(texture_atlas.view()),
                 },
                 BindGroupEntry {
                     binding: 1,
-                    resource: BindingResource::Sampler(&texture_atlas.sampler()),
+                    resource: BindingResource::Sampler(texture_atlas.sampler()),
                 },
             ],
             label: Some("diffuse_bind_group"),
@@ -108,7 +105,6 @@ impl InstanceRenderer {
             index_buffer,
             num_indices,
             diffuse_bind_group,
-            instances: vec![],
             instance_buffer,
             texture_atlas,
         }
@@ -166,12 +162,16 @@ impl InstanceRenderer {
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint16);
 
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
+            render_pass.draw_indexed(0..self.num_indices, 0, 0..instances.len() as _);
         }
 
         wgpu_state.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
         Ok(())
+    }
+
+    pub fn texture_atlas(&self) -> &TextureAtlas {
+        &self.texture_atlas
     }
 }

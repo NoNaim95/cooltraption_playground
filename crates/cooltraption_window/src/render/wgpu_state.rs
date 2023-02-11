@@ -153,7 +153,7 @@ impl WgpuState {
                     entry_point: "fs_main",
                     targets: &[Some(ColorTargetState {
                         format: self.config.format,
-                        blend: Some(BlendState::REPLACE),
+                        blend: Some(BlendState::ALPHA_BLENDING),
                         write_mask: ColorWrites::ALL,
                     })],
                 }),

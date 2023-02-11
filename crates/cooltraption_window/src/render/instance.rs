@@ -1,5 +1,6 @@
 use cgmath::{Matrix4, Quaternion, Vector3};
 use guillotiere::Rectangle;
+use wgpu::BufferAddress;
 
 #[derive(Debug)]
 pub struct Instance {
@@ -11,7 +12,10 @@ pub struct Instance {
 impl Instance {
     pub(crate) fn to_raw(&self) -> InstanceRaw {
         InstanceRaw {
-            model: (Matrix4::from_translation(self.position) * Matrix4::from(self.rotation)).into(),
+            pos_rot: (Matrix4::from_translation(self.position) * Matrix4::from(self.rotation))
+                .into(),
+            region_offset: self.atlas_region.min.to_array(),
+            region_size: self.atlas_region.size().to_array(),
         }
     }
 }
@@ -19,43 +23,50 @@ impl Instance {
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct InstanceRaw {
-    model: [[f32; 4]; 4],
+    pos_rot: [[f32; 4]; 4],
+    region_offset: [i32; 2],
+    region_size: [i32; 2],
 }
 
 impl InstanceRaw {
     pub(crate) fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
         wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
-            // We need to switch from using a step mode of Vertex to Instance
-            // This means that our shaders will only change to use the next
-            // instance when the shader starts processing a new instance
+            array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
+                // pos_rot matrix
                 wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x4,
                     offset: 0,
-                    // While our vertex shader only uses locations 0, and 1 now, in later tutorials we'll
-                    // be using 2, 3, and 4, for Vertex. We'll start at slot 5 not conflict with them later
+                    shader_location: 2,
+                },
+                wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x4,
+                    offset: mem::size_of::<[f32; 4]>() as BufferAddress,
+                    shader_location: 3,
+                },
+                wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x4,
+                    offset: mem::size_of::<[f32; 8]>() as BufferAddress,
+                    shader_location: 4,
+                },
+                wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x4,
+                    offset: mem::size_of::<[f32; 12]>() as BufferAddress,
                     shader_location: 5,
-                    format: wgpu::VertexFormat::Float32x4,
                 },
-                // A mat4 takes up 4 vertex slots as it is technically 4 vec4s. We need to define a slot
-                // for each vec4. We'll have to reassemble the mat4 in
-                // the shader.
+                // region matrix
                 wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
+                    format: wgpu::VertexFormat::Sint32x2,
+                    offset: mem::size_of::<[f32; 16]>() as BufferAddress,
                     shader_location: 6,
-                    format: wgpu::VertexFormat::Float32x4,
                 },
                 wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 8]>() as wgpu::BufferAddress,
+                    format: wgpu::VertexFormat::Sint32x2,
+                    offset: mem::size_of::<[f32; 16]>() as BufferAddress
+                        + mem::size_of::<[i32; 2]>() as BufferAddress,
                     shader_location: 7,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 12]>() as wgpu::BufferAddress,
-                    shader_location: 8,
-                    format: wgpu::VertexFormat::Float32x4,
                 },
             ],
         }

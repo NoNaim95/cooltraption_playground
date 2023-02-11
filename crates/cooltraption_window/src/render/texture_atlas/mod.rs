@@ -21,4 +21,8 @@ impl TextureAtlas {
     pub fn sampler(&self) -> &Sampler {
         &self.sampler
     }
+
+    pub fn get_texture_region(&self, texture_hash: u64) -> Option<&Rectangle> {
+        self.texture_map.get(&texture_hash)
+    }
 }

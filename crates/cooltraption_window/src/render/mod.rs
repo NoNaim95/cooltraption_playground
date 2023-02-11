@@ -1,9 +1,11 @@
+use crate::asset_bundle::texture_asset::TextureAsset;
 use crate::asset_bundle::{AssetBundle, LoadAssetBundle};
 use crate::render::instance::Instance;
 use crate::render::instance_renderer::InstanceRenderer;
 use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 use crate::render::wgpu_state::WgpuState;
-use cgmath::Vector2;
+use cgmath::{Quaternion, Vector2, Vector3};
+use guillotiere::euclid::num::Zero;
 use log::{debug, error};
 use std::error::Error;
 use std::sync::mpsc::Receiver;
@@ -21,24 +23,23 @@ pub mod vertex;
 mod wgpu_state;
 
 #[derive(Clone, Debug)]
-pub struct Position(pub Vector2<f64>);
+pub struct Position(pub Vector2<f32>);
 
 impl Default for Position {
     fn default() -> Self {
-        Self {
-            0: Vector2::new(0.0, 0.0),
-        }
+        Self(Vector2::new(0.0, 0.0))
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Drawable {
-    pub asset: String,
+    pub position: Position,
+    pub asset_name: String,
 }
 
 #[derive(Default, Debug)]
 pub struct WorldState {
-    state: Vec<Instance>,
+    pub state: Vec<Drawable>,
 }
 
 pub struct WgpuWindowConfig<E: Error> {
@@ -112,11 +113,27 @@ impl WgpuWindow {
     }
 
     pub fn render(&mut self) {
-        // TODO: Identify different render sets and render them one by one
+        let instances: Vec<Instance> = self.world_state[0]
+            .state
+            .iter()
+            .filter_map(|d| {
+                let asset = self.assets.get_asset::<TextureAsset>(&d.asset_name)?;
+                let atlas_region = *self
+                    .renderer
+                    .texture_atlas()
+                    .get_texture_region(asset.texture_hash)?;
+
+                Some(Instance {
+                    position: Vector3::new(d.position.0.x, d.position.0.y, 0.0),
+                    rotation: Quaternion::zero(),
+                    atlas_region,
+                })
+            })
+            .collect();
 
         match self
             .renderer
-            .render_all(&self.world_state[0].state, &self.wgpu_state)
+            .render_all(instances.as_slice(), &self.wgpu_state)
         {
             Ok(_) => {}
             Err(SurfaceError::Lost) => self.reset_size(),
