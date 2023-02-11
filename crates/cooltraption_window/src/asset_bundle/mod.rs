@@ -3,7 +3,7 @@ use std::error::Error;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use crate::render::texture_atlas_builder::TextureAtlasBuilder;
+use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 use as_any::AsAny;
 use serde::{Deserialize, Serialize};
 
@@ -16,8 +16,8 @@ pub struct AssetBundle<Id: Eq + Hash> {
 }
 
 impl<Id: Eq + Hash> AssetBundle<Id> {
-    fn get_asset<T: Into<Id>, A: Asset>(&self, id: Id) -> Option<&A> {
-        let asset = self.assets.get(&id)?.as_ref();
+    pub fn get_asset<A: Asset>(&self, id: &Id) -> Option<&A> {
+        let asset = self.assets.get(id)?.as_ref();
         asset.as_any().downcast_ref()
     }
 }

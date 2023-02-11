@@ -10,12 +10,13 @@ use std::path::PathBuf;
 use crate::asset_bundle::strings_asset::StringsAsset;
 use crate::asset_bundle::texture_asset::{LoadTextureError, TextureAsset};
 use crate::asset_bundle::*;
+use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 
 #[derive(Debug)]
 pub enum LoadAssetError {
     IOError(std::io::Error),
     ParseError(serde_yaml::Error),
-    PathError,
+    PathError(PathBuf),
     TextureError(LoadTextureError),
 }
 
@@ -26,7 +27,7 @@ impl Display for LoadAssetError {
             LoadAssetError::ParseError(e) => {
                 write!(f, "could not parse content of asset file: {}", e)
             }
-            LoadAssetError::PathError => write!(f, "the asset path does not exist"),
+            LoadAssetError::PathError(p) => write!(f, "the asset path '{:?}' does not exist", p),
             LoadAssetError::TextureError(e) => write!(f, "texture could not be loaded: {}", e),
         }
     }
@@ -84,17 +85,17 @@ impl LoadAssetBundle<String, LoadAssetError> for FileAssetLoader {
             }) {
                 let file_content = fs::read_to_string(file.path())?;
                 let asset_config: AssetConfig = serde_yaml::from_str(file_content.as_str())?;
-                let asset_name = file_stem(&file).ok_or(LoadAssetError::PathError)?;
+                let asset_name =
+                    file_stem(&file).ok_or_else(|| LoadAssetError::PathError(file.path()))?;
 
                 let asset: Box<dyn Asset> = match asset_config {
                     AssetConfig::Texture(path) => {
                         let texture_path = file
                             .path()
                             .parent()
-                            .ok_or(LoadAssetError::PathError)?
+                            .ok_or_else(|| LoadAssetError::PathError(path.clone().into()))?
                             .join(path);
                         let texture = TextureAsset::load(texture_path, atlas_builder)?;
-                        atlas_builder.add_texture(&texture);
                         Box::new(texture)
                     }
                     AssetConfig::Strings(map) => Box::new(StringsAsset::from(map)),
@@ -108,7 +109,7 @@ impl LoadAssetBundle<String, LoadAssetError> for FileAssetLoader {
             return Ok(bundle);
         }
 
-        Err(LoadAssetError::PathError)
+        Err(LoadAssetError::PathError(self.path.clone()))
     }
 }
 

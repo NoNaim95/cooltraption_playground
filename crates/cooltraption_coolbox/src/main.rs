@@ -3,15 +3,10 @@ use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::sync::mpsc;
 
-use cooltraption_playground::asset_bundle::file_asset_loader::FileAssetLoader;
-use cooltraption_playground::render::{RenderMachine, RenderMachineOptions, RenderWorld};
+use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
+use cooltraption_window::render::{WgpuWindow, WgpuWindowConfig, WorldState};
 use log::info;
 
-use cooltraption_playground::simulation::simulation_state::file_simulation_loader::MockFileSimulationLoader;
-use cooltraption_playground::simulation::SimulationImpl;
-use cooltraption_playground::simulation::SimulationOptions;
-
-use cooltraption_playground::networking;
 mod entities;
 
 #[tokio::main]
@@ -25,7 +20,7 @@ async fn main() {
         env::current_dir().unwrap().to_str().unwrap()
     );
 
-    let (state_send, state_recv) = mpsc::sync_channel::<RenderWorld>(1);
+    let (state_send, state_recv) = mpsc::sync_channel::<WorldState>(1);
 
     tokio::spawn(async {
         let simulation_loader = MockFileSimulationLoader::from(PathBuf::from("./scenes/scene1"));
@@ -38,11 +33,11 @@ async fn main() {
     });
 
     let asset_loader = FileAssetLoader::new("./assets".into());
-    let options = RenderMachineOptions {
+    let options = WgpuWindowConfig {
         asset_loader: Box::new(asset_loader),
         state_recv,
     };
-    RenderMachine::run(options).await;
+    WgpuWindow::run(options).await;
     /*
     let bundle = FileAssetBundle::load(PathBuf::from("./assets"), &mut wgpu_state)
         .expect("Could not load assets");
