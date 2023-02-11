@@ -1,20 +1,26 @@
 [package]
-name = "cooltraption_simulation"
+name = "cooltraption_runtime"
 version = "0.1.0"
 edition = "2021"
+
+[lib]
+crate-type = ["lib"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cooltraption_simulation = { path = "../cooltraption_simulation" }
+cooltraption_window = { path = "../cooltraption_window" }
+
 log = "0.4"
 env_logger = "0.10"
-bevy_ecs = "0.9"
-bevy_reflect = "0.9"
+cgmath = "0.18"
 nalgebra = "0.32"
 simba = "0.7"
 fixed = "1.21"
 fixed-macro = "1.1"
 num-traits = "0.2"
+
 
 [build-dependencies]
 copy_to_output = "2.0"
