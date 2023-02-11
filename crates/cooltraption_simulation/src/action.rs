@@ -1,6 +1,6 @@
 use bevy_ecs::system::Resource;
 
-use super::super::components::Position;
+use crate::components::Position;
 use crate::stages::physics_stage::Float;
 
 pub enum ActionRequest {
