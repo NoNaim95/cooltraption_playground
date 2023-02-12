@@ -12,10 +12,7 @@ use std::time::{Duration, Instant};
 
 #[tokio::main]
 async fn main() {
-    env::set_var(
-        "RUST_LOG",
-        "coolbox=debug,cooltraption_window_example=debug",
-    );
+    env::set_var("RUST_LOG", "info");
     env_logger::init();
 
     let (state_send, state_recv) = mpsc::sync_channel(1);

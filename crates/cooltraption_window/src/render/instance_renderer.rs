@@ -1,10 +1,11 @@
-use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource,
-    BindingType, Buffer, BufferUsages, Color, CommandEncoderDescriptor, include_wgsl,
-    IndexFormat, LoadOp, Operations, RenderPassColorAttachment, RenderPassDescriptor,
-    RenderPipeline, ShaderStages, SurfaceError, TextureViewDescriptor, util,
-};
+use log::info;
 use wgpu::util::DeviceExt;
+use wgpu::{
+    include_wgsl, util, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
+    BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferUsages, Color,
+    CommandEncoderDescriptor, Device, IndexFormat, LoadOp, Operations, RenderPassColorAttachment,
+    RenderPassDescriptor, RenderPipeline, ShaderStages, SurfaceError, TextureViewDescriptor,
+};
 
 use crate::render::instance::{Instance, InstanceRaw};
 use crate::render::texture_atlas::TextureAtlas;
@@ -69,14 +70,7 @@ impl InstanceRenderer {
             .device
             .create_shader_module(include_wgsl!("shader.wgsl"));
 
-        let instance_data: Vec<InstanceRaw> = vec![];
-        let instance_buffer = state
-            .device
-            .create_buffer_init(&util::BufferInitDescriptor {
-                label: Some("Instance Buffer"),
-                contents: bytemuck::cast_slice(&instance_data),
-                usage: BufferUsages::VERTEX,
-            });
+        let instance_buffer = Self::create_instance_buffer(&[0], &state.device);
 
         let render_pipeline = state.create_pipeline(
             &[&texture_bind_group_layout, &state.camera_bind_group_layout],
@@ -146,15 +140,17 @@ impl InstanceRenderer {
                 depth_stencil_attachment: None,
             });
 
-            let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
-            self.instance_buffer =
+            let instances_raw = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
+            let instance_data = bytemuck::cast_slice::<_, u8>(&instances_raw);
+
+            if self.instance_buffer.size() < instance_data.len() as u64 {
+                self.instance_buffer =
+                    Self::create_instance_buffer(instance_data, &wgpu_state.device);
+            } else {
                 wgpu_state
-                    .device
-                    .create_buffer_init(&util::BufferInitDescriptor {
-                        label: Some("Instance Buffer"),
-                        contents: bytemuck::cast_slice(&instance_data),
-                        usage: BufferUsages::VERTEX,
-                    });
+                    .queue
+                    .write_buffer(&self.instance_buffer, 0, instance_data);
+            }
 
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
@@ -174,5 +170,13 @@ impl InstanceRenderer {
 
     pub fn texture_atlas(&self) -> &TextureAtlas {
         &self.texture_atlas
+    }
+
+    fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
+        device.create_buffer_init(&util::BufferInitDescriptor {
+            label: Some("Instance Buffer"),
+            contents: data,
+            usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
+        })
     }
 }

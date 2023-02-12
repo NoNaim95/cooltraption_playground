@@ -1,5 +1,5 @@
-use wgpu::*;
 use wgpu::util::DeviceExt;
+use wgpu::*;
 use winit::window::Window;
 
 use crate::render::camera::{Camera, CameraUniform};
@@ -173,20 +173,11 @@ impl WgpuState {
     pub fn update_camera_buffer(&mut self, camera: &Camera) {
         self.camera_uniform.update_view_proj(camera);
 
-        self.camera_buffer = self.device.create_buffer_init(&util::BufferInitDescriptor {
-            label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[self.camera_uniform]),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
-
-        self.camera_bind_group = self.device.create_bind_group(&BindGroupDescriptor {
-            layout: &self.camera_bind_group_layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: self.camera_buffer.as_entire_binding(),
-            }],
-            label: Some("camera_bind_group"),
-        });
+        self.queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[self.camera_uniform]),
+        );
     }
 
     pub fn aspect(&self) -> f32 {
