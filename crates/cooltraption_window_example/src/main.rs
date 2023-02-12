@@ -30,17 +30,23 @@ async fn main() {
         let start = Instant::now();
 
         loop {
-            let (pos1, pos2) = {
+            let (pos1, pos2, pos3) = {
                 let time = start.elapsed().as_secs_f32() / 10.0;
 
                 (
                     Vector2::new(time.sin(), time.cos()),
                     Vector2::new(wrap(time * 4.0, -4.0..4.0), wrap(time * 4.0, -4.0..4.0)),
+                    Vector2::new(wrap(time * 1.5, -4.0..4.0), 0.0),
                 )
             };
 
             let world_state = WorldState {
                 drawables: vec![
+                    Drawable {
+                        id: 4,
+                        position: Position(pos3.neg()),
+                        asset_name: "cloud".to_string(),
+                    },
                     Drawable {
                         id: 0,
                         position: Position(pos2),
@@ -55,6 +61,11 @@ async fn main() {
                         id: 2,
                         position: Position(pos1.neg()),
                         asset_name: "dude".to_string(),
+                    },
+                    Drawable {
+                        id: 3,
+                        position: Position(pos3),
+                        asset_name: "cloud".to_string(),
                     },
                 ],
             };
