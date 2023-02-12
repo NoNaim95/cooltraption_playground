@@ -82,13 +82,7 @@ impl WgpuWindow {
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            self.wgpu_state.size = new_size;
-            self.wgpu_state.config.width = new_size.width;
-            self.wgpu_state.config.height = new_size.height;
-            self.wgpu_state
-                .surface
-                .configure(&self.wgpu_state.device, &self.wgpu_state.config);
-
+            self.wgpu_state.set_size(new_size);
             self.camera.aspect = self.wgpu_state.aspect();
         }
     }

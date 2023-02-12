@@ -1,5 +1,6 @@
 use wgpu::util::DeviceExt;
 use wgpu::*;
+use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
 use crate::render::camera::{Camera, CameraUniform};
@@ -11,7 +12,7 @@ pub struct WgpuState {
     pub device: Device,
     pub queue: Queue,
     pub config: SurfaceConfiguration,
-    pub size: winit::dpi::PhysicalSize<u32>,
+    pub size: PhysicalSize<u32>,
     pub camera_uniform: CameraUniform,
     pub camera_buffer: Buffer,
     pub camera_bind_group: BindGroup,
@@ -168,6 +169,13 @@ impl WgpuState {
                 },
                 multiview: None,
             })
+    }
+
+    pub fn set_size(&mut self, new_size: PhysicalSize<u32>) {
+        self.size = new_size;
+        self.config.width = new_size.width;
+        self.config.height = new_size.height;
+        self.surface.configure(&self.device, &self.config);
     }
 
     pub fn update_camera_buffer(&mut self, camera: &Camera) {
