@@ -32,7 +32,7 @@ impl InstanceRaw {
     pub(crate) fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
+            array_stride: mem::size_of::<Self>() as BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
                 // pos_rot matrix

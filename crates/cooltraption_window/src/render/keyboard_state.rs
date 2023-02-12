@@ -1,4 +1,5 @@
 use std::ops::{AddAssign, SubAssign};
+
 use winit::event::VirtualKeyCode;
 
 const KEY_COUNT: usize = 163;

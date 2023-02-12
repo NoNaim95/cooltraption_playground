@@ -1,8 +1,8 @@
 use cgmath::num_traits::Float;
 use cgmath::Vector2;
 use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
-use cooltraption_window::render::{Drawable, Position, WgpuWindow, WgpuWindowConfig, WorldState};
-use log::info;
+use cooltraption_window::render::world_state::{Drawable, Position, WorldState};
+use cooltraption_window::render::{WgpuWindow, WgpuWindowConfig};
 use std::env;
 use std::ops::{Neg, Range};
 use std::sync::mpsc;
@@ -44,16 +44,19 @@ async fn main() {
             };
 
             let world_state = WorldState {
-                state: vec![
+                drawables: vec![
                     Drawable {
+                        id: 0,
                         position: Position(pos2),
                         asset_name: "does this asset exist?".to_string(),
                     },
                     Drawable {
+                        id: 1,
                         position: Position(pos1),
                         asset_name: "house".to_string(),
                     },
                     Drawable {
+                        id: 2,
                         position: Position(pos1.neg()),
                         asset_name: "dude".to_string(),
                     },

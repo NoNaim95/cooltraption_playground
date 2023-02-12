@@ -1,20 +1,19 @@
-use crate::asset_bundle::texture_asset::TextureAsset;
-use crate::asset_bundle::{AssetBundle, LoadAssetBundle};
-use crate::render::camera::Camera;
-use crate::render::instance::Instance;
-use crate::render::instance_renderer::InstanceRenderer;
-use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
-use crate::render::wgpu_state::WgpuState;
-use cgmath::{Quaternion, Vector2, Vector3};
-use guillotiere::euclid::num::Zero;
-use log::{debug, error};
 use std::error::Error;
 use std::sync::mpsc::Receiver;
+
+use log::{debug, error};
 use wgpu::SurfaceError;
-use winit::dpi::{PhysicalSize, Size};
+use winit::dpi::PhysicalSize;
 use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Window, WindowBuilder};
+
+use crate::asset_bundle::{AssetBundle, LoadAssetBundle};
+use crate::render::camera::Camera;
+use crate::render::instance_renderer::InstanceRenderer;
+use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
+use crate::render::wgpu_state::WgpuState;
+use crate::render::world_state::WorldState;
 
 mod camera;
 mod instance;
@@ -23,26 +22,7 @@ pub mod keyboard_state;
 pub mod texture_atlas;
 pub mod vertex;
 mod wgpu_state;
-
-#[derive(Clone, Debug)]
-pub struct Position(pub Vector2<f32>);
-
-impl Default for Position {
-    fn default() -> Self {
-        Self(Vector2::new(0.0, 0.0))
-    }
-}
-
-#[derive(Debug)]
-pub struct Drawable {
-    pub position: Position,
-    pub asset_name: String,
-}
-
-#[derive(Default, Debug)]
-pub struct WorldState {
-    pub state: Vec<Drawable>,
-}
+pub mod world_state;
 
 pub struct WgpuWindowConfig<E: Error> {
     pub asset_loader: Box<dyn LoadAssetBundle<E>>,
@@ -119,43 +99,24 @@ impl WgpuWindow {
 
     pub fn update_state(&mut self, new_state: WorldState) {
         self.world_state.swap(0, 1);
-
         self.world_state[0] = new_state;
     }
 
     pub fn render(&mut self) {
         self.wgpu_state.update_camera_buffer(&self.camera);
 
-        let instances: Vec<Instance> = self.world_state[0]
-            .state
-            .iter()
-            .filter_map(|d| {
-                let asset = self
-                    .assets
-                    .get_asset::<TextureAsset>(&d.asset_name)
-                    .or_else(|| {
-                        // if asset does not exist display missing texture
-                        self.assets.get_asset::<TextureAsset>("missing")
-                    })?;
-                let atlas_region = *self
-                    .renderer
-                    .texture_atlas()
-                    .get_texture_region(asset.texture_hash)?;
-
-                Some(Instance {
-                    position: Vector3::new(d.position.0.x, d.position.0.y, 0.0),
-                    rotation: Quaternion::zero(),
-                    atlas_region,
-                })
-            })
-            .collect();
+        let instances = self.world_state[1].interpolate(
+            &self.world_state[0],
+            &self.assets,
+            self.renderer.texture_atlas(),
+        );
 
         match self
             .renderer
             .render_all(instances.as_slice(), &self.wgpu_state)
         {
             Ok(_) => {}
-            Err(SurfaceError::Lost) => self.reset_size(),
+            Err(SurfaceError::Lost | SurfaceError::Outdated) => self.reset_size(),
             Err(e) => error!("{}", e),
         }
     }

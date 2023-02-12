@@ -1,4 +1,3 @@
-use log::debug;
 use std::collections::HashMap;
 use std::error::Error;
 use std::ffi::OsStr;
@@ -6,6 +5,8 @@ use std::fmt::{Display, Formatter};
 use std::fs;
 use std::fs::DirEntry;
 use std::path::PathBuf;
+
+use log::debug;
 
 use crate::asset_bundle::strings_asset::StringsAsset;
 use crate::asset_bundle::texture_asset::{LoadTextureError, TextureAsset};
@@ -23,7 +24,9 @@ pub enum LoadAssetError {
 impl Display for LoadAssetError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            LoadAssetError::IOError(e) => write!(f, "io error occured during asset loading: {}", e),
+            LoadAssetError::IOError(e) => {
+                write!(f, "io error occurred during asset loading: {}", e)
+            }
             LoadAssetError::ParseError(e) => {
                 write!(f, "could not parse content of asset file: {}", e)
             }

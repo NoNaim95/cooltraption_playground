@@ -1,11 +1,10 @@
-use crate::asset_bundle::Asset;
-use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 use std::collections::hash_map::DefaultHasher;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use std::fs;
 use std::hash::{Hash, Hasher};
-use std::path::PathBuf;
+
+use crate::asset_bundle::Asset;
+use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 
 #[derive(Debug)]
 pub struct TextureAsset {
@@ -22,7 +21,7 @@ impl Display for LoadTextureError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             LoadTextureError::IOError(e) => {
-                write!(f, "io error occured during texture loading: {}", e)
+                write!(f, "io error occurred during texture loading: {}", e)
             }
             LoadTextureError::DecodeError(e) => {
                 write!(f, "could not decode texture from file: {}", e)

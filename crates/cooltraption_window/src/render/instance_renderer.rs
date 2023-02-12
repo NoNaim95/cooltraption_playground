@@ -1,14 +1,15 @@
+use wgpu::{
+    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource,
+    BindingType, Buffer, BufferUsages, Color, CommandEncoderDescriptor, include_wgsl,
+    IndexFormat, LoadOp, Operations, RenderPassColorAttachment, RenderPassDescriptor,
+    RenderPipeline, ShaderStages, SurfaceError, TextureViewDescriptor, util,
+};
+use wgpu::util::DeviceExt;
+
 use crate::render::instance::{Instance, InstanceRaw};
 use crate::render::texture_atlas::TextureAtlas;
 use crate::render::vertex::{INDICES, VERTICES};
 use crate::render::wgpu_state::WgpuState;
-use wgpu::util::DeviceExt;
-use wgpu::{
-    include_wgsl, util, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferUsages, Color,
-    CommandEncoderDescriptor, IndexFormat, LoadOp, Operations, RenderPassColorAttachment,
-    RenderPassDescriptor, RenderPipeline, ShaderStages, SurfaceError, TextureViewDescriptor,
-};
 
 pub struct InstanceRenderer {
     render_pipeline: RenderPipeline,

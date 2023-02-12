@@ -1,11 +1,12 @@
-use crate::render::texture_atlas::TextureAtlas;
-use guillotiere::euclid::{Rect, Size2D};
-use guillotiere::{point2, size2, AllocId, Allocation, AtlasAllocator, Size};
-use image::{DynamicImage, GenericImageView, RgbImage, RgbaImage};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use wgpu::{Device, Queue, Sampler, Texture, TextureView};
+
+use guillotiere::{point2, size2, AllocId, Allocation, AtlasAllocator, Size};
+use image::{DynamicImage, GenericImageView, RgbaImage};
+use wgpu::{Device, Queue};
+
+use crate::render::texture_atlas::TextureAtlas;
 
 pub struct TextureAtlasBuilder<'a> {
     device: &'a mut Device,

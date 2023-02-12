@@ -1,11 +1,10 @@
-use crate::asset_bundle::texture_asset::TextureAsset;
+use wgpu::*;
+use wgpu::util::DeviceExt;
+use winit::window::Window;
+
 use crate::render::camera::{Camera, CameraUniform};
 use crate::render::instance::InstanceRaw;
-use crate::render::vertex::{Vertex, INDICES, VERTICES};
-use cgmath::Vector3;
-use wgpu::util::DeviceExt;
-use wgpu::*;
-use winit::window::Window;
+use crate::render::vertex::Vertex;
 
 pub struct WgpuState {
     pub surface: Surface,

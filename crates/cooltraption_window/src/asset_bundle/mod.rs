@@ -2,9 +2,10 @@ use std::collections::{BTreeMap, HashMap};
 use std::error::Error;
 use std::fmt::Debug;
 
-use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 use as_any::AsAny;
 use serde::{Deserialize, Serialize};
+
+use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 
 pub mod file_asset_loader;
 pub mod strings_asset;

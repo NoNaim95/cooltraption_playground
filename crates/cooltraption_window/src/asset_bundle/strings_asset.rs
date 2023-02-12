@@ -1,5 +1,6 @@
-use crate::asset_bundle::Asset;
 use std::collections::BTreeMap;
+
+use crate::asset_bundle::Asset;
 
 #[derive(Debug)]
 pub struct StringsAsset {
