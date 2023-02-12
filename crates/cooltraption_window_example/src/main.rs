@@ -39,7 +39,7 @@ async fn main() {
 
                 (
                     Vector2::new(time.sin(), time.cos()),
-                    Vector2::new(wrap(time, -4.0..4.0), wrap(time, -4.0..4.0)),
+                    Vector2::new(wrap(time * 4.0, -4.0..4.0), wrap(time * 4.0, -4.0..4.0)),
                 )
             };
 
@@ -72,5 +72,5 @@ async fn main() {
 
 fn wrap<T: Float>(val: T, range: Range<T>) -> T {
     let width = range.end - range.start;
-    (val % width) + range.start
+    ((val - range.start) % width) + range.start
 }

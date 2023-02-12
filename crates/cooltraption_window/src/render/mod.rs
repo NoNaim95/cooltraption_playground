@@ -45,7 +45,7 @@ pub struct WorldState {
 }
 
 pub struct WgpuWindowConfig<E: Error> {
-    pub asset_loader: Box<dyn LoadAssetBundle<String, E>>,
+    pub asset_loader: Box<dyn LoadAssetBundle<E>>,
     pub state_recv: Receiver<WorldState>,
 }
 
@@ -55,7 +55,7 @@ pub struct WgpuWindow {
     renderer: InstanceRenderer,
     state_recv: Receiver<WorldState>,
     window: Window,
-    assets: Box<AssetBundle<String>>,
+    assets: Box<AssetBundle>,
     camera: Camera,
 }
 
@@ -100,7 +100,7 @@ impl WgpuWindow {
         self.window.request_redraw();
     }
 
-    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+    pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
             self.wgpu_state.size = new_size;
             self.wgpu_state.config.width = new_size.width;
@@ -135,8 +135,7 @@ impl WgpuWindow {
                     .get_asset::<TextureAsset>(&d.asset_name)
                     .or_else(|| {
                         // if asset does not exist display missing texture
-                        self.assets
-                            .get_asset::<TextureAsset>(&"missing".to_string())
+                        self.assets.get_asset::<TextureAsset>("missing")
                     })?;
                 let atlas_region = *self
                     .renderer

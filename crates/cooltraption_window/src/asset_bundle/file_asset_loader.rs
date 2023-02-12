@@ -63,11 +63,8 @@ impl FileAssetLoader {
     }
 }
 
-impl LoadAssetBundle<String, LoadAssetError> for FileAssetLoader {
-    fn load(
-        &self,
-        atlas_builder: &mut TextureAtlasBuilder,
-    ) -> Result<AssetBundle<String>, LoadAssetError> {
+impl LoadAssetBundle<LoadAssetError> for FileAssetLoader {
+    fn load(&self, atlas_builder: &mut TextureAtlasBuilder) -> Result<AssetBundle, LoadAssetError> {
         debug!("Loading assets from {:?}", self.path);
 
         if self.path.is_dir() {
