@@ -1,8 +1,9 @@
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
+use std::path::PathBuf;
 
-use guillotiere::{point2, size2, AllocId, Allocation, AtlasAllocator, Size};
+use guillotiere::{size2, AllocId, Allocation, AtlasAllocator, Size};
 use image::{DynamicImage, GenericImageView, RgbaImage};
 use wgpu::{Device, Queue};
 
@@ -36,8 +37,8 @@ impl<'a> TextureAtlasBuilder<'a> {
             None => {
                 let new_size = self.atlas_allocator.size().max(size);
                 // resize to make sufficient space vertically in the texture atlas
-                self.atlas_allocator
-                    .resize_and_rearrange(new_size + size2(0, size.height));
+                // TODO: Use resize_and_rearrange and handle ChangeList correctly
+                self.atlas_allocator.grow(new_size + size2(0, size.height));
 
                 self.alloc_size(size)
             }
@@ -64,6 +65,8 @@ impl<'a> TextureAtlasBuilder<'a> {
                 }
             }
         }
+
+        atlas_rgba.save(PathBuf::from("atlas.png")).unwrap();
 
         let texture_size = wgpu::Extent3d {
             width: atlas_rgba.width(),

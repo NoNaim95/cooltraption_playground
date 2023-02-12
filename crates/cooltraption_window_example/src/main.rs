@@ -4,6 +4,7 @@ use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
 use cooltraption_window::render::world_state::{Drawable, Position, WorldState};
 use cooltraption_window::render::{WgpuWindow, WgpuWindowConfig};
 use std::env;
+use std::env::current_dir;
 use std::ops::{Neg, Range};
 use std::sync::mpsc;
 use std::thread::sleep;
@@ -22,11 +23,9 @@ async fn main() {
     let config = WgpuWindowConfig {
         state_recv,
         asset_loader: Box::new(FileAssetLoader::new(
-            env::current_exe()
+            current_dir()
                 .unwrap()
-                .parent()
-                .unwrap()
-                .join("./assets"),
+                .join("cooltraption_window_example/assets"),
         )),
     };
 
