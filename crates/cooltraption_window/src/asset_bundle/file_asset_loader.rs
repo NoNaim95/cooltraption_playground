@@ -75,6 +75,11 @@ impl LoadAssetBundle<String, LoadAssetError> for FileAssetLoader {
                 assets: HashMap::new(),
             };
 
+            // Insert missing.png texture which can be used by the renderer when get_asset returns None
+            bundle
+                .assets
+                .insert("missing".to_string(), create_missing_asset(atlas_builder));
+
             // Load all yml files
             for file in fs::read_dir(&self.path)?.flat_map(|r| r.ok()).filter(|f| {
                 return if let Some(ext) = f.path().extension() {
@@ -95,7 +100,8 @@ impl LoadAssetBundle<String, LoadAssetError> for FileAssetLoader {
                             .parent()
                             .ok_or_else(|| LoadAssetError::PathError(path.clone().into()))?
                             .join(path);
-                        let texture = TextureAsset::load(texture_path, atlas_builder)?;
+                        let bytes = fs::read(texture_path)?;
+                        let texture = TextureAsset::decode(bytes.as_slice(), atlas_builder)?;
                         Box::new(texture)
                     }
                     AssetConfig::Strings(map) => Box::new(StringsAsset::from(map)),
@@ -111,6 +117,14 @@ impl LoadAssetBundle<String, LoadAssetError> for FileAssetLoader {
 
         Err(LoadAssetError::PathError(self.path.clone()))
     }
+}
+
+fn create_missing_asset(atlas_builder: &mut TextureAtlasBuilder) -> Box<dyn Asset> {
+    let bytes = include_bytes!("missing.png");
+    Box::new(
+        TextureAsset::decode(bytes, atlas_builder)
+            .expect("decode missing.png file which is used for debugging"),
+    )
 }
 
 fn file_stem(file: &DirEntry) -> Option<String> {

@@ -48,12 +48,11 @@ impl From<image::ImageError> for LoadTextureError {
 impl Asset for TextureAsset {}
 
 impl TextureAsset {
-    pub fn load(
-        path: PathBuf,
+    pub fn decode(
+        bytes: &[u8],
         atlas_builder: &mut TextureAtlasBuilder,
     ) -> Result<TextureAsset, LoadTextureError> {
-        let diffuse_bytes = fs::read(path)?;
-        let diffuse_image = image::load_from_memory(diffuse_bytes.as_slice())?;
+        let diffuse_image = image::load_from_memory(bytes)?;
 
         let asset = {
             let mut hasher = DefaultHasher::new();

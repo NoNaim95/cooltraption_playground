@@ -1,9 +1,10 @@
+use cgmath::num_traits::Float;
 use cgmath::Vector2;
 use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
 use cooltraption_window::render::{Drawable, Position, WgpuWindow, WgpuWindowConfig, WorldState};
 use log::info;
 use std::env;
-use std::ops::Neg;
+use std::ops::{Neg, Range};
 use std::sync::mpsc;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
@@ -33,20 +34,28 @@ async fn main() {
         let start = Instant::now();
 
         loop {
-            let pos = {
+            let (pos1, pos2) = {
                 let time = start.elapsed().as_secs_f32() / 10.0;
-                Vector2::new(time.sin(), time.cos())
+
+                (
+                    Vector2::new(time.sin(), time.cos()),
+                    Vector2::new(wrap(time, -4.0..4.0), wrap(time, -4.0..4.0)),
+                )
             };
 
             let world_state = WorldState {
                 state: vec![
                     Drawable {
-                        position: Position(pos),
+                        position: Position(pos2),
+                        asset_name: "does this asset exist?".to_string(),
+                    },
+                    Drawable {
+                        position: Position(pos1),
                         asset_name: "house".to_string(),
                     },
                     Drawable {
-                        position: Position(pos.neg()),
-                        asset_name: "texture".to_string(),
+                        position: Position(pos1.neg()),
+                        asset_name: "dude".to_string(),
                     },
                 ],
             };
@@ -59,4 +68,9 @@ async fn main() {
     });
 
     WgpuWindow::run(config).await;
+}
+
+fn wrap<T: Float>(val: T, range: Range<T>) -> T {
+    let width = range.end - range.start;
+    (val % width) + range.start
 }

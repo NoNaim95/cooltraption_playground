@@ -56,6 +56,7 @@ pub struct WgpuWindow {
     state_recv: Receiver<WorldState>,
     window: Window,
     assets: Box<AssetBundle<String>>,
+    camera: Camera,
 }
 
 impl WgpuWindow {
@@ -81,6 +82,8 @@ impl WgpuWindow {
 
         let renderer = InstanceRenderer::new(&wgpu_state, texture_atlas);
 
+        let camera = Camera::new(wgpu_state.aspect());
+
         Self {
             world_state: [WorldState::default(), WorldState::default()],
             state_recv: options.state_recv,
@@ -88,6 +91,7 @@ impl WgpuWindow {
             renderer,
             assets,
             wgpu_state,
+            camera,
         }
         .run_event_loop(event_loop);
     }
@@ -104,6 +108,8 @@ impl WgpuWindow {
             self.wgpu_state
                 .surface
                 .configure(&self.wgpu_state.device, &self.wgpu_state.config);
+
+            self.camera.aspect = self.wgpu_state.aspect();
         }
     }
 
@@ -118,11 +124,20 @@ impl WgpuWindow {
     }
 
     pub fn render(&mut self) {
+        self.wgpu_state.update_camera_buffer(&self.camera);
+
         let instances: Vec<Instance> = self.world_state[0]
             .state
             .iter()
             .filter_map(|d| {
-                let asset = self.assets.get_asset::<TextureAsset>(&d.asset_name)?;
+                let asset = self
+                    .assets
+                    .get_asset::<TextureAsset>(&d.asset_name)
+                    .or_else(|| {
+                        // if asset does not exist display missing texture
+                        self.assets
+                            .get_asset::<TextureAsset>(&"missing".to_string())
+                    })?;
                 let atlas_region = *self
                     .renderer
                     .texture_atlas()

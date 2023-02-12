@@ -16,6 +16,15 @@ pub struct Camera {
 }
 
 impl Camera {
+    pub fn new(aspect: f32) -> Self {
+        Self {
+            target: Point3::new(0.0, 0.0, 0.0),
+            aspect,
+            z_near: 0.1,
+            z_far: 100.0,
+        }
+    }
+
     fn build_view_projection_matrix(&self) -> Matrix4<f32> {
         let view = Matrix4::look_at_rh(
             self.target + Vector3::unit_z(),

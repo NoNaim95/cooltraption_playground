@@ -13,7 +13,6 @@ pub struct WgpuState {
     pub queue: Queue,
     pub config: SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
-    pub camera: Camera,
     pub camera_uniform: CameraUniform,
     pub camera_buffer: Buffer,
     pub camera_bind_group: BindGroup,
@@ -111,7 +110,6 @@ impl WgpuState {
             queue,
             config,
             size,
-            camera,
             camera_uniform,
             camera_buffer,
             camera_bind_group,
@@ -171,5 +169,28 @@ impl WgpuState {
                 },
                 multiview: None,
             })
+    }
+
+    pub fn update_camera_buffer(&mut self, camera: &Camera) {
+        self.camera_uniform.update_view_proj(camera);
+
+        self.camera_buffer = self.device.create_buffer_init(&util::BufferInitDescriptor {
+            label: Some("Camera Buffer"),
+            contents: bytemuck::cast_slice(&[self.camera_uniform]),
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        });
+
+        self.camera_bind_group = self.device.create_bind_group(&BindGroupDescriptor {
+            layout: &self.camera_bind_group_layout,
+            entries: &[BindGroupEntry {
+                binding: 0,
+                resource: self.camera_buffer.as_entire_binding(),
+            }],
+            label: Some("camera_bind_group"),
+        });
+    }
+
+    pub fn aspect(&self) -> f32 {
+        self.size.width as f32 / self.size.height as f32
     }
 }
