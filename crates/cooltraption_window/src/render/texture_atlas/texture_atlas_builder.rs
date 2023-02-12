@@ -54,13 +54,12 @@ impl<'a> TextureAtlasBuilder<'a> {
         // TODO: Use bulk copy operations
         for (id, texture) in &self.alloc_map {
             let region = self.atlas_allocator[*id];
-            for target_x in region.x_range() {
-                for target_y in region.y_range() {
-                    let source = point2(target_x, target_y) - region.min;
+            for source_x in 0..texture.width() {
+                for source_y in 0..texture.height() {
                     atlas_rgba.put_pixel(
-                        target_x as u32,
-                        target_y as u32,
-                        texture.get_pixel(source.x as u32, source.y as u32),
+                        source_x + region.min.x as u32,
+                        source_y + region.min.y as u32,
+                        texture.get_pixel(source_x, source_y),
                     );
                 }
             }

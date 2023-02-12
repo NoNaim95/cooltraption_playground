@@ -48,7 +48,7 @@ async fn main() {
                     Drawable {
                         id: 0,
                         position: Position(pos2),
-                        asset_name: "does this asset exist?".to_string(),
+                        asset_name: "plane".to_string(),
                     },
                     Drawable {
                         id: 1,
