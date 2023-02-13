@@ -1,8 +1,9 @@
 use cgmath::num_traits::Float;
 use cgmath::Vector2;
 use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
-use cooltraption_window::render::world_state::{Drawable, Position, WorldState};
-use cooltraption_window::render::{WgpuWindow, WgpuWindowConfig};
+use cooltraption_window::render::{
+    Drawable, Id, Position, WgpuWindow, WgpuWindowConfig, WorldState,
+};
 use std::env;
 use std::env::current_dir;
 use std::ops::{Neg, Range};
@@ -43,27 +44,27 @@ async fn main() {
             let world_state = WorldState {
                 drawables: vec![
                     Drawable {
-                        id: 4,
+                        id: Id(0),
                         position: Position(pos3.neg()),
                         asset_name: "cloud".to_string(),
                     },
                     Drawable {
-                        id: 0,
+                        id: Id(1),
                         position: Position(pos2),
                         asset_name: "plane".to_string(),
                     },
                     Drawable {
-                        id: 1,
+                        id: Id(2),
                         position: Position(pos1),
                         asset_name: "house".to_string(),
                     },
                     Drawable {
-                        id: 2,
+                        id: Id(3),
                         position: Position(pos1.neg()),
                         asset_name: "dude".to_string(),
                     },
                     Drawable {
-                        id: 3,
+                        id: Id(4),
                         position: Position(pos3),
                         asset_name: "cloud".to_string(),
                     },

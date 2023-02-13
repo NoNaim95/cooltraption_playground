@@ -4,16 +4,17 @@ use std::sync::mpsc::Receiver;
 use log::{debug, error};
 use wgpu::SurfaceError;
 use winit::dpi::PhysicalSize;
-use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Window, WindowBuilder};
 
 use crate::asset_bundle::{AssetBundle, LoadAssetBundle};
 use crate::render::camera::Camera;
 use crate::render::instance_renderer::InstanceRenderer;
+use crate::render::keyboard_state::KeyboardState;
 use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 use crate::render::wgpu_state::WgpuState;
-use crate::render::world_state::WorldState;
+pub use crate::render::world_state::*;
 
 mod camera;
 mod instance;
@@ -22,7 +23,7 @@ pub mod keyboard_state;
 pub mod texture_atlas;
 pub mod vertex;
 mod wgpu_state;
-pub mod world_state;
+mod world_state;
 
 pub struct WgpuWindowConfig<E: Error> {
     pub asset_loader: Box<dyn LoadAssetBundle<E>>,
@@ -161,5 +162,26 @@ impl WgpuWindow {
                 _ => debug!("Received event: {:?}", &event),
             }
         });
+    }
+
+    fn handle_window_event(&mut self, event: &WindowEvent, control_flow: &mut ControlFlow) {
+        match event {
+            WindowEvent::KeyboardInput { input, .. } => {
+                if let Some(vk_code) = input.virtual_keycode {
+                    match input.state {
+                        ElementState::Pressed => self.keyboard_state += vk_code,
+                        ElementState::Released => self.keyboard_state -= vk_code,
+                    }
+                }
+            }
+            WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+            WindowEvent::Resized(physical_size) => {
+                self.resize(*physical_size);
+            }
+            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                self.resize(**new_inner_size);
+            }
+            _ => {}
+        }
     }
 }
