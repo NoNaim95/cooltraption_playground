@@ -1,13 +1,12 @@
-use log::info;
-use wgpu::util::DeviceExt;
 use wgpu::{
-    include_wgsl, util, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferUsages, Color,
-    CommandEncoderDescriptor, Device, IndexFormat, LoadOp, Operations, RenderPassColorAttachment,
-    RenderPassDescriptor, RenderPipeline, ShaderStages, SurfaceError, TextureViewDescriptor,
+    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource,
+    BindingType, Buffer, BufferUsages, Color, CommandEncoderDescriptor, Device,
+    include_wgsl, IndexFormat, LoadOp, Operations, RenderPassColorAttachment, RenderPassDescriptor,
+    RenderPipeline, ShaderStages, SurfaceError, TextureViewDescriptor, util,
 };
+use wgpu::util::DeviceExt;
 
-use crate::render::instance::{Instance, InstanceRaw};
+use crate::render::instance::Instance;
 use crate::render::texture_atlas::TextureAtlas;
 use crate::render::vertex::{INDICES, VERTICES};
 use crate::render::wgpu_state::WgpuState;

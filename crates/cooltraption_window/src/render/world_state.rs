@@ -15,9 +15,12 @@ impl Default for Position {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct Id(pub u64);
+
 #[derive(Debug)]
 pub struct Drawable {
-    pub id: u64,
+    pub id: Id,
     pub position: Position,
     pub asset_name: String,
 }

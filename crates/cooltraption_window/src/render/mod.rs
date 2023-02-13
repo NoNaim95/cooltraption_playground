@@ -4,16 +4,17 @@ use std::sync::mpsc::Receiver;
 use log::{debug, error};
 use wgpu::SurfaceError;
 use winit::dpi::PhysicalSize;
-use winit::event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Window, WindowBuilder};
 
 use crate::asset_bundle::{AssetBundle, LoadAssetBundle};
 use crate::render::camera::Camera;
 use crate::render::instance_renderer::InstanceRenderer;
+use crate::render::keyboard_state::KeyboardState;
 use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 use crate::render::wgpu_state::WgpuState;
-use crate::render::world_state::WorldState;
+pub use crate::render::world_state::*;
 
 mod camera;
 mod instance;
@@ -22,7 +23,7 @@ pub mod keyboard_state;
 pub mod texture_atlas;
 pub mod vertex;
 mod wgpu_state;
-pub mod world_state;
+mod world_state;
 
 pub struct WgpuWindowConfig<E: Error> {
     pub asset_loader: Box<dyn LoadAssetBundle<E>>,
@@ -36,6 +37,7 @@ pub struct WgpuWindow {
     state_recv: Receiver<WorldState>,
     window: Window,
     assets: Box<AssetBundle>,
+    keyboard_state: KeyboardState,
     camera: Camera,
 }
 
@@ -69,6 +71,7 @@ impl WgpuWindow {
             state_recv: options.state_recv,
             window,
             renderer,
+            keyboard_state: KeyboardState::default(),
             assets,
             wgpu_state,
             camera,
@@ -125,25 +128,7 @@ impl WgpuWindow {
                 Event::WindowEvent {
                     ref event,
                     window_id: event_window_id,
-                } if event_window_id == window_id => match event {
-                    WindowEvent::CloseRequested
-                    | WindowEvent::KeyboardInput {
-                        input:
-                            KeyboardInput {
-                                state: winit::event::ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Escape),
-                                ..
-                            },
-                        ..
-                    } => *control_flow = ControlFlow::Exit,
-                    WindowEvent::Resized(physical_size) => {
-                        self.resize(*physical_size);
-                    }
-                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        self.resize(**new_inner_size);
-                    }
-                    _ => {}
-                },
+                } if event_window_id == window_id => self.handle_window_event(event, control_flow),
                 Event::RedrawRequested(event_window_id) if window_id == event_window_id => {
                     self.request_redraw_window();
                 }
@@ -161,5 +146,26 @@ impl WgpuWindow {
                 _ => debug!("Received event: {:?}", &event),
             }
         });
+    }
+
+    fn handle_window_event(&mut self, event: &WindowEvent, control_flow: &mut ControlFlow) {
+        match event {
+            WindowEvent::KeyboardInput { input, .. } => {
+                if let Some(vk_code) = input.virtual_keycode {
+                    match input.state {
+                        ElementState::Pressed => self.keyboard_state += vk_code,
+                        ElementState::Released => self.keyboard_state -= vk_code,
+                    }
+                }
+            }
+            WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+            WindowEvent::Resized(physical_size) => {
+                self.resize(*physical_size);
+            }
+            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                self.resize(**new_inner_size);
+            }
+            _ => {}
+        }
     }
 }
