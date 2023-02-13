@@ -6,14 +6,17 @@ use wgpu::BufferAddress;
 pub struct Instance {
     pub position: Vector3<f32>,
     pub rotation: Quaternion<f32>,
+    pub scale: Vector3<f32>,
     pub atlas_region: Rectangle,
 }
 
 impl Instance {
     pub(crate) fn to_raw(&self) -> InstanceRaw {
         InstanceRaw {
-            pos_rot: (Matrix4::from_translation(self.position) * Matrix4::from(self.rotation))
-                .into(),
+            transform: (Matrix4::from_translation(self.position)
+                * Matrix4::from_nonuniform_scale(self.scale.x, self.scale.y, self.scale.z)
+                * Matrix4::from(self.rotation))
+            .into(),
             region_offset: self.atlas_region.min.to_array(),
             region_size: self.atlas_region.size().to_array(),
         }
@@ -23,7 +26,7 @@ impl Instance {
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct InstanceRaw {
-    pos_rot: [[f32; 4]; 4],
+    transform: [[f32; 4]; 4],
     region_offset: [i32; 2],
     region_size: [i32; 2],
 }

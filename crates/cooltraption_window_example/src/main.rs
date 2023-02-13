@@ -2,7 +2,7 @@ use cgmath::num_traits::Float;
 use cgmath::Vector2;
 use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
 use cooltraption_window::render::{
-    Drawable, Id, Position, WgpuWindow, WgpuWindowConfig, WorldState,
+    Drawable, Id, Position, Scale, WgpuWindow, WgpuWindowConfig, WorldState,
 };
 use std::env;
 use std::env::current_dir;
@@ -46,27 +46,32 @@ async fn main() {
                     Drawable {
                         id: Id(0),
                         position: Position(pos3.neg()),
+                        scale: Scale(Vector2::new(0.8, 0.8)),
                         asset_name: "cloud".to_string(),
                     },
                     Drawable {
                         id: Id(1),
                         position: Position(pos2),
                         asset_name: "plane".to_string(),
+                        ..Default::default()
                     },
                     Drawable {
                         id: Id(2),
                         position: Position(pos1),
+                        scale: Scale(Vector2::new(0.4, 0.4)),
                         asset_name: "house".to_string(),
                     },
                     Drawable {
                         id: Id(3),
                         position: Position(pos1.neg()),
+                        scale: Scale(Vector2::new(0.2, 0.2)),
                         asset_name: "dude".to_string(),
                     },
                     Drawable {
                         id: Id(4),
                         position: Position(pos3),
                         asset_name: "cloud".to_string(),
+                        ..Default::default()
                     },
                 ],
             };

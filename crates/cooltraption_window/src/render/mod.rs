@@ -4,7 +4,7 @@ use std::sync::mpsc::Receiver;
 use log::{debug, error};
 use wgpu::SurfaceError;
 use winit::dpi::PhysicalSize;
-use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Window, WindowBuilder};
 
