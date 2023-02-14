@@ -4,28 +4,26 @@ use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 
 use guillotiere::{size2, AllocId, Allocation, AtlasAllocator, Size};
-use image::{DynamicImage, GenericImageView, RgbaImage};
+use image::{DynamicImage, GenericImage, GenericImageView, RgbaImage};
 use wgpu::{Device, Queue};
 
 use crate::render::texture_atlas::TextureAtlas;
 
-pub struct TextureAtlasBuilder<'a> {
-    device: &'a mut Device,
-    queue: &'a mut Queue,
+pub struct TextureAtlasBuilder {
     atlas_allocator: AtlasAllocator,
     alloc_map: HashMap<AllocId, DynamicImage>,
 }
 
-impl<'a> TextureAtlasBuilder<'a> {
-    pub fn new(device: &'a mut Device, queue: &'a mut Queue) -> Self {
+impl Default for TextureAtlasBuilder {
+    fn default() -> Self {
         Self {
-            device,
-            queue,
             atlas_allocator: AtlasAllocator::new(size2(1000, 1000)),
             alloc_map: HashMap::new(),
         }
     }
+}
 
+impl TextureAtlasBuilder {
     pub fn add_texture(&mut self, texture: DynamicImage) {
         let texture_size = size2(texture.width() as i32, texture.height() as i32);
         let alloc = self.alloc_size(texture_size);
@@ -46,24 +44,17 @@ impl<'a> TextureAtlasBuilder<'a> {
         }
     }
 
-    pub fn build(&self) -> TextureAtlas {
+    pub fn build(&self, device: &Device, queue: &Queue) -> TextureAtlas {
         let mut atlas_rgba = {
             let (width, height) = self.atlas_allocator.size().into();
             RgbaImage::new(width as u32, height as u32)
         };
 
-        // TODO: Use bulk copy operations
         for (id, texture) in &self.alloc_map {
             let region = self.atlas_allocator[*id];
-            for source_x in 0..texture.width() {
-                for source_y in 0..texture.height() {
-                    atlas_rgba.put_pixel(
-                        source_x + region.min.x as u32,
-                        source_y + region.min.y as u32,
-                        texture.get_pixel(source_x, source_y),
-                    );
-                }
-            }
+            atlas_rgba
+                .copy_from(texture, region.min.x as u32, region.min.y as u32)
+                .expect("copy texture to allocated region in texture atlas");
         }
 
         atlas_rgba.save(PathBuf::from("atlas.png")).unwrap();
@@ -75,7 +66,7 @@ impl<'a> TextureAtlasBuilder<'a> {
         };
 
         // TODO: Make properties configurable using yaml
-        let diffuse_texture = self.device.create_texture(&wgpu::TextureDescriptor {
+        let diffuse_texture = device.create_texture(&wgpu::TextureDescriptor {
             size: texture_size,
             mip_level_count: 1,
             sample_count: 1,
@@ -85,7 +76,7 @@ impl<'a> TextureAtlasBuilder<'a> {
             label: Some("diffuse_texture"),
         });
 
-        self.queue.write_texture(
+        queue.write_texture(
             wgpu::ImageCopyTexture {
                 texture: &diffuse_texture,
                 mip_level: 0,
@@ -103,7 +94,7 @@ impl<'a> TextureAtlasBuilder<'a> {
 
         let diffuse_texture_view =
             diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let diffuse_sampler = self.device.create_sampler(&wgpu::SamplerDescriptor {
+        let diffuse_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,

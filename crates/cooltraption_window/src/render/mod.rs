@@ -49,10 +49,9 @@ impl WgpuWindow {
             .build(&event_loop)
             .expect("create window");
 
-        let mut wgpu_state = WgpuState::new(&window).await;
+        let wgpu_state = WgpuState::new(&window).await;
 
-        let mut texture_atlas_builder =
-            TextureAtlasBuilder::new(&mut wgpu_state.device, &mut wgpu_state.queue);
+        let mut texture_atlas_builder = TextureAtlasBuilder::default();
         let assets = Box::new(
             options
                 .asset_loader
@@ -60,7 +59,7 @@ impl WgpuWindow {
                 .expect("load assets"),
         );
 
-        let texture_atlas = texture_atlas_builder.build();
+        let texture_atlas = texture_atlas_builder.build(&wgpu_state.device, &wgpu_state.queue);
 
         let renderer = InstanceRenderer::new(&wgpu_state, texture_atlas);
 
