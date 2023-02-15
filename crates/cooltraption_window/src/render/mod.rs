@@ -1,10 +1,12 @@
+use cgmath::{InnerSpace, Vector2, Vector3};
 use std::error::Error;
 use std::sync::mpsc::Receiver;
 
 use log::{debug, error};
+use num_traits::Zero;
 use wgpu::SurfaceError;
 use winit::dpi::PhysicalSize;
-use winit::event::{ElementState, Event, WindowEvent};
+use winit::event::{ElementState, Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Window, WindowBuilder};
 
@@ -136,6 +138,8 @@ impl WgpuWindow {
                         self.update_state(state);
                     }
 
+                    self.handle_controls();
+
                     self.render();
                 }
                 Event::MainEventsCleared => {}
@@ -165,6 +169,36 @@ impl WgpuWindow {
                 self.resize(**new_inner_size);
             }
             _ => {}
+        }
+    }
+
+    fn handle_controls(&mut self) {
+        let zoom_speed = 1.01;
+        let move_speed = 0.01;
+        let mut move_vec = Vector2::zero();
+
+        if self.keyboard_state.is_down(VirtualKeyCode::Q) {
+            self.camera.zoom /= zoom_speed;
+        }
+        if self.keyboard_state.is_down(VirtualKeyCode::E) {
+            self.camera.zoom *= zoom_speed;
+        }
+
+        if self.keyboard_state.is_down(VirtualKeyCode::W) {
+            move_vec.y += 1.0;
+        }
+        if self.keyboard_state.is_down(VirtualKeyCode::A) {
+            move_vec.x -= 1.0;
+        }
+        if self.keyboard_state.is_down(VirtualKeyCode::S) {
+            move_vec.y -= 1.0;
+        }
+        if self.keyboard_state.is_down(VirtualKeyCode::D) {
+            move_vec.x += 1.0;
+        }
+        if move_vec.magnitude() > 0.0 {
+            move_vec = move_vec.normalize_to(move_speed);
+            self.camera.target += Vector3::new(move_vec.x, move_vec.y, 0.0);
         }
     }
 }

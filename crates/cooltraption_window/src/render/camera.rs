@@ -13,6 +13,7 @@ pub struct Camera {
     pub aspect: f32,
     pub z_near: f32,
     pub z_far: f32,
+    pub zoom: f32,
 }
 
 impl Camera {
@@ -22,6 +23,7 @@ impl Camera {
             aspect,
             z_near: 0.1,
             z_far: 100.0,
+            zoom: 1.0,
         }
     }
 
@@ -32,10 +34,10 @@ impl Camera {
             Vector3::unit_y(),
         );
         let proj = cgmath::ortho(
-            -self.aspect,
-            self.aspect,
-            -1.0,
-            1.0,
+            -self.aspect / self.zoom,
+            self.aspect / self.zoom,
+            -1.0 / self.zoom,
+            1.0 / self.zoom,
             self.z_near,
             self.z_far,
         );

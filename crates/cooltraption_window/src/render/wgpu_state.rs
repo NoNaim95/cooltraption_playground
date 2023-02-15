@@ -64,12 +64,7 @@ impl WgpuState {
         };
         surface.configure(&device, &config);
 
-        let camera = Camera {
-            target: (0.0, 0.0, 0.0).into(),
-            aspect: config.width as f32 / config.height as f32,
-            z_near: 0.1,
-            z_far: 100.0,
-        };
+        let camera = Camera::new(config.width as f32 / config.height as f32);
 
         let mut camera_uniform = CameraUniform::new();
         camera_uniform.update_view_proj(&camera);
