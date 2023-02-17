@@ -19,11 +19,16 @@ image = "0.24"
 as-any = "0.3"
 
 # rendering
-wgpu = "0.14"
+wgpu = "^0.15"
 pollster = "0.2"
-winit = "0.27"
+winit = "^0.28"
 bytemuck = { version = "1.4", features = [ "derive" ] }
 guillotiere = "0.6.2" # texture atlas
+
+# gui
+egui = "0.21"
+egui_winit_platform = "0.18"
+egui_wgpu_backend = "0.22"
 
 [build-dependencies]
 copy_to_output = "2.0"

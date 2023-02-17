@@ -1,21 +1,23 @@
-use cgmath::{InnerSpace, Vector2, Vector3};
+use cgmath::Vector3;
 use std::error::Error;
-use std::sync::mpsc::{Receiver, Sender, SyncSender};
+use std::sync::mpsc::{Receiver, Sender};
 
 use log::{debug, error};
-use num_traits::Zero;
 use wgpu::SurfaceError;
 use winit::dpi::PhysicalSize;
-use winit::event::{ElementState, Event, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Window, WindowBuilder};
 
 use crate::asset_bundle::{AssetBundle, LoadAssetBundle};
+use crate::gui::debug_window::DebugWindow;
+pub use crate::gui::Gui;
 use crate::render::camera::Camera;
 use crate::render::instance_renderer::InstanceRenderer;
 use crate::render::keyboard_state::KeyboardState;
+pub(crate) use crate::render::render_frame::RenderFrame;
 use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
-use crate::render::wgpu_state::WgpuState;
+pub(crate) use crate::render::wgpu_state::WgpuState;
 pub use crate::render::world_state::*;
 pub use controls::CameraControls;
 
@@ -24,6 +26,7 @@ mod controls;
 mod instance;
 mod instance_renderer;
 pub mod keyboard_state;
+mod render_frame;
 pub mod texture_atlas;
 pub mod vertex;
 mod wgpu_state;
@@ -47,6 +50,7 @@ pub struct WgpuWindow {
     keyboard_send: Sender<KeyboardState>,
     controls_recv: Receiver<CameraControls>,
     camera: Camera,
+    gui: Gui,
 }
 
 impl WgpuWindow {
@@ -68,10 +72,12 @@ impl WgpuWindow {
         );
 
         let texture_atlas = texture_atlas_builder.build(&wgpu_state.device, &wgpu_state.queue);
-
         let renderer = InstanceRenderer::new(&wgpu_state, texture_atlas);
-
         let camera = Camera::new(wgpu_state.aspect());
+
+        let gui = Gui::new(&window, &wgpu_state);
+
+        //gui.add_window(Box::new(DebugWindow::new()));
 
         Self {
             world_state: [WorldState::default(), WorldState::default()],
@@ -84,6 +90,7 @@ impl WgpuWindow {
             assets,
             wgpu_state,
             camera,
+            gui,
         }
         .run_event_loop(event_loop);
     }
@@ -117,11 +124,20 @@ impl WgpuWindow {
             self.renderer.texture_atlas(),
         );
 
-        match self
-            .renderer
-            .render_all(instances.as_slice(), &self.wgpu_state)
-        {
-            Ok(_) => {}
+        match RenderFrame::new(&self.wgpu_state) {
+            Ok(mut render_frame) => {
+                // Render world
+                self.renderer.render_all(
+                    instances.as_slice(),
+                    &mut render_frame,
+                    &self.wgpu_state.camera_bind_group,
+                );
+
+                // Render gui
+                self.gui.render(&mut render_frame, &self.window);
+
+                render_frame.present()
+            }
             Err(SurfaceError::Lost | SurfaceError::Outdated) => self.reset_size(),
             Err(e) => error!("{}", e),
         }
@@ -132,6 +148,8 @@ impl WgpuWindow {
 
         event_loop.run(move |event, _, control_flow| {
             *control_flow = ControlFlow::Wait;
+
+            self.gui.handle_event(&event);
 
             match event {
                 Event::WindowEvent {

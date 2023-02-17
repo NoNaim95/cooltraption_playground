@@ -25,8 +25,11 @@ impl WgpuState {
 
         // The instance is a handle to our GPU
         // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU
-        let instance = Instance::new(Backends::all());
-        let surface = unsafe { instance.create_surface(window) };
+        let instance = Instance::new(InstanceDescriptor {
+            backends: Backends::all(),
+            dx12_shader_compiler: Default::default(),
+        });
+        let surface = unsafe { instance.create_surface(window) }.expect("Create surface");
         let adapter = instance
             .request_adapter(&RequestAdapterOptions {
                 power_preference: PowerPreference::default(),
@@ -54,13 +57,16 @@ impl WgpuState {
             .await
             .unwrap();
 
+        let formats = surface.get_capabilities(&adapter).formats;
+
         let config = SurfaceConfiguration {
             usage: TextureUsages::RENDER_ATTACHMENT,
-            format: surface.get_supported_formats(&adapter)[0],
+            format: formats[0],
             width: size.width,
             height: size.height,
             present_mode: PresentMode::Fifo,
             alpha_mode: CompositeAlphaMode::Auto,
+            view_formats: formats,
         };
         surface.configure(&device, &config);
 
