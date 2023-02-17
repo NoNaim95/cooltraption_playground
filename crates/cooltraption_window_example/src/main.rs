@@ -1,8 +1,9 @@
 use cgmath::num_traits::Float;
-use cgmath::Vector2;
+use cgmath::{InnerSpace, Vector2, Vector3, Zero};
 use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
+use cooltraption_window::render::keyboard_state::{KeyboardState, VirtualKeyCode};
 use cooltraption_window::render::{
-    Drawable, Id, Position, Scale, WgpuWindow, WgpuWindowConfig, WorldState,
+    CameraControls, Drawable, Id, Position, Scale, WgpuWindow, WgpuWindowConfig, WorldState,
 };
 use std::env;
 use std::env::current_dir;
@@ -17,9 +18,13 @@ async fn main() {
     env_logger::init();
 
     let (state_send, state_recv) = mpsc::sync_channel(1);
+    let (keyboard_send, keyboard_recv) = mpsc::channel();
+    let (controls_send, controls_recv) = mpsc::channel();
 
     let config = WgpuWindowConfig {
         state_recv,
+        keyboard_send,
+        controls_recv,
         asset_loader: Box::new(FileAssetLoader::new(
             current_dir()
                 .unwrap()
@@ -29,6 +34,7 @@ async fn main() {
 
     tokio::spawn(async move {
         let start = Instant::now();
+        let mut controls = CameraControls::default();
 
         loop {
             let (pos1, pos2, pos3) = {
@@ -79,11 +85,53 @@ async fn main() {
             if state_send.send(world_state).is_err() {
                 return;
             }
+
+            while let Ok(keyboard_state) = keyboard_recv.try_recv() {
+                controls = handle_controls(&keyboard_state);
+            }
+
+            if controls_send.send(controls.clone()).is_err() {
+                return;
+            }
+
             sleep(Duration::from_millis(10));
         }
     });
 
     WgpuWindow::run(config).await;
+}
+
+fn handle_controls(keyboard_state: &KeyboardState) -> CameraControls {
+    let mut controls = CameraControls::default();
+
+    let zoom_speed = 1.01;
+    let move_speed = 0.01;
+
+    if keyboard_state.is_down(VirtualKeyCode::Q) {
+        controls.zoom /= zoom_speed;
+    }
+    if keyboard_state.is_down(VirtualKeyCode::E) {
+        controls.zoom *= zoom_speed;
+    }
+
+    if keyboard_state.is_down(VirtualKeyCode::W) {
+        controls.move_vec.y += 1.0;
+    }
+    if keyboard_state.is_down(VirtualKeyCode::A) {
+        controls.move_vec.x -= 1.0;
+    }
+    if keyboard_state.is_down(VirtualKeyCode::S) {
+        controls.move_vec.y -= 1.0;
+    }
+    if keyboard_state.is_down(VirtualKeyCode::D) {
+        controls.move_vec.x += 1.0;
+    }
+
+    if controls.move_vec.magnitude() > 0.0 {
+        controls.move_vec = controls.move_vec.normalize_to(move_speed);
+    }
+
+    controls
 }
 
 fn wrap<T: Float>(val: T, range: Range<T>) -> T {

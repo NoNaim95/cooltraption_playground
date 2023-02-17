@@ -1,9 +1,10 @@
 use std::ops::{AddAssign, SubAssign};
 
-use winit::event::VirtualKeyCode;
+pub use winit::event::VirtualKeyCode;
 
 const KEY_COUNT: usize = 163;
 
+#[derive(Clone)]
 pub struct KeyboardState {
     keys: [bool; KEY_COUNT],
 }

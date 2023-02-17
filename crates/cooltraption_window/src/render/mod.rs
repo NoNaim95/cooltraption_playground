@@ -1,6 +1,6 @@
 use cgmath::{InnerSpace, Vector2, Vector3};
 use std::error::Error;
-use std::sync::mpsc::Receiver;
+use std::sync::mpsc::{Receiver, Sender, SyncSender};
 
 use log::{debug, error};
 use num_traits::Zero;
@@ -17,8 +17,10 @@ use crate::render::keyboard_state::KeyboardState;
 use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 use crate::render::wgpu_state::WgpuState;
 pub use crate::render::world_state::*;
+pub use controls::CameraControls;
 
 mod camera;
+mod controls;
 mod instance;
 mod instance_renderer;
 pub mod keyboard_state;
@@ -30,6 +32,8 @@ mod world_state;
 pub struct WgpuWindowConfig<E: Error> {
     pub asset_loader: Box<dyn LoadAssetBundle<E>>,
     pub state_recv: Receiver<WorldState>,
+    pub keyboard_send: Sender<KeyboardState>,
+    pub controls_recv: Receiver<CameraControls>,
 }
 
 pub struct WgpuWindow {
@@ -40,6 +44,8 @@ pub struct WgpuWindow {
     window: Window,
     assets: Box<AssetBundle>,
     keyboard_state: KeyboardState,
+    keyboard_send: Sender<KeyboardState>,
+    controls_recv: Receiver<CameraControls>,
     camera: Camera,
 }
 
@@ -73,6 +79,8 @@ impl WgpuWindow {
             window,
             renderer,
             keyboard_state: KeyboardState::default(),
+            keyboard_send: options.keyboard_send,
+            controls_recv: options.controls_recv,
             assets,
             wgpu_state,
             camera,
@@ -138,7 +146,9 @@ impl WgpuWindow {
                         self.update_state(state);
                     }
 
-                    self.handle_controls();
+                    while let Ok(controls) = self.controls_recv.try_recv() {
+                        self.handle_controls(&controls);
+                    }
 
                     self.render();
                 }
@@ -159,6 +169,9 @@ impl WgpuWindow {
                         ElementState::Pressed => self.keyboard_state += vk_code,
                         ElementState::Released => self.keyboard_state -= vk_code,
                     }
+                    self.keyboard_send
+                        .send(self.keyboard_state.clone())
+                        .expect("Send keyboard state");
                 }
             }
             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
@@ -172,33 +185,8 @@ impl WgpuWindow {
         }
     }
 
-    fn handle_controls(&mut self) {
-        let zoom_speed = 1.01;
-        let move_speed = 0.01;
-        let mut move_vec = Vector2::zero();
-
-        if self.keyboard_state.is_down(VirtualKeyCode::Q) {
-            self.camera.zoom /= zoom_speed;
-        }
-        if self.keyboard_state.is_down(VirtualKeyCode::E) {
-            self.camera.zoom *= zoom_speed;
-        }
-
-        if self.keyboard_state.is_down(VirtualKeyCode::W) {
-            move_vec.y += 1.0;
-        }
-        if self.keyboard_state.is_down(VirtualKeyCode::A) {
-            move_vec.x -= 1.0;
-        }
-        if self.keyboard_state.is_down(VirtualKeyCode::S) {
-            move_vec.y -= 1.0;
-        }
-        if self.keyboard_state.is_down(VirtualKeyCode::D) {
-            move_vec.x += 1.0;
-        }
-        if move_vec.magnitude() > 0.0 {
-            move_vec = move_vec.normalize_to(move_speed);
-            self.camera.target += Vector3::new(move_vec.x, move_vec.y, 0.0);
-        }
+    fn handle_controls(&mut self, controls: &CameraControls) {
+        self.camera.target += Vector3::new(controls.move_vec.x, controls.move_vec.y, 0.0);
+        self.camera.zoom *= controls.zoom;
     }
 }
