@@ -9,12 +9,11 @@ use winit::event::{ElementState, Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Window, WindowBuilder};
 
-use crate::asset_bundle::{AssetBundle, LoadAssetBundle};
-use crate::gui::debug_window::DebugWindow;
+use crate::asset_bundle::LoadAssetBundle;
 pub use crate::gui::Gui;
 use crate::render::camera::Camera;
 use crate::render::instance_renderer::InstanceRenderer;
-use crate::render::keyboard_state::KeyboardState;
+pub use crate::render::keyboard_state::{KeyboardState, VirtualKeyCode};
 pub(crate) use crate::render::render_frame::RenderFrame;
 use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 pub(crate) use crate::render::wgpu_state::WgpuState;
@@ -25,7 +24,7 @@ mod camera;
 mod controls;
 mod instance;
 mod instance_renderer;
-pub mod keyboard_state;
+mod keyboard_state;
 mod render_frame;
 pub mod texture_atlas;
 pub mod vertex;
@@ -39,18 +38,18 @@ pub struct WgpuWindowConfig<E: Error> {
     pub controls_recv: Receiver<CameraControls>,
 }
 
+pub trait Renderer {
+    fn render(&mut self, render_frame: &mut RenderFrame);
+}
+
 pub struct WgpuWindow {
-    world_state: [WorldState; 2],
     wgpu_state: WgpuState,
-    renderer: InstanceRenderer,
-    state_recv: Receiver<WorldState>,
+    renderers: Vec<Box<dyn Renderer>>,
     window: Window,
-    assets: Box<AssetBundle>,
+    camera: Camera,
     keyboard_state: KeyboardState,
     keyboard_send: Sender<KeyboardState>,
     controls_recv: Receiver<CameraControls>,
-    camera: Camera,
-    gui: Gui,
 }
 
 impl WgpuWindow {
@@ -62,35 +61,29 @@ impl WgpuWindow {
             .expect("create window");
 
         let wgpu_state = WgpuState::new(&window).await;
-
-        let mut texture_atlas_builder = TextureAtlasBuilder::default();
-        let assets = Box::new(
-            options
-                .asset_loader
-                .load(&mut texture_atlas_builder)
-                .expect("load assets"),
-        );
-
-        let texture_atlas = texture_atlas_builder.build(&wgpu_state.device, &wgpu_state.queue);
-        let renderer = InstanceRenderer::new(&wgpu_state, texture_atlas);
         let camera = Camera::new(wgpu_state.aspect());
 
+        let renderer = {
+            let mut texture_atlas_builder = TextureAtlasBuilder::default();
+            let assets = options
+                .asset_loader
+                .load(&mut texture_atlas_builder)
+                .expect("load assets");
+
+            let texture_atlas = texture_atlas_builder.build(&wgpu_state.device, &wgpu_state.queue);
+
+            InstanceRenderer::new(&wgpu_state, assets, texture_atlas, options.state_recv)
+        };
         let gui = Gui::new(&window, &wgpu_state);
 
-        //gui.add_window(Box::new(DebugWindow::new()));
-
         Self {
-            world_state: [WorldState::default(), WorldState::default()],
-            state_recv: options.state_recv,
             window,
-            renderer,
+            renderers: vec![Box::new(renderer), Box::new(gui)],
             keyboard_state: KeyboardState::default(),
             keyboard_send: options.keyboard_send,
             controls_recv: options.controls_recv,
-            assets,
             wgpu_state,
             camera,
-            gui,
         }
         .run_event_loop(event_loop);
     }
@@ -110,31 +103,14 @@ impl WgpuWindow {
         self.resize(self.wgpu_state.size);
     }
 
-    pub fn update_state(&mut self, new_state: WorldState) {
-        self.world_state.swap(0, 1);
-        self.world_state[0] = new_state;
-    }
-
     pub fn render(&mut self) {
         self.wgpu_state.update_camera_buffer(&self.camera);
 
-        let instances = self.world_state[1].interpolate(
-            &self.world_state[0],
-            &self.assets,
-            self.renderer.texture_atlas(),
-        );
-
-        match RenderFrame::new(&self.wgpu_state) {
+        match self.wgpu_state.create_render_frame(&self.window) {
             Ok(mut render_frame) => {
-                // Render world
-                self.renderer.render_all(
-                    instances.as_slice(),
-                    &mut render_frame,
-                    &self.wgpu_state.camera_bind_group,
-                );
-
-                // Render gui
-                self.gui.render(&mut render_frame, &self.window);
+                for renderer in &mut self.renderers {
+                    renderer.render(&mut render_frame);
+                }
 
                 render_frame.present()
             }
@@ -149,7 +125,8 @@ impl WgpuWindow {
         event_loop.run(move |event, _, control_flow| {
             *control_flow = ControlFlow::Wait;
 
-            self.gui.handle_event(&event);
+            // TODO: Make gui handle events
+            //self.gui.handle_event(&event);
 
             match event {
                 Event::WindowEvent {
@@ -160,10 +137,6 @@ impl WgpuWindow {
                     self.request_redraw_window();
                 }
                 Event::RedrawEventsCleared => {
-                    while let Ok(state) = self.state_recv.try_recv() {
-                        self.update_state(state);
-                    }
-
                     while let Ok(controls) = self.controls_recv.try_recv() {
                         self.handle_controls(&controls);
                     }

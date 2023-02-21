@@ -2,7 +2,7 @@ pub mod debug_window;
 mod gui_window;
 
 pub use crate::gui::gui_window::{GuiWindow, UiState};
-use crate::render::{RenderFrame, WgpuState};
+use crate::render::{RenderFrame, Renderer, WgpuState};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use winit::event::Event;
@@ -14,22 +14,8 @@ pub struct Gui {
     windows: Vec<Box<dyn GuiWindow>>,
 }
 
-impl Gui {
-    pub fn new(window: &Window, wgpu_state: &WgpuState) -> Self {
-        Self {
-            platform: Platform::new(PlatformDescriptor {
-                physical_width: window.inner_size().width,
-                physical_height: window.inner_size().height,
-                scale_factor: window.scale_factor(),
-                font_definitions: Default::default(),
-                style: Default::default(),
-            }),
-            render_pass: RenderPass::new(&wgpu_state.device, wgpu_state.config.format, 1),
-            windows: vec![],
-        }
-    }
-
-    pub fn render(&mut self, render_frame: &mut RenderFrame, window: &Window) {
+impl Renderer for Gui {
+    fn render(&mut self, render_frame: &mut RenderFrame) {
         // Begin to draw the UI frame.
         self.platform.update_time(0.01);
         self.platform.begin_frame();
@@ -40,14 +26,14 @@ impl Gui {
         });
 
         // End the UI frame. We could now handle the output and draw the UI with the backend.
-        let full_output = self.platform.end_frame(Some(window));
+        let full_output = self.platform.end_frame(Some(render_frame.window));
         let paint_jobs = self.platform.context().tessellate(full_output.shapes);
 
         // Upload all resources for the GPU.
         let screen_descriptor = ScreenDescriptor {
-            physical_width: window.inner_size().width,
-            physical_height: window.inner_size().height,
-            scale_factor: window.scale_factor() as f32,
+            physical_width: render_frame.window.inner_size().width,
+            physical_height: render_frame.window.inner_size().height,
+            scale_factor: render_frame.window.scale_factor() as f32,
         };
         let t_delta: egui::TexturesDelta = full_output.textures_delta;
         self.render_pass
@@ -74,6 +60,22 @@ impl Gui {
         self.render_pass
             .remove_textures(t_delta)
             .expect("remove texture ok");
+    }
+}
+
+impl Gui {
+    pub fn new(window: &Window, wgpu_state: &WgpuState) -> Self {
+        Self {
+            platform: Platform::new(PlatformDescriptor {
+                physical_width: window.inner_size().width,
+                physical_height: window.inner_size().height,
+                scale_factor: window.scale_factor(),
+                font_definitions: Default::default(),
+                style: Default::default(),
+            }),
+            render_pass: RenderPass::new(&wgpu_state.device, wgpu_state.config.format, 1),
+            windows: vec![],
+        }
     }
 
     pub fn handle_event<T>(&mut self, event: &Event<T>) {

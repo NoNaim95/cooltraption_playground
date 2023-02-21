@@ -1,10 +1,10 @@
 use cgmath::num_traits::Float;
 use cgmath::{InnerSpace, Vector2, Vector3, Zero};
 use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
-use cooltraption_window::render::keyboard_state::{KeyboardState, VirtualKeyCode};
 use cooltraption_window::render::{
     CameraControls, Drawable, Id, Position, Scale, WgpuWindow, WgpuWindowConfig, WorldState,
 };
+use cooltraption_window::render::{KeyboardState, VirtualKeyCode};
 use std::env;
 use std::env::current_dir;
 use std::ops::{Neg, Range};
@@ -17,7 +17,7 @@ async fn main() {
     env::set_var("RUST_LOG", "info");
     env_logger::init();
 
-    let (state_send, state_recv) = mpsc::sync_channel(1);
+    let (state_send, state_recv) = mpsc::sync_channel(0);
     let (keyboard_send, keyboard_recv) = mpsc::channel();
     let (controls_send, controls_recv) = mpsc::channel();
 

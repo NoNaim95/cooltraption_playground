@@ -1,3 +1,5 @@
+use crate::asset_bundle::AssetBundle;
+use std::sync::mpsc::Receiver;
 use wgpu::util::DeviceExt;
 use wgpu::{
     include_wgsl, util, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
@@ -12,6 +14,7 @@ use crate::render::render_frame::RenderFrame;
 use crate::render::texture_atlas::TextureAtlas;
 use crate::render::vertex::{INDICES, VERTICES};
 use crate::render::wgpu_state::WgpuState;
+use crate::render::{Renderer, WorldState};
 
 pub struct InstanceRenderer {
     render_pipeline: RenderPipeline,
@@ -20,11 +23,35 @@ pub struct InstanceRenderer {
     num_indices: u32,
     diffuse_bind_group: BindGroup,
     instance_buffer: Buffer,
+    assets: AssetBundle,
     texture_atlas: TextureAtlas,
+    state_recv: Receiver<WorldState>,
+    world_state: [WorldState; 2],
+}
+
+impl Renderer for InstanceRenderer {
+    fn render(&mut self, render_frame: &mut RenderFrame) {
+        while let Ok(state) = self.state_recv.try_recv() {
+            self.update_state(state);
+        }
+
+        let instances = self.world_state[1].interpolate(
+            &self.world_state[0],
+            &self.assets,
+            &self.texture_atlas,
+        );
+
+        self.do_render_pass(instances.as_slice(), render_frame, &render_frame.camera);
+    }
 }
 
 impl InstanceRenderer {
-    pub fn new(state: &WgpuState, texture_atlas: TextureAtlas) -> Self {
+    pub fn new(
+        state: &WgpuState,
+        assets: AssetBundle,
+        texture_atlas: TextureAtlas,
+        state_recv: Receiver<WorldState>,
+    ) -> Self {
         let texture_bind_group_layout =
             state
                 .device
@@ -103,61 +130,62 @@ impl InstanceRenderer {
             diffuse_bind_group,
             instance_buffer,
             texture_atlas,
+            assets,
+            state_recv,
+            world_state: [WorldState::default(), WorldState::default()],
         }
     }
 
-    pub fn render_all(
+    fn update_state(&mut self, new_state: WorldState) {
+        self.world_state.swap(0, 1);
+        self.world_state[0] = new_state;
+    }
+
+    fn do_render_pass(
         &mut self,
         instances: &[Instance],
         render_frame: &mut RenderFrame,
         camera_bind_group: &BindGroup,
     ) {
-        {
-            let mut render_pass = render_frame
-                .encoder
-                .begin_render_pass(&RenderPassDescriptor {
-                    label: Some("Render Pass"),
-                    color_attachments: &[Some(RenderPassColorAttachment {
-                        view: &render_frame.view,
-                        resolve_target: None,
-                        ops: Operations {
-                            load: LoadOp::Clear(Color {
-                                r: 0.1,
-                                g: 0.2,
-                                b: 0.3,
-                                a: 1.0,
-                            }),
-                            store: true,
-                        },
-                    })],
-                    depth_stencil_attachment: None,
-                });
+        let mut render_pass = render_frame
+            .encoder
+            .begin_render_pass(&RenderPassDescriptor {
+                label: Some("Render Pass"),
+                color_attachments: &[Some(RenderPassColorAttachment {
+                    view: &render_frame.view,
+                    resolve_target: None,
+                    ops: Operations {
+                        load: LoadOp::Clear(Color {
+                            r: 0.1,
+                            g: 0.2,
+                            b: 0.3,
+                            a: 1.0,
+                        }),
+                        store: true,
+                    },
+                })],
+                depth_stencil_attachment: None,
+            });
 
-            let instances_raw = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
-            let instance_data = bytemuck::cast_slice::<_, u8>(&instances_raw);
+        let instances_raw = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
+        let instance_data = bytemuck::cast_slice::<_, u8>(&instances_raw);
 
-            if self.instance_buffer.size() < instance_data.len() as u64 {
-                self.instance_buffer =
-                    Self::create_instance_buffer(instance_data, &render_frame.device);
-            } else {
-                render_frame
-                    .queue
-                    .write_buffer(&self.instance_buffer, 0, instance_data);
-            }
-
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
-            render_pass.set_bind_group(1, camera_bind_group, &[]);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint16);
-
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..instances.len() as _);
+        if self.instance_buffer.size() < instance_data.len() as u64 {
+            self.instance_buffer = Self::create_instance_buffer(instance_data, render_frame.device);
+        } else {
+            render_frame
+                .queue
+                .write_buffer(&self.instance_buffer, 0, instance_data);
         }
-    }
 
-    pub fn texture_atlas(&self) -> &TextureAtlas {
-        &self.texture_atlas
+        render_pass.set_pipeline(&self.render_pipeline);
+        render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+        render_pass.set_bind_group(1, camera_bind_group, &[]);
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+        render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint16);
+
+        render_pass.draw_indexed(0..self.num_indices, 0, 0..instances.len() as _);
     }
 
     fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
