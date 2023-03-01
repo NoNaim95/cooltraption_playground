@@ -1,10 +1,11 @@
 use cgmath::{Quaternion, Vector2, Vector3};
 use num_traits::Zero;
 
-use crate::asset_bundle::AssetBundle;
 use crate::asset_bundle::texture_asset::TextureAsset;
-use crate::render::instance_renderer::Instance;
-use crate::render::instance_renderer::texture_atlas::TextureAtlas;
+use crate::asset_bundle::AssetBundle;
+
+use super::texture_atlas::TextureAtlas;
+use super::Instance;
 
 #[derive(Clone, Debug)]
 pub struct Position(pub Vector2<f32>);

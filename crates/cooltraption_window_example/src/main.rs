@@ -1,10 +1,11 @@
 use cgmath::num_traits::Float;
-use cgmath::{InnerSpace, Vector2};
+use cgmath::*;
 use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
-use cooltraption_window::render::instance_renderer::world_state::{Drawable, Id, Position, Scale};
-use cooltraption_window::render::instance_renderer::WorldState;
-use cooltraption_window::render::{CameraControls, KeyboardState, VirtualKeyCode};
-use cooltraption_window::window::{WgpuWindow, WgpuWindowConfig};
+use cooltraption_window::controls::CameraControls;
+use cooltraption_window::instance_renderer::world_state::{Drawable, Id, Position, Scale};
+use cooltraption_window::instance_renderer::WorldState;
+use cooltraption_window::keyboard_state::{KeyboardState, VirtualKeyCode};
+use cooltraption_window::{WgpuWindow, WgpuWindowConfig};
 use std::env;
 use std::env::current_dir;
 use std::ops::{Neg, Range};

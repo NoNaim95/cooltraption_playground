@@ -4,7 +4,8 @@ use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
 use crate::render::RenderFrame;
-use crate::window::camera::{Camera, CameraUniform};
+
+use super::camera::{Camera, CameraUniform};
 
 pub struct WgpuState {
     pub surface: Surface,

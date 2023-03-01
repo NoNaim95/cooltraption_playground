@@ -7,7 +7,7 @@ use guillotiere::{Allocation, AllocId, AtlasAllocator, Size, size2};
 use image::{DynamicImage, GenericImage, RgbaImage};
 use wgpu::{Device, Queue};
 
-use crate::render::instance_renderer::texture_atlas::TextureAtlas;
+use super::TextureAtlas;
 
 pub struct TextureAtlasBuilder {
     atlas_allocator: AtlasAllocator,

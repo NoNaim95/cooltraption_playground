@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use guillotiere::Rectangle;
 use wgpu::{Sampler, Texture, TextureView};
 
-pub mod texture_atlas_builder;
+pub use texture_atlas_builder::TextureAtlasBuilder;
+
+mod texture_atlas_builder;
 
 pub struct TextureAtlas {
     texture: Texture,

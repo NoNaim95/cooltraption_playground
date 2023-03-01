@@ -12,11 +12,14 @@ use winit::window::{Window, WindowBuilder};
 use camera::Camera;
 
 use crate::asset_bundle::LoadAssetBundle;
-use crate::render::{CameraControls, KeyboardState, Renderer};
 use crate::render::gui::Gui;
 use crate::render::instance_renderer::{InstanceRenderer, WorldState};
-use crate::render::instance_renderer::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
-pub use crate::window::wgpu_state::WgpuState;
+use crate::render::instance_renderer::texture_atlas::TextureAtlasBuilder;
+use crate::render::Renderer;
+use crate::window::controls::CameraControls;
+use crate::window::keyboard_state::KeyboardState;
+
+pub use self::wgpu_state::WgpuState;
 
 pub mod camera;
 pub mod controls;
