@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 
-use guillotiere::{size2, AllocId, Allocation, AtlasAllocator, Size};
-use image::{DynamicImage, GenericImage, GenericImageView, RgbaImage};
+use guillotiere::{Allocation, AllocId, AtlasAllocator, Size, size2};
+use image::{DynamicImage, GenericImage, RgbaImage};
 use wgpu::{Device, Queue};
 
-use crate::render::texture_atlas::TextureAtlas;
+use crate::render::instance_renderer::texture_atlas::TextureAtlas;
 
 pub struct TextureAtlasBuilder {
     atlas_allocator: AtlasAllocator,

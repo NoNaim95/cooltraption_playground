@@ -1,12 +1,10 @@
-use wgpu::util::DeviceExt;
 use wgpu::*;
+use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
-use crate::render::camera::{Camera, CameraUniform};
-use crate::render::instance::InstanceRaw;
-use crate::render::vertex::Vertex;
 use crate::render::RenderFrame;
+use crate::window::camera::{Camera, CameraUniform};
 
 pub struct WgpuState {
     pub surface: Surface,
@@ -117,60 +115,6 @@ impl WgpuState {
             camera_bind_group,
             camera_bind_group_layout,
         }
-    }
-
-    pub fn create_pipeline(
-        &self,
-        bind_groups: &[&BindGroupLayout],
-        shader: &ShaderModule,
-    ) -> RenderPipeline {
-        let render_pipeline_layout =
-            self.device
-                .create_pipeline_layout(&PipelineLayoutDescriptor {
-                    label: Some("Render Pipeline Layout"),
-                    bind_group_layouts: bind_groups,
-                    push_constant_ranges: &[],
-                });
-
-        self.device
-            .create_render_pipeline(&RenderPipelineDescriptor {
-                label: Some("Render Pipeline"),
-                layout: Some(&render_pipeline_layout),
-                vertex: VertexState {
-                    // TODO: Load shaders from assets
-                    module: shader,
-                    entry_point: "vs_main",
-                    buffers: &[Vertex::desc(), InstanceRaw::desc()],
-                },
-                fragment: Some(FragmentState {
-                    module: shader,
-                    entry_point: "fs_main",
-                    targets: &[Some(ColorTargetState {
-                        format: self.config.format,
-                        blend: Some(BlendState::ALPHA_BLENDING),
-                        write_mask: ColorWrites::ALL,
-                    })],
-                }),
-                primitive: PrimitiveState {
-                    topology: PrimitiveTopology::TriangleList,
-                    strip_index_format: None,
-                    front_face: FrontFace::Ccw,
-                    cull_mode: Some(Face::Back),
-                    // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-                    polygon_mode: PolygonMode::Fill,
-                    // Requires Features::DEPTH_CLIP_CONTROL
-                    unclipped_depth: false,
-                    // Requires Features::CONSERVATIVE_RASTERIZATION
-                    conservative: false,
-                },
-                depth_stencil: None,
-                multisample: MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                multiview: None,
-            })
     }
 
     pub fn create_render_frame<'a>(

@@ -1,12 +1,14 @@
-pub mod debug_window;
-mod gui_window;
-
-pub use crate::gui::gui_window::{GuiWindow, UiState};
-use crate::render::{RenderFrame, Renderer, WgpuState};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use winit::event::Event;
 use winit::window::Window;
+
+use crate::render::{Renderer, RenderFrame};
+pub use crate::render::gui::gui_window::{GuiWindow, UiState};
+use crate::window::WgpuState;
+
+pub mod debug_window;
+mod gui_window;
 
 pub struct Gui {
     platform: Platform,

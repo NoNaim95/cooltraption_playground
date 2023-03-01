@@ -1,20 +1,28 @@
-use crate::asset_bundle::AssetBundle;
 use std::sync::mpsc::Receiver;
+
 use wgpu::util::DeviceExt;
 use wgpu::{
-    include_wgsl, util, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, Buffer, BufferUsages, Color,
-    CommandEncoderDescriptor, Device, IndexFormat, LoadOp, Operations, RenderPassColorAttachment,
-    RenderPassDepthStencilAttachment, RenderPassDescriptor, RenderPipeline, ShaderStages,
-    SurfaceError, TextureViewDescriptor,
+    include_wgsl, util, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
+    BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType, BlendState,
+    Buffer, BufferUsages, Color, ColorTargetState, ColorWrites, Device, Face, FragmentState,
+    FrontFace, IndexFormat, LoadOp, MultisampleState, Operations, PipelineLayoutDescriptor,
+    PolygonMode, PrimitiveState, PrimitiveTopology, RenderPassColorAttachment,
+    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderModule, ShaderStages,
+    TextureFormat, VertexState,
 };
 
-use crate::render::instance::Instance;
+use crate::asset_bundle::AssetBundle;
+pub use crate::render::instance_renderer::instance::{Instance, InstanceRaw};
+use crate::render::instance_renderer::texture_atlas::TextureAtlas;
+pub use crate::render::instance_renderer::world_state::WorldState;
 use crate::render::render_frame::RenderFrame;
-use crate::render::texture_atlas::TextureAtlas;
-use crate::render::vertex::{INDICES, VERTICES};
-use crate::render::wgpu_state::WgpuState;
-use crate::render::{Renderer, WorldState};
+use crate::render::vertex::{Vertex, INDICES, VERTICES};
+use crate::render::Renderer;
+use crate::window::WgpuState;
+
+mod instance;
+pub mod texture_atlas;
+pub mod world_state;
 
 pub struct InstanceRenderer {
     render_pipeline: RenderPipeline,
@@ -41,7 +49,7 @@ impl Renderer for InstanceRenderer {
             &self.texture_atlas,
         );
 
-        self.do_render_pass(instances.as_slice(), render_frame, &render_frame.camera);
+        self.do_render_pass(instances.as_slice(), render_frame, render_frame.camera);
     }
 }
 
@@ -100,7 +108,9 @@ impl InstanceRenderer {
 
         let instance_buffer = Self::create_instance_buffer(&[0], &state.device);
 
-        let render_pipeline = state.create_pipeline(
+        let render_pipeline = Self::create_pipeline(
+            &state.device,
+            &state.config.format,
             &[&texture_bind_group_layout, &state.camera_bind_group_layout],
             &shader,
         );
@@ -186,6 +196,58 @@ impl InstanceRenderer {
         render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint16);
 
         render_pass.draw_indexed(0..self.num_indices, 0, 0..instances.len() as _);
+    }
+
+    pub fn create_pipeline(
+        device: &Device,
+        format: &TextureFormat,
+        bind_groups: &[&BindGroupLayout],
+        shader: &ShaderModule,
+    ) -> RenderPipeline {
+        let render_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
+            label: Some("Render Pipeline Layout"),
+            bind_group_layouts: bind_groups,
+            push_constant_ranges: &[],
+        });
+
+        device.create_render_pipeline(&RenderPipelineDescriptor {
+            label: Some("Render Pipeline"),
+            layout: Some(&render_pipeline_layout),
+            vertex: VertexState {
+                // TODO: Load shaders from assets
+                module: shader,
+                entry_point: "vs_main",
+                buffers: &[Vertex::desc(), InstanceRaw::desc()],
+            },
+            fragment: Some(FragmentState {
+                module: shader,
+                entry_point: "fs_main",
+                targets: &[Some(ColorTargetState {
+                    format: *format,
+                    blend: Some(BlendState::ALPHA_BLENDING),
+                    write_mask: ColorWrites::ALL,
+                })],
+            }),
+            primitive: PrimitiveState {
+                topology: PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: FrontFace::Ccw,
+                cull_mode: Some(Face::Back),
+                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+                polygon_mode: PolygonMode::Fill,
+                // Requires Features::DEPTH_CLIP_CONTROL
+                unclipped_depth: false,
+                // Requires Features::CONSERVATIVE_RASTERIZATION
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview: None,
+        })
     }
 
     fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {

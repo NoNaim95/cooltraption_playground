@@ -1,8 +1,8 @@
+use wgpu::{BindGroup, CommandEncoder};
 use wgpu::Device;
 use wgpu::Queue;
 use wgpu::SurfaceTexture;
 use wgpu::TextureView;
-use wgpu::{BindGroup, CommandEncoder};
 use winit::window::Window;
 
 pub struct RenderFrame<'a> {

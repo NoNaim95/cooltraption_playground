@@ -16,7 +16,7 @@ impl Instance {
             transform: (Matrix4::from_translation(self.position)
                 * Matrix4::from_nonuniform_scale(self.scale.x, self.scale.y, self.scale.z)
                 * Matrix4::from(self.rotation))
-            .into(),
+                .into(),
             region_offset: self.atlas_region.min.to_array(),
             region_size: self.atlas_region.size().to_array(),
         }

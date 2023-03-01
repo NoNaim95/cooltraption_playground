@@ -4,7 +4,8 @@ use std::path::PathBuf;
 use std::sync::mpsc;
 
 use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
-use cooltraption_window::render::{WgpuWindow, WgpuWindowConfig, WorldState};
+use cooltraption_window::render::WorldState;
+use cooltraption_window::window::{WgpuWindow, WgpuWindowConfig};
 use log::info;
 
 mod entities;

@@ -1,6 +1,9 @@
-use crate::gui::{GuiWindow, UiState};
-use egui::Context;
 use std::sync::mpsc::Receiver;
+
+use egui::Context;
+
+use crate::render::gui::gui_window::UiState;
+use crate::render::gui::GuiWindow;
 
 pub struct Fps(f32);
 

@@ -8,10 +8,9 @@ use std::path::PathBuf;
 
 use log::debug;
 
+use crate::asset_bundle::*;
 use crate::asset_bundle::strings_asset::StringsAsset;
 use crate::asset_bundle::texture_asset::{LoadTextureError, TextureAsset};
-use crate::asset_bundle::*;
-use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 
 #[derive(Debug)]
 pub enum LoadAssetError {

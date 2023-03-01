@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use as_any::AsAny;
 use serde::{Deserialize, Serialize};
 
-use crate::render::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
+use crate::render::instance_renderer::texture_atlas::texture_atlas_builder::TextureAtlasBuilder;
 
 pub mod file_asset_loader;
 pub mod strings_asset;
