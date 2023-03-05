@@ -1,22 +1,16 @@
 use wgpu::*;
-use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
 use crate::render::RenderFrame;
 
-use super::camera::{Camera, CameraUniform};
-
+#[derive(Debug)]
 pub struct WgpuState {
     pub surface: Surface,
     pub device: Device,
     pub queue: Queue,
     pub config: SurfaceConfiguration,
     pub size: PhysicalSize<u32>,
-    pub camera_uniform: CameraUniform,
-    pub camera_buffer: Buffer,
-    pub camera_bind_group: BindGroup,
-    pub camera_bind_group_layout: BindGroupLayout,
 }
 
 impl WgpuState {
@@ -70,51 +64,12 @@ impl WgpuState {
         };
         surface.configure(&device, &config);
 
-        let camera = Camera::new(config.width as f32 / config.height as f32);
-
-        let mut camera_uniform = CameraUniform::new();
-        camera_uniform.update_view_proj(&camera);
-
-        let camera_buffer = device.create_buffer_init(&util::BufferInitDescriptor {
-            label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[camera_uniform]),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
-
-        let camera_bind_group_layout =
-            device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-                entries: &[BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: ShaderStages::VERTEX,
-                    ty: BindingType::Buffer {
-                        ty: BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-                label: Some("camera_bind_group_layout"),
-            });
-
-        let camera_bind_group = device.create_bind_group(&BindGroupDescriptor {
-            layout: &camera_bind_group_layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: camera_buffer.as_entire_binding(),
-            }],
-            label: Some("camera_bind_group"),
-        });
-
         Self {
             surface,
             device,
             queue,
             config,
             size,
-            camera_uniform,
-            camera_buffer,
-            camera_bind_group,
-            camera_bind_group_layout,
         }
     }
 
@@ -135,7 +90,6 @@ impl WgpuState {
 
         Ok(RenderFrame {
             window,
-            camera: &self.camera_bind_group,
             device: &self.device,
             queue: &self.queue,
             output,
@@ -145,20 +99,12 @@ impl WgpuState {
     }
 
     pub fn set_size(&mut self, new_size: PhysicalSize<u32>) {
-        self.size = new_size;
-        self.config.width = new_size.width;
-        self.config.height = new_size.height;
-        self.surface.configure(&self.device, &self.config);
-    }
-
-    pub fn update_camera_buffer(&mut self, camera: &Camera) {
-        self.camera_uniform.update_view_proj(camera);
-
-        self.queue.write_buffer(
-            &self.camera_buffer,
-            0,
-            bytemuck::cast_slice(&[self.camera_uniform]),
-        );
+        if new_size.width > 0 && new_size.height > 0 {
+            self.size = new_size;
+            self.config.width = new_size.width;
+            self.config.height = new_size.height;
+            self.surface.configure(&self.device, &self.config);
+        }
     }
 
     pub fn aspect(&self) -> f32 {

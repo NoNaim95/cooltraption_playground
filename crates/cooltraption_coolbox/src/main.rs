@@ -5,7 +5,7 @@ use std::sync::mpsc;
 
 use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
 use cooltraption_window::render::WorldState;
-use cooltraption_window::window::{WgpuWindow, WgpuWindowConfig};
+use cooltraption_window::window::{EventLoopHandler, EventLoopHandlerConfig};
 use log::info;
 
 mod entities;
@@ -34,11 +34,11 @@ async fn main() {
     });
 
     let asset_loader = FileAssetLoader::new("./assets".into());
-    let options = WgpuWindowConfig {
+    let options = EventLoopHandlerConfig {
         asset_loader: Box::new(asset_loader),
         state_recv,
     };
-    WgpuWindow::run(options).await;
+    EventLoopHandler::run(options).await;
     /*
     let bundle = FileAssetBundle::load(PathBuf::from("./assets"), &mut wgpu_state)
         .expect("Could not load assets");

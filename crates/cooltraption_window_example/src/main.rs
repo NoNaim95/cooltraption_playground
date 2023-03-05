@@ -1,41 +1,31 @@
 use cgmath::num_traits::Float;
 use cgmath::*;
-use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
-use cooltraption_window::controls::CameraControls;
+use cooltraption_window::asset_bundle::{FileAssetLoader, LoadAssetBundle, TextureAtlasBuilder};
+use cooltraption_window::camera::controller::CameraController;
+use cooltraption_window::gui::Gui;
 use cooltraption_window::instance_renderer::world_state::{Drawable, Id, Position, Scale};
-use cooltraption_window::instance_renderer::WorldState;
-use cooltraption_window::keyboard_state::{KeyboardState, VirtualKeyCode};
-use cooltraption_window::{WgpuWindow, WgpuWindowConfig};
+use cooltraption_window::instance_renderer::{InstanceRenderer, WorldState};
+use cooltraption_window::render::render_event_handler::RenderEventHandler;
+use cooltraption_window::window_event_handler::WindowEventHandler;
+use cooltraption_window::EventLoopHandler;
+use std::cell::RefCell;
 use std::env;
 use std::env::current_dir;
 use std::ops::{Neg, Range};
+use std::rc::Rc;
 use std::sync::mpsc;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 #[tokio::main]
 async fn main() {
-    env::set_var("RUST_LOG", "info");
+    env::set_var("RUST_LOG", "debug");
     env_logger::init();
 
     let (state_send, state_recv) = mpsc::sync_channel(0);
-    let (keyboard_send, keyboard_recv) = mpsc::channel();
-    let (controls_send, controls_recv) = mpsc::channel();
-
-    let config = WgpuWindowConfig {
-        state_recv,
-        keyboard_send,
-        controls_recv,
-        asset_loader: Box::new(FileAssetLoader::new(
-            current_dir()
-                .unwrap()
-                .join("cooltraption_window_example/assets"),
-        )),
-    };
 
     tokio::spawn(async move {
         let start = Instant::now();
-        let mut controls = CameraControls::default();
 
         loop {
             let (pos1, pos2, pos3) = {
@@ -87,52 +77,43 @@ async fn main() {
                 return;
             }
 
-            while let Ok(keyboard_state) = keyboard_recv.try_recv() {
-                controls = handle_controls(&keyboard_state);
-            }
-
-            if controls_send.send(controls.clone()).is_err() {
-                return;
-            }
-
             sleep(Duration::from_millis(10));
         }
     });
 
-    WgpuWindow::run(config).await;
-}
+    let asset_loader = FileAssetLoader::new(
+        current_dir()
+            .unwrap()
+            .join("cooltraption_window_example/assets"),
+    );
 
-fn handle_controls(keyboard_state: &KeyboardState) -> CameraControls {
-    let mut controls = CameraControls::default();
+    let instance_renderer = {
+        let mut texture_atlas_builder = TextureAtlasBuilder::default();
+        let assets = asset_loader
+            .load(&mut texture_atlas_builder)
+            .expect("load assets");
 
-    let zoom_speed = 1.01;
-    let move_speed = 0.01;
+        Rc::new(RefCell::new(InstanceRenderer::new(
+            assets,
+            texture_atlas_builder,
+            state_recv,
+        )))
+    };
+    let gui = Rc::new(RefCell::new(Gui::default()));
 
-    if keyboard_state.is_down(VirtualKeyCode::Q) {
-        controls.zoom /= zoom_speed;
-    }
-    if keyboard_state.is_down(VirtualKeyCode::E) {
-        controls.zoom *= zoom_speed;
-    }
+    let render_event_handler =
+        RenderEventHandler::new(vec![instance_renderer.clone(), gui.clone()]);
+    let camera_controller = CameraController::default();
 
-    if keyboard_state.is_down(VirtualKeyCode::W) {
-        controls.move_vec.y += 1.0;
-    }
-    if keyboard_state.is_down(VirtualKeyCode::A) {
-        controls.move_vec.x -= 1.0;
-    }
-    if keyboard_state.is_down(VirtualKeyCode::S) {
-        controls.move_vec.y -= 1.0;
-    }
-    if keyboard_state.is_down(VirtualKeyCode::D) {
-        controls.move_vec.x += 1.0;
-    }
+    let mut event_loop_handler = EventLoopHandler::new().await;
 
-    if controls.move_vec.magnitude() > 0.0 {
-        controls.move_vec = controls.move_vec.normalize_to(move_speed);
-    }
+    event_loop_handler.add_handler(Rc::new(RefCell::new(WindowEventHandler {})));
+    event_loop_handler.add_handler(Rc::new(RefCell::new(render_event_handler)));
+    event_loop_handler.add_handler(Rc::new(RefCell::new(camera_controller)));
+    event_loop_handler.add_handler(instance_renderer);
+    event_loop_handler.add_handler(gui);
 
-    controls
+    event_loop_handler.run_event_loop();
 }
 
 fn wrap<T: Float>(val: T, range: Range<T>) -> T {

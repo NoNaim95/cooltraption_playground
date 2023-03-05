@@ -8,7 +8,7 @@ pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
     0.0, 0.0, 0.5, 1.0,
 );
 
-pub struct Camera {
+pub struct CameraState {
     pub target: Point3<f32>,
     pub aspect: f32,
     pub z_near: f32,
@@ -16,7 +16,7 @@ pub struct Camera {
     pub zoom: f32,
 }
 
-impl Camera {
+impl CameraState {
     pub fn new(aspect: f32) -> Self {
         Self {
             target: Point3::new(0.0, 0.0, 0.0),
@@ -64,7 +64,7 @@ impl CameraUniform {
         }
     }
 
-    pub(crate) fn update_view_proj(&mut self, camera: &Camera) {
+    pub(crate) fn update_view_proj(&mut self, camera: &CameraState) {
         self.view_proj = camera.build_view_projection_matrix().into();
     }
 }

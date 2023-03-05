@@ -1,13 +1,13 @@
-use wgpu::{BindGroup, CommandEncoder};
+use wgpu::CommandEncoder;
 use wgpu::Device;
 use wgpu::Queue;
 use wgpu::SurfaceTexture;
 use wgpu::TextureView;
 use winit::window::Window;
 
+#[derive(Debug)]
 pub struct RenderFrame<'a> {
     pub window: &'a Window,
-    pub camera: &'a BindGroup,
     pub device: &'a Device,
     pub queue: &'a Queue,
     pub output: SurfaceTexture,

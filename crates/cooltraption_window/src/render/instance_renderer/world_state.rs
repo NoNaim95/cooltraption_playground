@@ -1,10 +1,8 @@
 use cgmath::{Quaternion, Vector2, Vector3};
 use num_traits::Zero;
 
-use crate::asset_bundle::texture_asset::TextureAsset;
-use crate::asset_bundle::AssetBundle;
+use crate::asset_bundle::{AssetBundle, TextureAsset, TextureAtlas};
 
-use super::texture_atlas::TextureAtlas;
 use super::Instance;
 
 #[derive(Clone, Debug)]

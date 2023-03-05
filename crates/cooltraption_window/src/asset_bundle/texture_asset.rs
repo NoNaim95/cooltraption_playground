@@ -4,7 +4,7 @@ use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
 
 use crate::asset_bundle::Asset;
-use crate::render::instance_renderer::texture_atlas::TextureAtlasBuilder;
+use crate::asset_bundle::texture_atlas::TextureAtlasBuilder;
 
 #[derive(Debug)]
 pub struct TextureAsset {
