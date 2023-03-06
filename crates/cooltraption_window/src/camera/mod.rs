@@ -1,16 +1,16 @@
 use cgmath::Vector3;
-use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingType, Buffer, BufferBindingType, BufferUsages,
-    Queue, ShaderStages, util,
-};
 use wgpu::util::DeviceExt;
+use wgpu::{
+    util, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
+    BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, Buffer, BufferBindingType,
+    BufferUsages, Queue, ShaderStages,
+};
 use winit::event::{Event, WindowEvent};
 
 use controller::CameraControls;
 
-use crate::{Context, CooltraptionEvent, EventHandler, WgpuState};
 use crate::camera::camera_state::{CameraState, CameraUniform};
+use crate::{Context, CooltraptionEvent, EventHandler, WgpuState};
 
 pub mod camera_state;
 pub mod controller;
