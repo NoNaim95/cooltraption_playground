@@ -2,9 +2,9 @@ use cgmath::num_traits::Float;
 use cgmath::*;
 use cooltraption_window::asset_bundle::{FileAssetLoader, LoadAssetBundle, TextureAtlasBuilder};
 use cooltraption_window::camera::controller::CameraController;
-use cooltraption_window::gui::Gui;
+use cooltraption_window::gui::GuiInitializer;
 use cooltraption_window::instance_renderer::world_state::{Drawable, Id, Position, Scale};
-use cooltraption_window::instance_renderer::{InstanceRenderer, WorldState};
+use cooltraption_window::instance_renderer::{InstanceRendererInitializer, WorldState};
 use cooltraption_window::render::render_event_handler::RenderEventHandler;
 use cooltraption_window::window_event_handler::WindowEventHandler;
 use cooltraption_window::EventLoopHandler;
@@ -93,16 +93,18 @@ async fn main() {
             .load(&mut texture_atlas_builder)
             .expect("load assets");
 
-        Rc::new(RefCell::new(InstanceRenderer::new(
-            assets,
+        Box::new(InstanceRendererInitializer {
             texture_atlas_builder,
+            assets,
             state_recv,
-        )))
+        })
     };
-    let gui = Rc::new(RefCell::new(Gui::default()));
+    let gui = Box::new(GuiInitializer {});
 
-    let render_event_handler =
-        RenderEventHandler::new(vec![instance_renderer.clone(), gui.clone()]);
+    let mut render_event_handler = RenderEventHandler::default();
+    render_event_handler.add_initializer(instance_renderer);
+    render_event_handler.add_initializer(gui);
+
     let camera_controller = CameraController::default();
 
     let mut event_loop_handler = EventLoopHandler::new().await;
@@ -110,8 +112,6 @@ async fn main() {
     event_loop_handler.add_handler(Rc::new(RefCell::new(WindowEventHandler {})));
     event_loop_handler.add_handler(Rc::new(RefCell::new(render_event_handler)));
     event_loop_handler.add_handler(Rc::new(RefCell::new(camera_controller)));
-    event_loop_handler.add_handler(instance_renderer);
-    event_loop_handler.add_handler(gui);
 
     event_loop_handler.run_event_loop();
 }

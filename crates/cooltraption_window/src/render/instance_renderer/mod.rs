@@ -1,32 +1,24 @@
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 
-use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
-    BindingResource, BindingType, BlendState, Buffer, BufferUsages,
-    Color, ColorTargetState, ColorWrites, Device, Face, FragmentState, FrontFace, include_wgsl,
-    IndexFormat, LoadOp, MultisampleState, Operations, PipelineLayoutDescriptor, PolygonMode,
-    PrimitiveState, PrimitiveTopology, RenderPassColorAttachment, RenderPassDescriptor,
-    RenderPipeline, RenderPipelineDescriptor, ShaderModule, ShaderStages, TextureFormat,
-    util, VertexState,
-};
 use wgpu::util::DeviceExt;
+use wgpu::*;
 use winit::event::Event;
-use winit::window::Window;
 
-use crate::{Context, CooltraptionEvent, EventHandler};
 use crate::asset_bundle::{AssetBundle, TextureAtlas, TextureAtlasBuilder};
 use crate::camera::Camera;
-pub use crate::render::instance_renderer::instance::{Instance, InstanceRaw};
+pub use crate::render::instance_renderer::render_instance::{RenderInstance, RenderInstanceRaw};
 pub use crate::render::instance_renderer::world_state::WorldState;
 use crate::render::render_frame::RenderFrame;
-use crate::render::Renderer;
-use crate::render::vertex::{INDICES, Vertex, VERTICES};
-use crate::window::WgpuState;
+use crate::render::vertex::{Vertex, INDICES, VERTICES};
+use crate::render::{Renderer, RendererInitializer};
+use crate::{Context, CooltraptionEvent, EventHandler};
 
-mod instance;
+mod render_instance;
 pub mod world_state;
 
-struct RenderState {
+struct InstanceRenderer {
     render_pipeline: RenderPipeline,
     vertex_buffer: Buffer,
     index_buffer: Buffer,
@@ -35,26 +27,99 @@ struct RenderState {
     instance_buffer: Buffer,
     texture_atlas: TextureAtlas,
     camera: Camera,
-}
-
-pub struct InstanceRenderer {
-    render_state: Option<RenderState>,
-    texture_atlas_builder: TextureAtlasBuilder,
     assets: AssetBundle,
     state_recv: Receiver<WorldState>,
     world_state: [WorldState; 2],
 }
 
+pub struct InstanceRendererInitializer {
+    pub texture_atlas_builder: TextureAtlasBuilder,
+    pub assets: AssetBundle,
+    pub state_recv: Receiver<WorldState>,
+}
+
 impl EventHandler for InstanceRenderer {
     fn handle_event(&mut self, event: &Event<CooltraptionEvent>, context: &mut Context) {
-        if let Some(render_state) = &mut self.render_state {
-            render_state.camera.handle_event(event, context);
-        }
+        self.camera.handle_event(event, context);
     }
 }
 
 impl Renderer for InstanceRenderer {
-    fn init(&mut self, _window: &Window, wgpu_state: &WgpuState) {
+    fn render(&mut self, render_frame: &mut RenderFrame) {
+        while let Ok(state) = self.state_recv.try_recv() {
+            self.update_state(state);
+        }
+
+        let instances = self.world_state[1].interpolate(
+            &self.world_state[0],
+            &self.assets,
+            &self.texture_atlas,
+        );
+
+        let mut render_pass = render_frame
+            .encoder
+            .begin_render_pass(&RenderPassDescriptor {
+                label: Some("Render Pass"),
+                color_attachments: &[Some(RenderPassColorAttachment {
+                    view: &render_frame.view,
+                    resolve_target: None,
+                    ops: Operations {
+                        load: LoadOp::Clear(Color {
+                            r: 0.1,
+                            g: 0.2,
+                            b: 0.3,
+                            a: 1.0,
+                        }),
+                        store: true,
+                    },
+                })],
+                depth_stencil_attachment: None,
+            });
+
+        let instances_raw = instances
+            .iter()
+            .map(RenderInstance::to_raw)
+            .collect::<Vec<_>>();
+        let instance_data = bytemuck::cast_slice::<_, u8>(&instances_raw);
+
+        if self.instance_buffer.size() < instance_data.len() as u64 {
+            self.instance_buffer = create_instance_buffer(instance_data, render_frame.device);
+        } else {
+            render_frame
+                .queue
+                .write_buffer(&self.instance_buffer, 0, instance_data);
+        }
+
+        render_pass.set_pipeline(&self.render_pipeline);
+        render_pass.set_bind_group(0, &self.texture_bind_group, &[]);
+        render_pass.set_bind_group(1, self.camera.camera_bind_group(), &[]);
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+        render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint16);
+
+        render_pass.draw_indexed(0..self.num_indices, 0, 0..instances.len() as _);
+    }
+}
+
+impl InstanceRenderer {
+    fn update_state(&mut self, new_state: WorldState) {
+        self.world_state.swap(0, 1);
+        self.world_state[0] = new_state;
+    }
+}
+
+fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
+    device.create_buffer_init(&util::BufferInitDescriptor {
+        label: Some("Instance Buffer"),
+        contents: data,
+        usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
+    })
+}
+
+impl RendererInitializer for InstanceRendererInitializer {
+    fn init(self: Box<Self>, context: &mut Context) -> Rc<RefCell<dyn Renderer>> {
+        let wgpu_state = &context.wgpu_state;
+
         let texture_atlas = self
             .texture_atlas_builder
             .build(&wgpu_state.device, &wgpu_state.queue);
@@ -107,7 +172,7 @@ impl Renderer for InstanceRenderer {
             .device
             .create_shader_module(include_wgsl!("shader.wgsl"));
 
-        let instance_buffer = Self::create_instance_buffer(&[0], &wgpu_state.device);
+        let instance_buffer = create_instance_buffer(&[0], &wgpu_state.device);
 
         let render_pipeline = Self::create_pipeline(
             &wgpu_state.device,
@@ -136,7 +201,7 @@ impl Renderer for InstanceRenderer {
             });
         let num_indices = INDICES.len() as u32;
 
-        self.render_state = Some(RenderState {
+        let instance_renderer = Rc::new(RefCell::new(InstanceRenderer {
             render_pipeline,
             vertex_buffer,
             index_buffer,
@@ -145,93 +210,18 @@ impl Renderer for InstanceRenderer {
             instance_buffer,
             texture_atlas,
             camera,
-        })
-    }
+            assets: self.assets,
+            state_recv: self.state_recv,
+            world_state: [Default::default(), Default::default()],
+        }));
 
-    fn render(&mut self, render_frame: &mut RenderFrame) {
-        while let Ok(state) = self.state_recv.try_recv() {
-            self.update_state(state);
-        }
+        context.event_handlers.push(instance_renderer.clone());
 
-        if let Some(render_state) = &mut self.render_state {
-            let instances = self.world_state[1].interpolate(
-                &self.world_state[0],
-                &self.assets,
-                &render_state.texture_atlas,
-            );
-
-            Self::do_render_pass(render_state, instances.as_slice(), render_frame);
-        }
+        instance_renderer
     }
 }
 
-impl InstanceRenderer {
-    pub fn new(
-        assets: AssetBundle,
-        texture_atlas_builder: TextureAtlasBuilder,
-        state_recv: Receiver<WorldState>,
-    ) -> Self {
-        Self {
-            render_state: None,
-            texture_atlas_builder,
-            assets,
-            state_recv,
-            world_state: [WorldState::default(), WorldState::default()],
-        }
-    }
-
-    fn update_state(&mut self, new_state: WorldState) {
-        self.world_state.swap(0, 1);
-        self.world_state[0] = new_state;
-    }
-
-    fn do_render_pass(
-        render_state: &mut RenderState,
-        instances: &[Instance],
-        render_frame: &mut RenderFrame,
-    ) {
-        let mut render_pass = render_frame
-            .encoder
-            .begin_render_pass(&RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &render_frame.view,
-                    resolve_target: None,
-                    ops: Operations {
-                        load: LoadOp::Clear(Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
-                            a: 1.0,
-                        }),
-                        store: true,
-                    },
-                })],
-                depth_stencil_attachment: None,
-            });
-
-        let instances_raw = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
-        let instance_data = bytemuck::cast_slice::<_, u8>(&instances_raw);
-
-        if render_state.instance_buffer.size() < instance_data.len() as u64 {
-            render_state.instance_buffer =
-                Self::create_instance_buffer(instance_data, render_frame.device);
-        } else {
-            render_frame
-                .queue
-                .write_buffer(&render_state.instance_buffer, 0, instance_data);
-        }
-
-        render_pass.set_pipeline(&render_state.render_pipeline);
-        render_pass.set_bind_group(0, &render_state.texture_bind_group, &[]);
-        render_pass.set_bind_group(1, render_state.camera.camera_bind_group(), &[]);
-        render_pass.set_vertex_buffer(0, render_state.vertex_buffer.slice(..));
-        render_pass.set_vertex_buffer(1, render_state.instance_buffer.slice(..));
-        render_pass.set_index_buffer(render_state.index_buffer.slice(..), IndexFormat::Uint16);
-
-        render_pass.draw_indexed(0..render_state.num_indices, 0, 0..instances.len() as _);
-    }
-
+impl InstanceRendererInitializer {
     pub fn create_pipeline(
         device: &Device,
         format: &TextureFormat,
@@ -251,7 +241,7 @@ impl InstanceRenderer {
                 // TODO: Load shaders from assets
                 module: shader,
                 entry_point: "vs_main",
-                buffers: &[Vertex::desc(), InstanceRaw::desc()],
+                buffers: &[Vertex::desc(), RenderInstanceRaw::desc()],
             },
             fragment: Some(FragmentState {
                 module: shader,
@@ -281,14 +271,6 @@ impl InstanceRenderer {
                 alpha_to_coverage_enabled: false,
             },
             multiview: None,
-        })
-    }
-
-    fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
-        device.create_buffer_init(&util::BufferInitDescriptor {
-            label: Some("Instance Buffer"),
-            contents: data,
-            usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
         })
     }
 }

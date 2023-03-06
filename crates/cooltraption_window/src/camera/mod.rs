@@ -1,10 +1,6 @@
 use cgmath::Vector3;
 use wgpu::util::DeviceExt;
-use wgpu::{
-    util, BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout,
-    BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, Buffer, BufferBindingType,
-    BufferUsages, Queue, ShaderStages,
-};
+use wgpu::*;
 use winit::event::{Event, WindowEvent};
 
 use controller::CameraControls;

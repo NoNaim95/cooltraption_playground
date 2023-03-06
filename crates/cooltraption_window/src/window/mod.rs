@@ -62,18 +62,23 @@ impl EventLoopHandler {
         self.event_loop.run(move |event, _, control_flow| {
             *control_flow = ControlFlow::Wait;
 
-            let mut context = Context {
-                control_flow,
-                window: &mut self.window,
-                wgpu_state: &mut self.wgpu_state,
-                event_loop_proxy: &self.event_loop_proxy,
-            };
+            let mut new_event_handlers = vec![];
 
             for event_handler in &self.handlers {
+                let mut context = Context {
+                    control_flow,
+                    window: &self.window,
+                    wgpu_state: &mut self.wgpu_state,
+                    event_loop_proxy: &self.event_loop_proxy,
+                    event_handlers: &mut new_event_handlers,
+                };
+
                 event_handler
                     .borrow_mut()
                     .handle_event(&event, &mut context);
             }
+
+            self.handlers.append(&mut new_event_handlers);
         });
     }
 }
