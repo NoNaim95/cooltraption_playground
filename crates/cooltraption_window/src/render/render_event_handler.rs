@@ -5,8 +5,8 @@ use log::error;
 use wgpu::SurfaceError;
 use winit::event::Event;
 
-use crate::render::{Renderer, RendererInitializer};
 use crate::{Context, CooltraptionEvent, EventHandler};
+use crate::render::{Renderer, RendererInitializer};
 
 #[derive(Default)]
 pub struct RenderEventHandler {

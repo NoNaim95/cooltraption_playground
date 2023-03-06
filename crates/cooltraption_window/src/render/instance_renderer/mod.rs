@@ -2,18 +2,18 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 
-use wgpu::util::DeviceExt;
 use wgpu::*;
+use wgpu::util::DeviceExt;
 use winit::event::Event;
 
+use crate::{Context, CooltraptionEvent, EventHandler};
 use crate::asset_bundle::{AssetBundle, TextureAtlas, TextureAtlasBuilder};
 use crate::camera::Camera;
+use crate::render::{Renderer, RendererInitializer};
 pub use crate::render::instance_renderer::render_instance::{RenderInstance, RenderInstanceRaw};
 pub use crate::render::instance_renderer::world_state::WorldState;
 use crate::render::render_frame::RenderFrame;
-use crate::render::vertex::{Vertex, INDICES, VERTICES};
-use crate::render::{Renderer, RendererInitializer};
-use crate::{Context, CooltraptionEvent, EventHandler};
+use crate::render::vertex::{INDICES, Vertex, VERTICES};
 
 mod render_instance;
 pub mod world_state;

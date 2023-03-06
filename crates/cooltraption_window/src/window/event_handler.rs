@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+
 use winit::event::Event;
 use winit::event_loop::{ControlFlow, EventLoopProxy};
 use winit::window::Window;

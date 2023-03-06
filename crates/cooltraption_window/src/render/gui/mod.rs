@@ -1,12 +1,13 @@
-use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
-use egui_winit_platform::{Platform, PlatformDescriptor};
 use std::cell::RefCell;
 use std::rc::Rc;
+
+use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
+use egui_winit_platform::{Platform, PlatformDescriptor};
 use winit::event::Event;
 
-pub use crate::render::gui::gui_window::{GuiWindow, UiState};
-use crate::render::{RenderFrame, Renderer, RendererInitializer};
 use crate::{Context, CooltraptionEvent, EventHandler};
+use crate::render::{Renderer, RendererInitializer, RenderFrame};
+pub use crate::render::gui::gui_window::{GuiWindow, UiState};
 
 pub mod debug_window;
 mod gui_window;

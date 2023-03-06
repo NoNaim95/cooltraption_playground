@@ -1,12 +1,12 @@
 use cgmath::Vector3;
-use wgpu::util::DeviceExt;
 use wgpu::*;
+use wgpu::util::DeviceExt;
 use winit::event::{Event, WindowEvent};
 
 use controller::CameraControls;
 
-use crate::camera::camera_state::{CameraState, CameraUniform};
 use crate::{Context, CooltraptionEvent, EventHandler, WgpuState};
+use crate::camera::camera_state::{CameraState, CameraUniform};
 
 pub mod camera_state;
 pub mod controller;

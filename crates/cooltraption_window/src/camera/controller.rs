@@ -3,8 +3,8 @@ use num_traits::Zero;
 use winit::event::{ElementState, Event, VirtualKeyCode, WindowEvent};
 use winit::event_loop::EventLoopProxy;
 
-use crate::keyboard_state::KeyboardState;
 use crate::{Context, CooltraptionEvent, EventHandler};
+use crate::keyboard_state::KeyboardState;
 
 #[derive(Clone, Copy, Debug)]
 pub struct CameraControls {
