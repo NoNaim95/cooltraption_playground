@@ -2,18 +2,18 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 
-use wgpu::*;
 use wgpu::util::DeviceExt;
+use wgpu::*;
 use winit::event::Event;
 
-use crate::{Context, CooltraptionEvent, EventHandler};
 use crate::asset_bundle::{AssetBundle, TextureAtlas, TextureAtlasBuilder};
 use crate::camera::Camera;
-use crate::render::{Renderer, RendererInitializer};
 pub use crate::render::instance_renderer::render_instance::{RenderInstance, RenderInstanceRaw};
 pub use crate::render::instance_renderer::world_state::WorldState;
 use crate::render::render_frame::RenderFrame;
-use crate::render::vertex::{INDICES, Vertex, VERTICES};
+use crate::render::vertex::{Vertex, INDICES, VERTICES};
+use crate::render::{Renderer, RendererInitializer};
+use crate::{Context, CooltraptionEvent, EventHandler};
 
 mod render_instance;
 pub mod world_state;
@@ -124,7 +124,7 @@ impl RendererInitializer for InstanceRendererInitializer {
             .texture_atlas_builder
             .build(&wgpu_state.device, &wgpu_state.queue);
 
-        let camera = Camera::new(wgpu_state);
+        let camera = Camera::init(wgpu_state);
 
         let texture_bind_group_layout =
             wgpu_state

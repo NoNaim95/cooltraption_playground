@@ -1,3 +1,4 @@
+use crate::EventHandler;
 use egui::Context;
 
 pub enum UiState {
@@ -5,6 +6,6 @@ pub enum UiState {
     Close,
 }
 
-pub trait GuiWindow {
+pub trait GuiWindow: EventHandler {
     fn show(&mut self, context: &Context) -> UiState;
 }

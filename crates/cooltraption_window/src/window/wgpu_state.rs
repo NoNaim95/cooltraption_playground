@@ -58,7 +58,7 @@ impl WgpuState {
             format: formats[0],
             width: size.width,
             height: size.height,
-            present_mode: PresentMode::Fifo,
+            present_mode: PresentMode::AutoNoVsync,
             alpha_mode: CompositeAlphaMode::Auto,
             view_formats: formats,
         };

@@ -6,12 +6,12 @@ use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy
 use winit::window::{Window, WindowBuilder};
 
 use crate::camera::controller::CameraControls;
+use crate::gui::GuiWindow;
 
 pub use self::event_handler::*;
 pub use self::wgpu_state::WgpuState;
 
 mod event_handler;
-pub mod keyboard_state;
 pub mod wgpu_state;
 pub mod window_event_handler;
 
@@ -28,6 +28,7 @@ pub enum CooltraptionEvent {
     Init,
     Render,
     CameraControls(CameraControls),
+    OpenGUI, // TODO: GuiCommand to specify window
 }
 
 impl EventLoopHandler {
@@ -35,7 +36,9 @@ impl EventLoopHandler {
         let event_loop = EventLoopBuilder::with_user_event().build();
         let event_loop_proxy = event_loop.create_proxy();
         let window = WindowBuilder::new()
+            .with_title("Cooltraption Playground - Render Example")
             .with_inner_size(PhysicalSize::new(1200, 800))
+            .with_min_inner_size(PhysicalSize::new(800, 600))
             .build(&event_loop)
             .expect("create window");
 

@@ -1,10 +1,10 @@
 use cgmath::{InnerSpace, Vector2};
-use num_traits::Zero;
-use winit::event::{ElementState, Event, VirtualKeyCode, WindowEvent};
+use num_traits::{Pow, Zero};
+use winit::event::{ElementState, Event, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 use winit::event_loop::EventLoopProxy;
 
+use crate::camera::input_device::{ButtonState, KeyboardState, MouseState};
 use crate::{Context, CooltraptionEvent, EventHandler};
-use crate::keyboard_state::KeyboardState;
 
 #[derive(Clone, Copy, Debug)]
 pub struct CameraControls {
@@ -24,21 +24,17 @@ impl Default for CameraControls {
 #[derive(Default)]
 pub struct CameraController {
     keyboard_state: KeyboardState,
+    mouse_state: MouseState,
 }
 
 impl CameraController {
     fn send_controls(&self, event_loop_proxy: &EventLoopProxy<CooltraptionEvent>) {
         let mut controls = CameraControls::default();
 
-        let zoom_speed = 1.01;
+        let zoom_speed: f32 = 1.06;
         let move_speed = 0.01;
 
-        if self.keyboard_state.is_down(VirtualKeyCode::Q) {
-            controls.zoom /= zoom_speed;
-        }
-        if self.keyboard_state.is_down(VirtualKeyCode::E) {
-            controls.zoom *= zoom_speed;
-        }
+        controls.zoom *= zoom_speed.pow(self.mouse_state.scroll());
 
         if self.keyboard_state.is_down(VirtualKeyCode::W) {
             controls.move_vec.y += 1.0;
@@ -71,17 +67,43 @@ impl EventHandler for CameraController {
                     return;
                 }
 
-                if let WindowEvent::KeyboardInput { input, .. } = event {
-                    if let Some(vk_code) = input.virtual_keycode {
-                        match input.state {
-                            ElementState::Pressed => self.keyboard_state += vk_code,
-                            ElementState::Released => self.keyboard_state -= vk_code,
+                match event {
+                    WindowEvent::KeyboardInput { input, .. } => {
+                        if let Some(vk_code) = input.virtual_keycode {
+                            match input.state {
+                                ElementState::Pressed => self.keyboard_state += vk_code,
+                                ElementState::Released => self.keyboard_state -= vk_code,
+                            }
+
+                            if vk_code == VirtualKeyCode::F3 && input.state == ElementState::Pressed
+                            {
+                                context
+                                    .event_loop_proxy
+                                    .send_event(CooltraptionEvent::OpenGUI)
+                                    .expect("Send OpenGUI event");
+                            }
                         }
                     }
+                    WindowEvent::CursorMoved { position, .. } => {
+                        self.mouse_state
+                            .set_pos(Vector2::new(position.x, position.y));
+                    }
+                    WindowEvent::MouseInput { state, button, .. } => match state {
+                        ElementState::Pressed => self.mouse_state += *button,
+                        ElementState::Released => self.mouse_state -= *button,
+                    },
+                    WindowEvent::MouseWheel {
+                        delta: MouseScrollDelta::LineDelta(_x, y),
+                        ..
+                    } => {
+                        self.mouse_state.add_scroll(*y);
+                    }
+                    _ => {}
                 }
             }
             Event::UserEvent(CooltraptionEvent::Render) => {
                 self.send_controls(context.event_loop_proxy);
+                self.mouse_state.reset();
             }
             _ => {}
         }

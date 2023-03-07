@@ -6,11 +6,11 @@ use std::fs;
 use std::fs::DirEntry;
 use std::path::PathBuf;
 
-use log::debug;
+use log::{debug, info};
 
-use crate::asset_bundle::*;
 use crate::asset_bundle::strings_asset::StringsAsset;
 use crate::asset_bundle::texture_asset::{LoadTextureError, TextureAsset};
+use crate::asset_bundle::*;
 
 #[derive(Debug)]
 pub enum LoadAssetError {
@@ -67,7 +67,7 @@ impl FileAssetLoader {
 
 impl LoadAssetBundle<LoadAssetError> for FileAssetLoader {
     fn load(&self, atlas_builder: &mut TextureAtlasBuilder) -> Result<AssetBundle, LoadAssetError> {
-        debug!("Loading assets from {:?}", self.path);
+        info!("Loading assets from {:?}", self.path);
 
         if self.path.is_dir() {
             let mut bundle = AssetBundle {

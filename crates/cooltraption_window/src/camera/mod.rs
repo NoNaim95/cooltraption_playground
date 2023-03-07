@@ -1,15 +1,16 @@
 use cgmath::Vector3;
-use wgpu::*;
 use wgpu::util::DeviceExt;
+use wgpu::*;
 use winit::event::{Event, WindowEvent};
 
 use controller::CameraControls;
 
-use crate::{Context, CooltraptionEvent, EventHandler, WgpuState};
 use crate::camera::camera_state::{CameraState, CameraUniform};
+use crate::{Context, CooltraptionEvent, EventHandler, WgpuState};
 
 pub mod camera_state;
 pub mod controller;
+mod input_device;
 
 pub struct Camera {
     camera_state: CameraState,
@@ -45,7 +46,7 @@ impl EventHandler for Camera {
 }
 
 impl Camera {
-    pub fn new(wgpu_state: &WgpuState) -> Self {
+    pub fn init(wgpu_state: &WgpuState) -> Self {
         let camera_state = CameraState::new(wgpu_state.aspect());
         let camera_uniform = CameraUniform::new();
 

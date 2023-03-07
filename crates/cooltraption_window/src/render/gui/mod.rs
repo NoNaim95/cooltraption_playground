@@ -1,18 +1,21 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::Instant;
 
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use winit::event::Event;
 
-use crate::{Context, CooltraptionEvent, EventHandler};
-use crate::render::{Renderer, RendererInitializer, RenderFrame};
+use crate::gui::debug_window::DebugWindow;
 pub use crate::render::gui::gui_window::{GuiWindow, UiState};
+use crate::render::{RenderFrame, Renderer, RendererInitializer};
+use crate::{Context, CooltraptionEvent, EventHandler};
 
 pub mod debug_window;
 mod gui_window;
 
 struct Gui {
+    start_time: Instant,
     platform: Platform,
     render_pass: RenderPass,
     windows: Vec<Box<dyn GuiWindow>>,
@@ -28,15 +31,24 @@ impl Gui {
 }
 
 impl EventHandler for Gui {
-    fn handle_event(&mut self, event: &Event<CooltraptionEvent>, _context: &mut Context) {
-        self.platform.handle_event(event)
+    fn handle_event(&mut self, event: &Event<CooltraptionEvent>, context: &mut Context) {
+        self.platform.handle_event(event);
+
+        if let Event::UserEvent(CooltraptionEvent::OpenGUI) = event {
+            self.add_window(Box::new(DebugWindow::default()));
+        }
+
+        for window in &mut self.windows {
+            window.handle_event(event, context);
+        }
     }
 }
 
 impl Renderer for Gui {
     fn render(&mut self, render_frame: &mut RenderFrame) {
         // Begin to draw the UI frame.
-        self.platform.update_time(0.01);
+        self.platform
+            .update_time(self.start_time.elapsed().as_secs_f64());
         self.platform.begin_frame();
 
         // Draw all ui elements
@@ -85,6 +97,7 @@ impl Renderer for Gui {
 impl RendererInitializer for GuiInitializer {
     fn init(self: Box<Self>, context: &mut Context) -> Rc<RefCell<dyn Renderer>> {
         let gui = Rc::new(RefCell::new(Gui {
+            start_time: Instant::now(),
             platform: Platform::new(PlatformDescriptor {
                 physical_width: context.window.inner_size().width,
                 physical_height: context.window.inner_size().height,
