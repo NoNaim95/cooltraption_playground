@@ -1,12 +1,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::Duration;
 
 use winit::dpi::PhysicalSize;
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy};
 use winit::window::{Window, WindowBuilder};
 
 use crate::camera::controller::CameraControls;
-use crate::gui::GuiWindow;
 
 pub use self::event_handler::*;
 pub use self::wgpu_state::WgpuState;
@@ -26,7 +26,7 @@ pub struct EventLoopHandler {
 #[derive(Debug, Copy, Clone)]
 pub enum CooltraptionEvent {
     Init,
-    Render,
+    Render(Duration),
     CameraControls(CameraControls),
     OpenGUI, // TODO: GuiCommand to specify window
 }

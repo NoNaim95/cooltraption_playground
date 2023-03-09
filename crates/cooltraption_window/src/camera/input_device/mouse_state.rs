@@ -1,9 +1,8 @@
 use cgmath::Vector2;
 use num_traits::Zero;
-use std::ops::{AddAssign, SubAssign};
 use winit::event::MouseButton;
 
-use crate::camera::input_device::ButtonState;
+use crate::camera::input_device::ButtonMap;
 pub use winit::event::VirtualKeyCode;
 
 const BUTTON_COUNT: usize = 163;
@@ -46,14 +45,18 @@ impl MouseState {
     }
 }
 
-impl ButtonState for MouseState {
+impl ButtonMap for MouseState {
     type Button = MouseButton;
 
-    fn is_down(&self, button: MouseButton) -> bool {
+    fn set_btn(&mut self, button: &Self::Button, is_down: bool) {
+        self.buttons[as_usize(button)] = is_down;
+    }
+
+    fn is_down(&self, button: &MouseButton) -> bool {
         self.buttons[as_usize(button)]
     }
 
-    fn is_up(&self, button: MouseButton) -> bool {
+    fn is_up(&self, button: &MouseButton) -> bool {
         !self.is_down(button)
     }
 }
@@ -69,25 +72,11 @@ impl Default for MouseState {
     }
 }
 
-impl AddAssign<MouseButton> for MouseState {
-    fn add_assign(&mut self, rhs: MouseButton) {
-        let index = as_usize(rhs);
-        self.buttons[index] = true;
-    }
-}
-
-impl SubAssign<MouseButton> for MouseState {
-    fn sub_assign(&mut self, rhs: MouseButton) {
-        let index = as_usize(rhs);
-        self.buttons[index] = false;
-    }
-}
-
-fn as_usize(btn: MouseButton) -> usize {
+fn as_usize(btn: &MouseButton) -> usize {
     match btn {
         MouseButton::Left => 0,
         MouseButton::Right => 1,
         MouseButton::Middle => 2,
-        MouseButton::Other(b) => b as usize,
+        MouseButton::Other(b) => *b as usize,
     }
 }

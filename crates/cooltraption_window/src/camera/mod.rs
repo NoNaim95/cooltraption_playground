@@ -36,7 +36,9 @@ impl EventHandler for Camera {
                 }
             }
             Event::UserEvent(event) => match event {
-                CooltraptionEvent::Render => self.update_camera_buffer(&context.wgpu_state.queue),
+                CooltraptionEvent::Render(_) => {
+                    self.update_camera_buffer(&context.wgpu_state.queue)
+                }
                 CooltraptionEvent::CameraControls(controls) => self.apply_controls(controls),
                 _ => {}
             },

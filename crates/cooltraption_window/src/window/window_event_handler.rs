@@ -21,16 +21,6 @@ impl EventHandler for WindowEventHandler {
                 }
                 _ => {}
             },
-            Event::RedrawRequested(event_window_id) if &context.window.id() == event_window_id => {
-                context.window.request_redraw();
-            }
-            Event::RedrawEventsCleared => {
-                // TODO: Add delta time as enum attribute? Maybe inside render_event_handler
-                context
-                    .event_loop_proxy
-                    .send_event(CooltraptionEvent::Render)
-                    .expect("Send render event");
-            }
             Event::MainEventsCleared => {}
             Event::DeviceEvent { .. } => {}
             Event::UserEvent(_) => {}

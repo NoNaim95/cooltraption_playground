@@ -1,9 +1,10 @@
 use cgmath::{InnerSpace, Vector2};
 use num_traits::{Pow, Zero};
+use std::time::Duration;
 use winit::event::{ElementState, Event, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 use winit::event_loop::EventLoopProxy;
 
-use crate::camera::input_device::{ButtonState, KeyboardState, MouseState};
+use crate::camera::input_device::{ButtonMap, KeyboardState, MouseState};
 use crate::{Context, CooltraptionEvent, EventHandler};
 
 #[derive(Clone, Copy, Debug)]
@@ -28,24 +29,28 @@ pub struct CameraController {
 }
 
 impl CameraController {
-    fn send_controls(&self, event_loop_proxy: &EventLoopProxy<CooltraptionEvent>) {
+    fn send_controls(
+        &self,
+        event_loop_proxy: &EventLoopProxy<CooltraptionEvent>,
+        delta_time: &Duration,
+    ) {
         let mut controls = CameraControls::default();
 
-        let zoom_speed: f32 = 1.06;
-        let move_speed = 0.01;
+        let zoom_speed = 60.0 * delta_time.as_secs_f32();
+        let move_speed = 2.0 * delta_time.as_secs_f32();
 
-        controls.zoom *= zoom_speed.pow(self.mouse_state.scroll());
+        controls.zoom *= (1.0 + zoom_speed).pow(self.mouse_state.scroll());
 
-        if self.keyboard_state.is_down(VirtualKeyCode::W) {
+        if self.keyboard_state.is_down(&VirtualKeyCode::W) {
             controls.move_vec.y += 1.0;
         }
-        if self.keyboard_state.is_down(VirtualKeyCode::A) {
+        if self.keyboard_state.is_down(&VirtualKeyCode::A) {
             controls.move_vec.x -= 1.0;
         }
-        if self.keyboard_state.is_down(VirtualKeyCode::S) {
+        if self.keyboard_state.is_down(&VirtualKeyCode::S) {
             controls.move_vec.y -= 1.0;
         }
-        if self.keyboard_state.is_down(VirtualKeyCode::D) {
+        if self.keyboard_state.is_down(&VirtualKeyCode::D) {
             controls.move_vec.x += 1.0;
         }
 
@@ -70,10 +75,8 @@ impl EventHandler for CameraController {
                 match event {
                     WindowEvent::KeyboardInput { input, .. } => {
                         if let Some(vk_code) = input.virtual_keycode {
-                            match input.state {
-                                ElementState::Pressed => self.keyboard_state += vk_code,
-                                ElementState::Released => self.keyboard_state -= vk_code,
-                            }
+                            self.keyboard_state
+                                .set_btn(&vk_code, input.state == ElementState::Pressed);
 
                             if vk_code == VirtualKeyCode::F3 && input.state == ElementState::Pressed
                             {
@@ -88,10 +91,10 @@ impl EventHandler for CameraController {
                         self.mouse_state
                             .set_pos(Vector2::new(position.x, position.y));
                     }
-                    WindowEvent::MouseInput { state, button, .. } => match state {
-                        ElementState::Pressed => self.mouse_state += *button,
-                        ElementState::Released => self.mouse_state -= *button,
-                    },
+                    WindowEvent::MouseInput { state, button, .. } => {
+                        self.mouse_state
+                            .set_btn(button, *state == ElementState::Pressed);
+                    }
                     WindowEvent::MouseWheel {
                         delta: MouseScrollDelta::LineDelta(_x, y),
                         ..
@@ -101,8 +104,8 @@ impl EventHandler for CameraController {
                     _ => {}
                 }
             }
-            Event::UserEvent(CooltraptionEvent::Render) => {
-                self.send_controls(context.event_loop_proxy);
+            Event::UserEvent(CooltraptionEvent::Render(delta_time)) => {
+                self.send_controls(context.event_loop_proxy, delta_time);
                 self.mouse_state.reset();
             }
             _ => {}

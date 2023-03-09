@@ -2,8 +2,6 @@ use wgpu::*;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
-use crate::render::RenderFrame;
-
 #[derive(Debug)]
 pub struct WgpuState {
     pub surface: Surface,
@@ -71,31 +69,6 @@ impl WgpuState {
             config,
             size,
         }
-    }
-
-    pub fn create_render_frame<'a>(
-        &'a self,
-        window: &'a Window,
-    ) -> Result<RenderFrame<'a>, SurfaceError> {
-        let output = self.surface.get_current_texture()?;
-        let view = output
-            .texture
-            .create_view(&TextureViewDescriptor::default());
-
-        let encoder = self
-            .device
-            .create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            });
-
-        Ok(RenderFrame {
-            window,
-            device: &self.device,
-            queue: &self.queue,
-            output,
-            view,
-            encoder,
-        })
     }
 
     pub fn set_size(&mut self, new_size: PhysicalSize<u32>) {

@@ -1,3 +1,4 @@
+use std::time::Duration;
 use wgpu::CommandEncoder;
 use wgpu::Device;
 use wgpu::Queue;
@@ -7,6 +8,7 @@ use winit::window::Window;
 
 #[derive(Debug)]
 pub struct RenderFrame<'a> {
+    pub delta_time: &'a Duration,
     pub window: &'a Window,
     pub device: &'a Device,
     pub queue: &'a Queue,

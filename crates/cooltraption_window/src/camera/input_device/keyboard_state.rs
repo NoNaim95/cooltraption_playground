@@ -1,6 +1,4 @@
-use std::ops::{AddAssign, SubAssign};
-
-use crate::camera::input_device::ButtonState;
+use crate::camera::input_device::ButtonMap;
 pub use winit::event::VirtualKeyCode;
 
 const KEY_COUNT: usize = 163;
@@ -9,14 +7,18 @@ pub struct KeyboardState {
     keys: [bool; KEY_COUNT],
 }
 
-impl ButtonState for KeyboardState {
+impl ButtonMap for KeyboardState {
     type Button = VirtualKeyCode;
 
-    fn is_down(&self, vk_code: VirtualKeyCode) -> bool {
-        self.keys[vk_code as usize]
+    fn set_btn(&mut self, button: &Self::Button, is_down: bool) {
+        self.keys[*button as usize] = is_down;
     }
 
-    fn is_up(&self, vk_code: VirtualKeyCode) -> bool {
+    fn is_down(&self, vk_code: &VirtualKeyCode) -> bool {
+        self.keys[*vk_code as usize]
+    }
+
+    fn is_up(&self, vk_code: &VirtualKeyCode) -> bool {
         !self.is_down(vk_code)
     }
 }
@@ -26,19 +28,5 @@ impl Default for KeyboardState {
         Self {
             keys: [false; KEY_COUNT],
         }
-    }
-}
-
-impl AddAssign<VirtualKeyCode> for KeyboardState {
-    fn add_assign(&mut self, rhs: VirtualKeyCode) {
-        let index = rhs as usize;
-        self.keys[index] = true;
-    }
-}
-
-impl SubAssign<VirtualKeyCode> for KeyboardState {
-    fn sub_assign(&mut self, rhs: VirtualKeyCode) {
-        let index = rhs as usize;
-        self.keys[index] = false;
     }
 }

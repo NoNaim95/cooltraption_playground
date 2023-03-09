@@ -21,7 +21,7 @@ impl Default for DebugWindow {
 }
 
 impl EventHandler for DebugWindow {
-    fn handle_event(&mut self, event: &Event<CooltraptionEvent>, context: &mut crate::Context) {
+    fn handle_event(&mut self, _event: &Event<CooltraptionEvent>, context: &mut crate::Context) {
         self.window_size = context.window.inner_size();
     }
 }
