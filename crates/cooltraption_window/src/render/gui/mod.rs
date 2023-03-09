@@ -9,7 +9,8 @@ use winit::event::Event;
 use crate::gui::debug_window::DebugWindow;
 pub use crate::render::gui::gui_window::{GuiWindow, UiState};
 use crate::render::{RenderFrame, Renderer, RendererInitializer};
-use crate::{Context, CooltraptionEvent, EventHandler};
+use crate::window::event_handler::{Context, EventHandler};
+use crate::window::CooltraptionEvent;
 
 pub mod debug_window;
 mod gui_window;

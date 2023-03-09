@@ -13,7 +13,8 @@ pub use crate::render::instance_renderer::world_state::WorldState;
 use crate::render::render_frame::RenderFrame;
 use crate::render::vertex::{Vertex, INDICES, VERTICES};
 use crate::render::{Renderer, RendererInitializer};
-use crate::{Context, CooltraptionEvent, EventHandler};
+use crate::window::event_handler::{Context, EventHandler};
+use crate::window::CooltraptionEvent;
 
 mod render_instance;
 pub mod world_state;
@@ -136,8 +137,8 @@ impl RendererInitializer for InstanceRendererInitializer {
                             visibility: ShaderStages::FRAGMENT,
                             ty: BindingType::Texture {
                                 multisampled: false,
-                                view_dimension: wgpu::TextureViewDimension::D2,
-                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                                view_dimension: TextureViewDimension::D2,
+                                sample_type: TextureSampleType::Float { filterable: true },
                             },
                             count: None,
                         },
@@ -146,7 +147,7 @@ impl RendererInitializer for InstanceRendererInitializer {
                             visibility: ShaderStages::FRAGMENT,
                             // This should match the filterable field of the
                             // corresponding Texture entry above.
-                            ty: BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                            ty: BindingType::Sampler(SamplerBindingType::Filtering),
                             count: None,
                         },
                     ],

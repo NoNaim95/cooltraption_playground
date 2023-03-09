@@ -1,34 +1,23 @@
-use cgmath::{InnerSpace, Vector2};
-use num_traits::{Pow, Zero};
+use cgmath::num_traits::*;
+use cgmath::*;
+use cooltraption_window::camera::controls::{
+    ButtonMap, CameraController, CameraControls, KeyboardState, MouseState, VirtualKeyCode,
+};
+use cooltraption_window::window::event_handler::{
+    Context, ElementState, Event, EventHandler, EventLoopProxy, MouseScrollDelta, WindowEvent,
+};
+use cooltraption_window::window::CooltraptionEvent;
 use std::time::Duration;
-use winit::event::{ElementState, Event, MouseScrollDelta, VirtualKeyCode, WindowEvent};
-use winit::event_loop::EventLoopProxy;
-
-use crate::camera::input_device::{ButtonMap, KeyboardState, MouseState};
-use crate::{Context, CooltraptionEvent, EventHandler};
-
-#[derive(Clone, Copy, Debug)]
-pub struct CameraControls {
-    pub move_vec: Vector2<f32>,
-    pub zoom: f32,
-}
-
-impl Default for CameraControls {
-    fn default() -> Self {
-        Self {
-            move_vec: Vector2::zero(),
-            zoom: 1.0,
-        }
-    }
-}
 
 #[derive(Default)]
-pub struct CameraController {
+pub struct Controller {
     keyboard_state: KeyboardState,
     mouse_state: MouseState,
 }
 
-impl CameraController {
+impl CameraController for Controller {}
+
+impl Controller {
     fn send_controls(
         &self,
         event_loop_proxy: &EventLoopProxy<CooltraptionEvent>,
@@ -64,7 +53,7 @@ impl CameraController {
     }
 }
 
-impl EventHandler for CameraController {
+impl EventHandler for Controller {
     fn handle_event(&mut self, event: &Event<CooltraptionEvent>, context: &mut Context) {
         match event {
             Event::WindowEvent { event, window_id } => {

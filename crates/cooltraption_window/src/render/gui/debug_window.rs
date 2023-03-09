@@ -1,10 +1,10 @@
-use crate::{CooltraptionEvent, EventHandler};
-use egui::{Context, Window};
 use winit::dpi::PhysicalSize;
 use winit::event::Event;
 
 use crate::render::gui::gui_window::UiState;
 use crate::render::gui::GuiWindow;
+use crate::window::event_handler::{Context, EventHandler};
+use crate::window::CooltraptionEvent;
 
 pub struct DebugWindow {
     window_size: PhysicalSize<u32>,
@@ -21,14 +21,14 @@ impl Default for DebugWindow {
 }
 
 impl EventHandler for DebugWindow {
-    fn handle_event(&mut self, _event: &Event<CooltraptionEvent>, context: &mut crate::Context) {
+    fn handle_event(&mut self, _event: &Event<CooltraptionEvent>, context: &mut Context) {
         self.window_size = context.window.inner_size();
     }
 }
 
 impl GuiWindow for DebugWindow {
-    fn show(&mut self, context: &Context) -> UiState {
-        Window::new("Debug")
+    fn show(&mut self, context: &egui::Context) -> UiState {
+        egui::Window::new("Debug")
             .open(&mut self.is_open)
             .resizable(false)
             .show(context, |ui| {

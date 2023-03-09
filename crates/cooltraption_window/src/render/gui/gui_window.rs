@@ -1,4 +1,4 @@
-use crate::EventHandler;
+use crate::window::event_handler::EventHandler;
 use egui::Context;
 
 pub enum UiState {

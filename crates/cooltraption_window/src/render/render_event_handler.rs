@@ -8,7 +8,8 @@ use winit::event::Event;
 use winit::window::Window;
 
 use crate::render::{RenderFrame, Renderer, RendererInitializer};
-use crate::{Context, CooltraptionEvent, EventHandler, WgpuState};
+use crate::window::event_handler::{Context, EventHandler};
+use crate::window::{CooltraptionEvent, WgpuState};
 
 pub struct RenderEventHandler {
     prev_frame_time: Instant,

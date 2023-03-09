@@ -2,8 +2,7 @@ use cgmath::Vector2;
 use num_traits::Zero;
 use winit::event::MouseButton;
 
-use crate::camera::input_device::ButtonMap;
-pub use winit::event::VirtualKeyCode;
+use crate::camera::controls::ButtonMap;
 
 const BUTTON_COUNT: usize = 163;
 

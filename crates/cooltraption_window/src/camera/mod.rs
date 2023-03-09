@@ -3,14 +3,13 @@ use wgpu::util::DeviceExt;
 use wgpu::*;
 use winit::event::{Event, WindowEvent};
 
-use controller::CameraControls;
-
 use crate::camera::camera_state::{CameraState, CameraUniform};
-use crate::{Context, CooltraptionEvent, EventHandler, WgpuState};
+use crate::camera::controls::CameraControls;
+use crate::window::event_handler::{Context, EventHandler};
+use crate::window::{CooltraptionEvent, WgpuState};
 
 pub mod camera_state;
-pub mod controller;
-mod input_device;
+pub mod controls;
 
 pub struct Camera {
     camera_state: CameraState,

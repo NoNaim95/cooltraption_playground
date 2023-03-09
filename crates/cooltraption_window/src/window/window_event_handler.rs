@@ -1,7 +1,7 @@
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::ControlFlow;
 
-use crate::{Context, CooltraptionEvent, EventHandler};
+use crate::window::{Context, CooltraptionEvent, EventHandler};
 
 pub struct WindowEventHandler {}
 

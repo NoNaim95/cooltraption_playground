@@ -1,11 +1,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use winit::event::Event;
-use winit::event_loop::{ControlFlow, EventLoopProxy};
-use winit::window::Window;
+pub use winit::event::*;
+pub use winit::event_loop::{ControlFlow, EventLoopProxy};
+pub use winit::window::Window;
 
-use crate::{CooltraptionEvent, WgpuState};
+pub use crate::window::{CooltraptionEvent, WgpuState};
 
 pub struct Context<'a> {
     pub control_flow: &'a mut ControlFlow,

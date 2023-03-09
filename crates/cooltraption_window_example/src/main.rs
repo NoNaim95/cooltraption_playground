@@ -1,13 +1,14 @@
+mod controller;
+
+use crate::controller::Controller;
 use cgmath::num_traits::Float;
 use cgmath::*;
 use cooltraption_window::asset_bundle::{FileAssetLoader, LoadAssetBundle, TextureAtlasBuilder};
-use cooltraption_window::camera::controller::CameraController;
 use cooltraption_window::gui::GuiInitializer;
 use cooltraption_window::instance_renderer::world_state::{Drawable, Id, Position, Scale};
 use cooltraption_window::instance_renderer::{InstanceRendererInitializer, WorldState};
 use cooltraption_window::render::render_event_handler::RenderEventHandler;
-use cooltraption_window::window_event_handler::WindowEventHandler;
-use cooltraption_window::EventLoopHandler;
+use cooltraption_window::window::{EventLoopHandler, WindowEventHandler};
 use log::info;
 use std::cell::RefCell;
 use std::env;
@@ -50,7 +51,7 @@ async fn main() {
     render_event_handler.add_initializer(instance_renderer);
     render_event_handler.add_initializer(gui);
 
-    let camera_controller = CameraController::default();
+    let camera_controller = Controller::default();
 
     let mut event_loop_handler = EventLoopHandler::new().await;
 

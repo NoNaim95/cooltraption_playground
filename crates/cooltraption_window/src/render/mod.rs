@@ -1,9 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-pub(crate) use render_frame::RenderFrame;
-
-use crate::Context;
+use crate::window::event_handler::Context;
+use render_frame::RenderFrame;
 
 pub mod gui;
 pub mod instance_renderer;

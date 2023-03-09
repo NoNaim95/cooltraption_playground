@@ -2,18 +2,18 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Duration;
 
+use crate::camera::controls::CameraControls;
+use crate::window::event_handler::{Context, EventHandler};
 use winit::dpi::PhysicalSize;
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy};
 use winit::window::{Window, WindowBuilder};
 
-use crate::camera::controller::CameraControls;
-
-pub use self::event_handler::*;
 pub use self::wgpu_state::WgpuState;
+pub use self::window_event_handler::WindowEventHandler;
 
-mod event_handler;
-pub mod wgpu_state;
-pub mod window_event_handler;
+pub mod event_handler;
+mod wgpu_state;
+mod window_event_handler;
 
 pub struct EventLoopHandler {
     event_loop: EventLoop<CooltraptionEvent>,
