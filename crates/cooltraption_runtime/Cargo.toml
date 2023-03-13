@@ -12,6 +12,8 @@ crate-type = ["lib"]
 cooltraption_simulation = { path = "../cooltraption_simulation" }
 cooltraption_window = { path = "../cooltraption_window" }
 
+fbp-rs = { git = "https://github.com/NoNaim95/fbp-rs", branch = "sync" }
+
 log = "0.4"
 env_logger = "0.10"
 cgmath = "0.18"
@@ -20,8 +22,3 @@ simba = "0.7"
 fixed = "1.21"
 fixed-macro = "1.1"
 num-traits = "0.2"
-
-
-[build-dependencies]
-copy_to_output = "2.0"
-glob = "0.3"
