@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::error::Error;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
@@ -105,6 +104,7 @@ impl<T: SimulationState + 'static> SimulationImpl<T> {
             sleep(Duration::from_secs_f64(1.0 / 1000.0));
         }
     }
+
     pub fn state(&self) -> &T {
         &self.simulation_state
     }
@@ -123,7 +123,7 @@ impl<T: SimulationState> Simulation<T> for SimulationImpl<T> {
         self.simulation_state
             .world_mut()
             .insert_resource(Actions(std::mem::take(
-                &mut self.action_table.entry(self.current_tick).or_default(),
+                self.action_table.entry(self.current_tick).or_default(),
             )));
 
         self.schedule.run(self.simulation_state.world_mut());

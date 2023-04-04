@@ -1,7 +1,7 @@
-use bevy_ecs::prelude::World;
 use crate::action::Action;
+use bevy_ecs::prelude::World;
 
-pub trait SimulationState {
+pub trait SimulationState: Sync {
     fn world(&self) -> &World;
     fn world_mut(&mut self) -> &mut World;
 }
@@ -9,7 +9,7 @@ pub trait SimulationState {
 #[derive(Default)]
 pub struct SimulationStateImpl {
     pub world: World,
-    pub actions: Vec<Action>
+    pub actions: Vec<Action>,
 }
 
 impl SimulationState for SimulationStateImpl {
