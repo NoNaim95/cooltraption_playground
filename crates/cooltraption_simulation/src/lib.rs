@@ -11,6 +11,9 @@ use components::Position;
 use simulation_state::SimulationState;
 use stages::physics_stage::{self, DeltaTime, PhysicsStage, Vec2f};
 
+
+use cooltraption_common::events::{MutEvent, Event};
+
 pub mod action;
 mod components;
 pub mod simulation_state;
@@ -23,61 +26,29 @@ pub struct Tick(u64);
 pub struct Actions(Vec<Action>);
 
 #[derive(Default)]
-pub struct SimulationOptions<S: SimulationState> {
-    state: S,
+pub struct SimulationOptions {
+    state: SimulationState,
 }
 
-pub trait Simulation<T: SimulationState> {
+pub trait Simulation {
     fn step_simulation(&mut self, dt: Duration);
+    fn register_action_packet(&mut self, action: ActionPacket);
+    fn register_tick_event(&mut self, f: impl Fn(&mut Self) + 'static);
+    fn register_simulation_ready_event(&mut self, f: impl Fn(&SimulationState) + 'static);
 }
 
 #[derive(Default)]
-pub struct SimulationImpl<T: SimulationState> {
-    simulation_state: T,
+pub struct SimulationImpl {
+    simulation_state: SimulationState,
     schedule: Schedule,
     current_tick: u64,
     action_table: HashMap<u64, Vec<Action>>,
+    tick_event: MutEvent<Self>,
+    simulation_ready_event: Event<SimulationState>,
 }
 
-pub struct ActionHandler {
-    action_request_receive_channel: Receiver<ActionRequest>,
-    action_packet_receive_channel: Receiver<ActionPacket>,
-    action_packet_send_channel: Sender<ActionPacket>,
-}
-
-impl ActionHandler {
-    fn load_action_packets(&self, current_tick: u64) -> Vec<ActionPacket> {
-        let mut action_packets = self
-            .action_packet_receive_channel
-            .iter()
-            .collect::<Vec<ActionPacket>>();
-        let action_requests = self
-            .action_request_receive_channel
-            .iter()
-            .collect::<Vec<ActionRequest>>();
-        for action_request in action_requests {
-            let action = match action_request {
-                ActionRequest::SpawnBall {
-                    requested_position: req_pos,
-                } => Action::SpawnBall {
-                    pos: Position(Vec2f::new(req_pos.0, req_pos.1)),
-                },
-            };
-            let action_packet = ActionPacket {
-                tick_no: current_tick,
-                action,
-            };
-            self.action_packet_send_channel
-                .send(action_packet.clone())
-                .unwrap();
-            action_packets.push(action_packet);
-        }
-        action_packets
-    }
-}
-
-impl<T: SimulationState + 'static> SimulationImpl<T> {
-    pub fn new(options: SimulationOptions<T>) -> Self {
+impl SimulationImpl {
+    pub fn new(options: SimulationOptions) -> Self {
         let mut schedule = Schedule::default();
         schedule.add_stage(
             PhysicsStage,
@@ -89,6 +60,8 @@ impl<T: SimulationState + 'static> SimulationImpl<T> {
             schedule,
             current_tick: 0,
             action_table: HashMap::default(),
+            tick_event: Default::default(),
+            simulation_ready_event: Default::default(),
         }
     }
 
@@ -104,14 +77,17 @@ impl<T: SimulationState + 'static> SimulationImpl<T> {
             sleep(Duration::from_secs_f64(1.0 / 1000.0));
         }
     }
-
-    pub fn state(&self) -> &T {
+    pub fn state(&self) -> &SimulationState {
         &self.simulation_state
     }
 }
 
-impl<T: SimulationState> Simulation<T> for SimulationImpl<T> {
+impl Simulation for SimulationImpl {
     fn step_simulation(&mut self, dt: Duration) {
+        let tick_event = std::mem::take(&mut self.tick_event);
+        MutEvent::invoke(&tick_event, self);
+        self.tick_event = tick_event;
+
         self.simulation_state
             .world_mut()
             .insert_resource(Tick(self.current_tick));
@@ -127,5 +103,16 @@ impl<T: SimulationState> Simulation<T> for SimulationImpl<T> {
             )));
 
         self.schedule.run(self.simulation_state.world_mut());
+        self.simulation_ready_event.invoke(&self.simulation_state);
+    }
+    fn register_action_packet(&mut self, action: ActionPacket) {
+    }
+
+    fn register_tick_event(&mut self, f: impl Fn(&mut Self) + 'static) {
+        self.tick_event.add_event_handler(Box::new(f));
+    }
+
+    fn register_simulation_ready_event(&mut self, f: impl Fn(&SimulationState) + 'static) {
+        self.simulation_ready_event.add_event_handler(Box::new(f));
     }
 }
