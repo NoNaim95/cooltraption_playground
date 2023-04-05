@@ -22,6 +22,14 @@ pub struct Drawable {
     pub asset: String,
 }
 
+#[derive(Bundle)]
+pub struct PhysicsBundle{
+    pub acc: Acceleration,
+    pub vel: Velocity,
+    pub pos: Position,
+}
+
+
 impl Deref for Position {
     type Target = Vec2f;
 
