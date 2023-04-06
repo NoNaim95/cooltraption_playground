@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::mpsc::Receiver;
 
 use wgpu::util::DeviceExt;
 use wgpu::*;
@@ -19,7 +18,10 @@ use crate::window::CooltraptionEvent;
 mod render_instance;
 pub mod world_state;
 
-struct InstanceRenderer {
+pub trait States: FnMut() -> Option<WorldState> {}
+impl<F: FnMut() -> Option<WorldState>> States for F {}
+
+struct InstanceRenderer<S: States> {
     render_pipeline: RenderPipeline,
     vertex_buffer: Buffer,
     index_buffer: Buffer,
@@ -29,25 +31,25 @@ struct InstanceRenderer {
     texture_atlas: TextureAtlas,
     camera: Camera,
     assets: AssetBundle,
-    state_recv: Receiver<WorldState>,
+    states: S,
     world_state: [WorldState; 2],
 }
 
-pub struct InstanceRendererInitializer {
+pub struct InstanceRendererInitializer<S: States> {
     pub texture_atlas_builder: TextureAtlasBuilder,
     pub assets: AssetBundle,
-    pub state_recv: Receiver<WorldState>,
+    pub states: S,
 }
 
-impl EventHandler for InstanceRenderer {
+impl<S: States> EventHandler for InstanceRenderer<S> {
     fn handle_event(&mut self, event: &Event<CooltraptionEvent>, context: &mut Context) {
         self.camera.handle_event(event, context);
     }
 }
 
-impl Renderer for InstanceRenderer {
+impl<S: States> Renderer for InstanceRenderer<S> {
     fn render(&mut self, render_frame: &mut RenderFrame) {
-        while let Ok(state) = self.state_recv.try_recv() {
+        while let Some(state) = (self.states)() {
             self.update_state(state);
         }
 
@@ -102,7 +104,7 @@ impl Renderer for InstanceRenderer {
     }
 }
 
-impl InstanceRenderer {
+impl<S: States> InstanceRenderer<S> {
     fn update_state(&mut self, new_state: WorldState) {
         self.world_state.swap(0, 1);
         self.world_state[0] = new_state;
@@ -117,7 +119,7 @@ fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
     })
 }
 
-impl RendererInitializer for InstanceRendererInitializer {
+impl<S: States + 'static> RendererInitializer for InstanceRendererInitializer<S> {
     fn init(self: Box<Self>, context: &mut Context) -> Rc<RefCell<dyn Renderer>> {
         let wgpu_state = &context.wgpu_state;
 
@@ -212,7 +214,7 @@ impl RendererInitializer for InstanceRendererInitializer {
             texture_atlas,
             camera,
             assets: self.assets,
-            state_recv: self.state_recv,
+            states: self.states,
             world_state: [Default::default(), Default::default()],
         }));
 
@@ -222,7 +224,7 @@ impl RendererInitializer for InstanceRendererInitializer {
     }
 }
 
-impl InstanceRendererInitializer {
+impl<S: States> InstanceRendererInitializer<S> {
     pub fn create_pipeline(
         device: &Device,
         format: &TextureFormat,

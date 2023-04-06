@@ -34,7 +34,7 @@ async fn main() {
         let assets = FileAssetLoader::new(
             current_dir()
                 .unwrap()
-                .join("cooltraption_window_example/assets"),
+                .join("crates/cooltraption_window_example/assets"),
         )
         .load(&mut texture_atlas_builder)
         .expect("load assets");
