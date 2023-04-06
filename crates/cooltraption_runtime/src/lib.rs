@@ -1,47 +1,72 @@
-use cooltraption_simulation::simulation_state::SimulationState;
-use cooltraption_simulation::{Simulation, SimulationImpl};
-use cooltraption_window::instance_renderer::WorldState;
-use fbp_rs::components::Component;
-use fbp_rs::{IocGeneratorComponent, ProcessorComponent};
-use std::sync::Arc;
-use std::time::Duration;
+use std::{
+    sync::mpsc::{self, channel},
+    thread::sleep,
+    time::Duration,
+};
 
-trait Runtime {
-    fn run();
+use cooltraption_simulation::{
+    action::Action,
+    components::Position,
+    simulation_state::SimulationState,
+    stages::physics_stage::{Float, Vec2f},
+    Simulation, SimulationImpl, SimulationOptions, World,
+};
+use fixed::traits::FromFixed;
+use fixed::traits::ToFixed;
+use fixed_macro::fixed;
+use pipeline_rs::{
+    self,
+    pipes::{receive_pipe::ReceivePipe, send_pipe::SendPipe},
+};
+
+use cooltraption_simulation::Entity;
+
+mod render_component;
+use render_component::*;
+
+pub struct Runtime<I: Iterator<Item = Action>> {
+    simulation: SimulationImpl<I>,
 }
 
-struct RuntimeImpl<T: SimulationState> {
-    simulation: Box<dyn ProcessorComponent<I = DeltaTime, O = Arc<T>>>,
-    window: Box<dyn IocGeneratorComponent<I = WorldState, O = ()>>,
+impl<I: Iterator<Item = Action>> Runtime<I> {}
+
+fn query_positions(world: &mut World) -> Vec<&Position> {
+    let mut query = world.query::<&Position>();
+    query.iter(world).collect()
 }
 
-impl<T: SimulationState + Default> Runtime for RuntimeImpl<T> {
-    fn run() {
-        let simulation: Box<SimulationComponent<T>> =
-            Box::new(SimulationComponent(SimulationImpl::default()));
+pub fn run() {
+    let (s, r) = channel::<Vec<Position>>();
+    let position_receiver = ReceivePipe::new(move || r.try_recv().ok());
+    let mut renderer = Renderer::new(position_receiver.into_try_iter());
+    std::thread::spawn(move || {
+        renderer.render();
+    });
 
-        /*let runtime = RuntimeImpl {
-            simulation,
-            window: _,
-        };
-        let start_time = Instant::now();
-        self.simulation.process(DeltaTime(Instant::now() - start_time));
-        self.window.*/
+    sleep(Duration::from_millis(40));
+    let mut i = 0;
+    loop {
+        i += 1;
+        let mut positions = vec![Position(Vec2f::new(i.to_fixed(), i.to_fixed()))];
+        for j in 1..200 {
+            positions.push(Position(Vec2f::new((i * j/8).to_fixed(), (i + j*5).to_fixed())))
+        }
+        println!("sending vec with {} positions",positions.len());
+        s.send(positions).unwrap();
+        sleep(Duration::from_millis(10));
     }
-}
 
-struct DeltaTime(Duration);
-
-struct SimulationComponent<T: SimulationState>(SimulationImpl<T>);
-
-impl<T: SimulationState> Component for SimulationComponent<T> {
-    type I = DeltaTime;
-    type O = T;
-}
-
-impl<T: SimulationState> ProcessorComponent for SimulationComponent<T> {
-    fn process(&mut self, input: Self::I) -> Self::O {
-        self.0.step_simulation(input.0);
-        Arc::new(self.0.state())
-    }
+    panic!();
+    let mut counter = 1..;
+    let action_recv_pipe_closure = move || {
+        let i = counter.next()?;
+        let pos = Position(Vec2f::new(i.to_fixed(), (i * 3).to_fixed()));
+        let action = Action::SpawnBall { pos };
+        std::thread::sleep(Duration::from_millis(300));
+        Some(action)
+    };
+    let mut recv_pipe = ReceivePipe::new(action_recv_pipe_closure);
+    let sim_options = SimulationOptions::new(recv_pipe.into_try_iter());
+    let mut sim = SimulationImpl::new(sim_options);
+    sim.run();
 }

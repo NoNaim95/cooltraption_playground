@@ -1,6 +1,6 @@
 use crate::components::{Acceleration, Position, Velocity};
 use bevy_ecs::{prelude::*, system::Query};
-use std::time::Duration;
+use std::{time::Duration, thread::sleep};
 
 use fixed::types::I48F16;
 use fixed_macro::fixed;
@@ -32,8 +32,12 @@ pub fn solve_movement(
     mut query: Query<(&mut Position, &mut Velocity, &mut Acceleration)>,
     dt: Res<DeltaTime>,
 ) {
+    sleep(Duration::from_millis(500));
+    let mut n = 0;
     for (mut pos, mut vel, acc) in &mut query {
         vel.0 += acc.0 * dt.seconds;
         pos.0 += vel.0 * dt.seconds;
+        n += 1;
     }
+    println!("Solved movement for {} entites",n);
 }
