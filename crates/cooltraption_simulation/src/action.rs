@@ -1,8 +1,8 @@
 use bevy_ecs::system::Resource;
 
-use crate::Tick;
 use crate::components::Position;
 use crate::stages::physics_stage::Float;
+use crate::Tick;
 
 pub enum ActionRequest {
     SpawnBall { requested_position: (Float, Float) },
@@ -16,7 +16,7 @@ pub struct ActionPacket {
 
 impl ActionPacket {
     pub fn new(tick: Tick, action: Action) -> Self {
-        Self{ tick, action }
+        Self { tick, action }
     }
 }
 

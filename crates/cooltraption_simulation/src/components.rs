@@ -1,14 +1,16 @@
-use crate::stages::physics_stage::Vec2f;
-use bevy_ecs::prelude::*;
 use std::ops::Deref;
+
+use bevy_ecs::prelude::*;
+
+use crate::stages::physics_stage::Vec2f;
 
 #[derive(Component, Default, Clone, Debug)]
 pub struct Position(pub Vec2f);
 
-#[derive(Component, Default, Clone)]
+#[derive(Component, Default, Clone, Debug)]
 pub struct Velocity(pub Vec2f);
 
-#[derive(Component, Default, Clone)]
+#[derive(Component, Default, Clone, Debug)]
 pub struct Acceleration(pub Vec2f);
 
 #[derive(Component, Clone)]
@@ -23,12 +25,11 @@ pub struct Drawable {
 }
 
 #[derive(Bundle)]
-pub struct PhysicsBundle{
+pub struct PhysicsBundle {
     pub acc: Acceleration,
     pub vel: Velocity,
     pub pos: Position,
 }
-
 
 impl Deref for Position {
     type Target = Vec2f;
