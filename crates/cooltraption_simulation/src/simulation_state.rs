@@ -1,6 +1,5 @@
-use bevy_ecs::component::Component;
 use bevy_ecs::prelude::World;
-use bevy_ecs::query::QueryIter;
+use bevy_ecs::query::{QueryIter, WorldQuery};
 
 use crate::{stages::physics_stage::DeltaTime, Actions, Tick};
 
@@ -9,15 +8,7 @@ pub struct SimulationState {
     world: World,
 }
 
-pub struct ComponentIter<'a, C: Component>(QueryIter<'a, 'a, &'a C, ()>);
-
-impl<'a, C: Component> Iterator for ComponentIter<'a, C> {
-    type Item = &'a C;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next()
-    }
-}
+pub type ComponentIter<'a, C> = QueryIter<'a, 'a, C, ()>;
 
 impl SimulationState {
     pub fn world(&self) -> &World {
@@ -36,9 +27,9 @@ impl SimulationState {
         self.world_mut().insert_resource(dt);
     }
 
-    pub fn query<C: Component>(&mut self, mut f: impl FnMut(ComponentIter<C>)) {
-        let mut query = self.world.query::<&C>();
-        f(ComponentIter(query.iter(&self.world)));
+    pub fn query<C: WorldQuery<ReadOnly = C>>(&mut self, mut f: impl FnMut(ComponentIter<C>)) {
+        let mut query = self.world.query::<C>();
+        f(query.iter(&self.world));
     }
 
     pub fn load_actions(&mut self, actions: Actions) {

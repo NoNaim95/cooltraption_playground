@@ -5,6 +5,7 @@ use std::time::{Duration, Instant};
 pub use bevy_ecs::entity::*;
 pub use bevy_ecs::prelude::*;
 pub use bevy_ecs::query::QueryIter;
+use bevy_ecs::query::WorldQuery;
 pub use bevy_ecs::schedule::{Schedule, Stage, SystemStage};
 pub use bevy_ecs::system::Resource;
 pub use bevy_ecs::world::*;
@@ -46,7 +47,10 @@ impl<I: Iterator<Item = Action>> SimulationOptions<I> {
 
 pub trait Simulation {
     fn step_simulation(&mut self, dt: Duration);
-    fn add_component_handler<C: Component>(&mut self, f: impl FnMut(ComponentIter<C>) + 'static);
+    fn add_component_handler<C: WorldQuery<ReadOnly = C>>(
+        &mut self,
+        f: impl FnMut(ComponentIter<C>) + 'static,
+    );
 }
 
 #[derive(Default)]
@@ -122,7 +126,7 @@ impl<I: Iterator<Item = Action>> Simulation for SimulationImpl<I> {
         self.state_complete_event.invoke(&mut self.simulation_state);
     }
 
-    fn add_component_handler<C: Component>(
+    fn add_component_handler<C: WorldQuery<ReadOnly = C>>(
         &mut self,
         mut f: impl FnMut(ComponentIter<C>) + 'static,
     ) {

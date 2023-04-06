@@ -1,5 +1,6 @@
 use crate::render_component::Renderer;
 use cooltraption_simulation::action::Action;
+use cooltraption_simulation::components::Drawable;
 use cooltraption_simulation::simulation_state::ComponentIter;
 use cooltraption_simulation::stages::physics_stage::Vec2f;
 use cooltraption_simulation::*;
@@ -63,7 +64,7 @@ pub fn query_example() {
     let action_recv = ReceivePipe::new(action_generator);
     let sim_options = SimulationOptions::new(action_recv.into_try_iter());
     let mut sim = SimulationImpl::new(sim_options);
-    sim.add_component_handler(move |pos: ComponentIter<Position>| {
+    sim.add_component_handler(move |pos: ComponentIter<&Position>| {
         let _ = s.send(pos.cloned().collect());
     });
 
