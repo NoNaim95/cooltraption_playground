@@ -1,19 +1,39 @@
 use crate::render_component::Renderer;
+use cooltraption_network::client_storage::{ClientStorage, ClientStorageEventHandler};
+use cooltraption_network::server::{
+    run_event_handler, listen, node, NetEvent, NodeEvent, Signal, ServerNetworkingEngine,
+};
+use cooltraption_network::*;
 use cooltraption_simulation::action::Action;
 use cooltraption_simulation::simulation_state::ComponentIter;
 use cooltraption_simulation::stages::physics_stage::Vec2f;
 use cooltraption_simulation::*;
 use fixed::prelude::ToFixed;
 use pipeline_rs::pipes::receive_pipe::*;
+use pipeline_rs::pipes::send_pipe::SendPipe;
+use pipeline_rs::pipes::transformer_pipe::TransformerPipe;
 use std::sync::mpsc::channel;
 use std::thread::sleep;
 use std::time::Duration;
+
+use base64::encode;
 
 pub mod render_component;
 
 fn main() {
     //cooltraption_runtime::run();
-    query_example();
+    //query_example();
+    let (handler, listener) = node::split();
+    listen(&handler, 5000);
+
+
+    let x = ClientStorageEventHandler::default();
+
+    let server = ServerNetworkingEngine::new();
+    server.run(5000, x);
+
+    listener.for_each(server.into_handler());
+    println!("dispatch_event_handler");
 }
 
 pub fn run() {

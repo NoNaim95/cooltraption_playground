@@ -4,11 +4,13 @@ use crate::components::Position;
 use crate::stages::physics_stage::Float;
 use crate::Tick;
 
+
+#[derive(Clone, Copy)]
 pub enum ActionRequest {
     SpawnBall { requested_position: (Float, Float) },
 }
 
-#[derive(Resource, Clone)]
+#[derive(Resource, Clone, Copy)]
 pub struct ActionPacket {
     pub tick: Tick,
     pub action: Action,
@@ -20,7 +22,7 @@ impl ActionPacket {
     }
 }
 
-#[derive(Resource, Clone, Debug)]
+#[derive(Resource, Clone, Debug, Copy)]
 pub enum Action {
     SpawnBall { pos: Position },
 }

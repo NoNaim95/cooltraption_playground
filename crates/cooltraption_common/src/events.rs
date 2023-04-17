@@ -1,42 +1,64 @@
-type EventHandler<T> = Box<dyn FnMut(&T)>;
-type MutEventHandler<T> = Box<dyn FnMut(&mut T)>;
-
-pub struct Event<T> {
-    event_handlers: Vec<EventHandler<T>>,
+pub struct EventPublisher<'a, T> {
+    event_handlers: Vec<Box<dyn EventHandler<T> + 'a>>,
 }
 
-impl<T> Event<T> {
-    pub fn add_event_handler(&mut self, f: impl FnMut(&T) + 'static) {
-        self.event_handlers.push(Box::new(f));
+
+impl<'a, T> EventPublisher<'a, T> {
+    pub fn add_event_handler(&mut self, event_handler: impl EventHandler<T> + 'a) {
+        self.event_handlers.push(Box::new(event_handler));
     }
-    pub fn invoke(&mut self, payload: &T) {
+    pub fn publish(&mut self, payload: &T) {
         for event_handler in &mut self.event_handlers {
-            event_handler(payload);
+            event_handler.handle_event(payload);
         }
     }
 }
 
-impl<T> Default for Event<T> {
+impl<'a, T> Default for EventPublisher<'a, T> {
     fn default() -> Self {
-        Event {
-            event_handlers: Default::default(),
-        }
+        Self { event_handlers: Default::default() }
     }
 }
 
-#[derive(Default)]
-pub struct MutEvent<T> {
-    event_handlers: Vec<MutEventHandler<T>>,
+pub struct MutEventPublisher<T> {
+    event_handlers: Vec<Box<dyn MutEventHandler<T>>>,
 }
 
-impl<T> MutEvent<T> {
-    pub fn add_event_handler(&mut self, f: impl FnMut(&mut T) + 'static) {
-        self.event_handlers.push(Box::new(f));
+impl<T> MutEventPublisher<T> {
+    pub fn add_event_handler(&mut self, event_handler: impl MutEventHandler<T> + 'static) {
+        self.event_handlers.push(Box::new(event_handler));
     }
 
-    pub fn invoke(&mut self, payload: &mut T) {
+    pub fn publish(&mut self, payload: &mut T) {
         for event_handler in &mut self.event_handlers {
-            event_handler(payload);
+            event_handler.handle_event(payload);
         }
+    }
+}
+
+impl<T> Default for MutEventPublisher<T> {
+    fn default() -> Self {
+        Self { event_handlers: Default::default() }
+    }
+}
+
+pub trait EventHandler<T>
+{
+    fn handle_event(&mut self, event: &T);
+}
+
+impl<T, F: FnMut(&T)> EventHandler<T> for F {
+    fn handle_event(&mut self, event: &T) {
+        self(event)
+    }
+}
+
+pub trait MutEventHandler<T> {
+    fn handle_event(&mut self, event: &mut T);
+}
+
+impl<T, F: FnMut(&mut T)> MutEventHandler<T> for F {
+    fn handle_event(&mut self, event: &mut T) {
+        self(event)
     }
 }
