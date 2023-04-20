@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 cooltraption_runtime = { path = "../cooltraption_runtime" }
 cooltraption_simulation = { path = "../cooltraption_simulation" }
+cooltraption_network = { path = "../cooltraption_network" }
+cooltraption_common = { path = "../cooltraption_common" }
 
 pipeline_rs = { git = "https://github.com/NoNaim95/pipeline_rs", branch = "master" }
 sfml = "0.20.0"
@@ -20,3 +22,4 @@ fixed = "1.21"
 fixed-macro = "1.1"
 num-traits = "0.2"
 rand = "0.8"
+base64 = "*"

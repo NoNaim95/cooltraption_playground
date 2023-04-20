@@ -4,7 +4,7 @@ use bevy_ecs::prelude::*;
 
 use crate::stages::physics_stage::Vec2f;
 
-#[derive(Component, Default, Clone, Debug)]
+#[derive(Component, Default, Clone, Debug, Copy)]
 pub struct Position(pub Vec2f);
 
 #[derive(Component, Default, Clone, Debug)]

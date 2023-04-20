@@ -1,37 +1,45 @@
-use std::collections::HashSet;
+use cooltraption_common::events::MutEventPublisher;
 
-use crate::common::NetworkingEngine;
 pub use message_io::network::{Endpoint, NetEvent, Transport};
-pub use message_io::node::{self, NodeEvent, NodeHandler, NodeListener};
-
-pub struct ServerNetworkingEngine {
-    pub handler: NodeHandler<()>,
-}
+pub use message_io::node::{self, NodeHandler, NodeListener, StoredNodeEvent};
+pub struct ServerNetworkingEngine {}
 
 impl ServerNetworkingEngine {
-    pub fn new(handler: NodeHandler<()>) -> Self {
-        Self { handler }
+    pub fn run(
+        &mut self,
+        port: u16,
+        mut node_event_publisher: MutEventPublisher<(StoredNodeEvent<Signal>, Context)>,
+    ) {
+        let (handler, listener) = node::split();
+        handler
+            .network()
+            .listen(Transport::Tcp, format!("0.0.0.0:{}", port))
+            .expect("The port to be free");
+
+        let (_task, mut events) = listener.enqueue();
+
+        loop {
+            let event = events.receive();
+            let context = Context {
+                node_handler: handler.clone(),
+            };
+
+            node_event_publisher.publish(&mut (event, context));
+        }
     }
 }
 
-impl ServerNetworkingEngine {}
-
-pub fn listen(handler: &NodeHandler<()>, port: u32) {
-    handler
-        .network()
-        .listen(Transport::Tcp, format!("0.0.0.0:{}", port));
-}
-
-pub fn run_event_handler(
-    listener: NodeListener<()>,
-    event_handler: impl FnMut(NodeEvent<()>),
-) {
-    listener.for_each(event_handler);
+#[derive(Clone)]
+pub struct Context {
+    pub node_handler: NodeHandler<Signal>,
 }
 
 #[derive(Default, Debug)]
-pub struct NetworkState<'a> {
-    pub connected_clients: HashSet<Endpoint>,
+pub struct MessageStorage {
     pub sent_messages: Vec<(Endpoint, String)>,
-    pub current_event: Option<NodeEvent<'a, ()>>,
+}
+
+#[derive(Debug, Clone)]
+pub enum Signal {
+    DisconnectClient(Endpoint),
 }

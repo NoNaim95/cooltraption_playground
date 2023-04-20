@@ -9,13 +9,14 @@ crate-type = ["lib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cooltraption_common = { path = "../cooltraption_common" }
+
 log = "0.4"
 env_logger = "0.10"
 fixed = "1.21"
 fixed-macro = "1.1"
 num-traits = "0.2"
 message-io = "0.15.0"
-
 [build-dependencies]
 copy_to_output = "2.0"
 glob = "0.3"

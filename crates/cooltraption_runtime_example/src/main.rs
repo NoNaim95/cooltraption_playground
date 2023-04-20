@@ -1,8 +1,8 @@
 use crate::render_component::Renderer;
-use cooltraption_network::server::{
-    run_event_handler, listen, node, NetEvent, NetworkState, NodeEvent,
-};
-use cooltraption_network::*;
+use cooltraption_common::events::MutEventPublisher;
+use cooltraption_network::network_state::NetworkStateEventHandler;
+use cooltraption_network::network_state_handler::NetworkStateHandler;
+use cooltraption_network::server::ServerNetworkingEngine;
 use cooltraption_simulation::action::Action;
 use cooltraption_simulation::simulation_state::ComponentIter;
 use cooltraption_simulation::stages::physics_stage::Vec2f;
@@ -20,48 +20,19 @@ pub mod render_component;
 fn main() {
     //cooltraption_runtime::run();
     //query_example();
+    server_example();
+}
 
-    //let event_send_pipe = SendPipe::new(move |event: NodeEvent<()>| {
-    //    match event {
-    //        NodeEvent::Network(ref net_event) => match net_event {
-    //            NetEvent::Connected(_endpoint, _ok) => unreachable!(),
-    //            NetEvent::Accepted(endpoint, _id) => {
-    //                network_state.connected_clients.insert(*endpoint);
-    //            }
-    //            NetEvent::Message(endpoint, data) => {
-    //                let msg = String::from_utf8_lossy(data);
-    //                let msg2 = String::from(msg);
-    //                println!("Received Message: {}", msg2);
-    //                network_state.sent_messages.push((*endpoint, msg2));
-    //            }
-    //            NetEvent::Disconnected(endpoint) => {
-    //                network_state.connected_clients.remove(endpoint);
-    //            }
-    //        },
-    //        NodeEvent::Signal(ref signal) => match signal {
-    //            () => {
-    //                println!("Received Greeting Signal")
-    //            }
-    //        },
-    //    }
-    //    network_state.current_event = Some(event);
-    //    on_network_state(&network_state);
-    //});
+pub fn server_example() {
+    let network_state_handler = NetworkStateHandler::new(2);
 
-    let on_network_state = |network_state: &NetworkState|{
-        dbg!(network_state);
-    };
+    let mut network_state_event_handler = NetworkStateEventHandler::default();
+    network_state_event_handler.add_handler(network_state_handler);
 
-    let (handler, listener) = node::split::<()>();
-    let mut network_state = NetworkState::default();
+    let mut event_publisher = MutEventPublisher::default();
+    event_publisher.add_event_handler(network_state_event_handler);
 
-    let event_send_pipe2 = SendPipe::new(move |event: NodeEvent<()>| {
-        dbg!(event);
-    });
-
-    listen(&handler, 5000);
-    listener.for_each(event_send_pipe2.into_inner());
-    println!("dispatch_event_handler");
+    ServerNetworkingEngine {}.run(5000, event_publisher);
 }
 
 pub fn run() {

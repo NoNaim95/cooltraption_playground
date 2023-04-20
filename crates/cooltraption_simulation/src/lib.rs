@@ -14,7 +14,7 @@ use crate::simulation_state::ComponentIter;
 use crate::stages::physics_stage::Vec2f;
 use action::{Action, ActionPacket};
 pub use components::{Acceleration, PhysicsBundle, Position, Velocity};
-use cooltraption_common::events::{Event, MutEvent};
+use cooltraption_common::events::{EventPublisher, MutEventPublisher};
 use simulation_state::SimulationState;
 use stages::physics_stage::{self, PhysicsStage};
 
@@ -50,16 +50,16 @@ pub trait Simulation {
 }
 
 #[derive(Default)]
-pub struct SimulationImpl<I: Iterator<Item = Action>> {
+pub struct SimulationImpl<'a, I: Iterator<Item = Action>> {
     simulation_state: SimulationState,
     schedule: Schedule,
     action_queue: I,
     action_table: HashMap<Tick, Vec<Action>>,
-    state_complete_event: MutEvent<SimulationState>,
-    publish_action_packet: Event<ActionPacket>,
+    state_complete_event: MutEventPublisher<'a, SimulationState>,
+    publish_action_packet: EventPublisher<'a, ActionPacket>,
 }
 
-impl<I: Iterator<Item = Action>> SimulationImpl<I> {
+impl<'a, I: Iterator<Item = Action>> SimulationImpl<'a, I> {
     pub fn new(mut options: SimulationOptions<I>) -> Self {
         let mut schedule = Schedule::default();
         schedule.add_stage(
@@ -102,11 +102,11 @@ impl<I: Iterator<Item = Action>> SimulationImpl<I> {
     }
 }
 
-impl<I: Iterator<Item = Action>> Simulation for SimulationImpl<I> {
+impl<'a, I: Iterator<Item = Action>> Simulation for SimulationImpl<'a, I> {
     fn step_simulation(&mut self, dt: Duration) {
         for action in &mut self.action_queue {
             let action_packet = ActionPacket::new(self.simulation_state.current_tick(), action);
-            self.publish_action_packet.invoke(&action_packet);
+            self.publish_action_packet.publish(&action_packet);
             let actions_for_tick = self.action_table.entry(action_packet.tick).or_default();
             actions_for_tick.push(action_packet.action);
         }
@@ -119,7 +119,7 @@ impl<I: Iterator<Item = Action>> Simulation for SimulationImpl<I> {
         self.simulation_state.load_delta_time(dt.into());
 
         self.schedule.run(self.simulation_state.world_mut());
-        self.state_complete_event.invoke(&mut self.simulation_state);
+        self.state_complete_event.publish(&mut self.simulation_state);
     }
 
     fn add_component_handler<C: Component>(
@@ -127,6 +127,6 @@ impl<I: Iterator<Item = Action>> Simulation for SimulationImpl<I> {
         mut f: impl FnMut(ComponentIter<C>) + 'static,
     ) {
         self.state_complete_event
-            .add_event_handler(move |s| s.query(|i| f(i)));
+            .add_event_handler(move |s: &mut SimulationState| s.query(|i| f(i)));
     }
 }
