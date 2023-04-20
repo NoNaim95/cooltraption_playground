@@ -38,7 +38,7 @@ impl RenderEventHandler {
 }
 
 impl EventHandler for RenderEventHandler {
-    fn handle_event(&mut self, event: &Event<CooltraptionEvent>, context: &mut Context) {
+    fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context) {
         match event {
             Event::UserEvent(CooltraptionEvent::Init) => {
                 for initializer in self.initializers.drain(0..self.initializers.len()) {

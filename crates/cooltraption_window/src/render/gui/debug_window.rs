@@ -21,7 +21,7 @@ impl Default for DebugWindow {
 }
 
 impl EventHandler for DebugWindow {
-    fn handle_event(&mut self, _event: &Event<CooltraptionEvent>, context: &mut Context) {
+    fn handle_event(&mut self, _event: &mut Event<CooltraptionEvent>, context: &mut Context) {
         self.window_size = context.window.inner_size();
     }
 }
@@ -39,5 +39,9 @@ impl GuiWindow for DebugWindow {
             true => UiState::KeepOpen,
             false => UiState::Close,
         }
+    }
+
+    fn id(&self) -> &'static str {
+        "debug"
     }
 }

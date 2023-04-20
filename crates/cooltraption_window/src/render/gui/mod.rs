@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Instant;
 
@@ -6,7 +7,6 @@ use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use winit::event::Event;
 
-use crate::gui::debug_window::DebugWindow;
 pub use crate::render::gui::gui_window::{GuiWindow, UiState};
 use crate::render::{RenderFrame, Renderer, RendererInitializer};
 use crate::window::event_handler::{Context, EventHandler};
@@ -19,7 +19,7 @@ struct Gui {
     start_time: Instant,
     platform: Platform,
     render_pass: RenderPass,
-    windows: Vec<Box<dyn GuiWindow>>,
+    windows: HashMap<&'static str, Box<dyn GuiWindow>>,
 }
 
 pub struct GuiInitializer {}
@@ -27,19 +27,30 @@ pub struct GuiInitializer {}
 impl Gui {
     #[allow(unused)]
     pub fn add_window(&mut self, window: Box<dyn GuiWindow>) {
-        self.windows.push(window);
+        self.windows.insert(window.id(), window);
     }
 }
 
 impl EventHandler for Gui {
-    fn handle_event(&mut self, event: &Event<CooltraptionEvent>, context: &mut Context) {
+    fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context) {
         self.platform.handle_event(event);
 
-        if let Event::UserEvent(CooltraptionEvent::OpenGUI) = event {
-            self.add_window(Box::new(DebugWindow::default()));
+        if let Event::UserEvent(event) = event {
+            match event {
+                CooltraptionEvent::OpenGUI(window) => match window.take() {
+                    None => {}
+                    Some(window) => {
+                        self.add_window(window);
+                    }
+                },
+                CooltraptionEvent::CloseGUI(id) => {
+                    self.windows.remove(id);
+                }
+                _ => {}
+            }
         }
 
-        for window in &mut self.windows {
+        for window in self.windows.values_mut() {
             window.handle_event(event, context);
         }
     }
@@ -53,7 +64,7 @@ impl Renderer for Gui {
         self.platform.begin_frame();
 
         // Draw all ui elements
-        self.windows.retain_mut(|window| {
+        self.windows.retain(|_id, window| {
             matches!(window.show(&self.platform.context()), UiState::KeepOpen)
         });
 
@@ -111,7 +122,7 @@ impl RendererInitializer for GuiInitializer {
                 context.wgpu_state.config.format,
                 1,
             ),
-            windows: vec![],
+            windows: HashMap::new(),
         }));
 
         context.event_handlers.push(gui.clone());

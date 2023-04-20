@@ -6,7 +6,7 @@ use crate::window::{Context, CooltraptionEvent, EventHandler};
 pub struct WindowEventHandler {}
 
 impl EventHandler for WindowEventHandler {
-    fn handle_event(&mut self, event: &Event<CooltraptionEvent>, context: &mut Context) {
+    fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context) {
         match event {
             Event::WindowEvent {
                 ref event,

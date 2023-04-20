@@ -8,4 +8,5 @@ pub enum UiState {
 
 pub trait GuiWindow: EventHandler {
     fn show(&mut self, context: &Context) -> UiState;
+    fn id(&self) -> &'static str;
 }

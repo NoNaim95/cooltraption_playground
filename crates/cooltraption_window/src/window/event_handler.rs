@@ -16,5 +16,5 @@ pub struct Context<'a> {
 }
 
 pub trait EventHandler {
-    fn handle_event(&mut self, event: &Event<CooltraptionEvent>, context: &mut Context);
+    fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context);
 }

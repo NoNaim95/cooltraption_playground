@@ -20,7 +20,7 @@ pub struct Camera {
 }
 
 impl EventHandler for Camera {
-    fn handle_event(&mut self, event: &Event<CooltraptionEvent>, context: &mut Context) {
+    fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context) {
         match event {
             Event::WindowEvent { event, window_id } => {
                 if window_id != &context.window.id() {

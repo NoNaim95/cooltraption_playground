@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -23,12 +24,27 @@ pub struct EventLoopHandler {
     window: Window,
 }
 
-#[derive(Debug, Copy, Clone)]
+//#[derive(Debug, Copy, Clone)]
 pub enum CooltraptionEvent {
     Init,
     Render(Duration),
     CameraControls(CameraControls),
-    OpenGUI, // TODO: GuiCommand to specify window
+    OpenGUI(Option<Box<dyn crate::gui::GuiWindow>>),
+    CloseGUI(&'static str),
+}
+
+impl Debug for CooltraptionEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CooltraptionEvent::Init => write!(f, "Init"),
+            CooltraptionEvent::Render(duration) => write!(f, "Render({:?})", duration),
+            CooltraptionEvent::CameraControls(controls) => {
+                write!(f, "CameraControls({:?})", controls)
+            }
+            CooltraptionEvent::OpenGUI(_) => write!(f, "OpenGUI"),
+            CooltraptionEvent::CloseGUI(id) => write!(f, "CloseGUI({})", id),
+        }
+    }
 }
 
 impl EventLoopHandler {
@@ -62,24 +78,22 @@ impl EventLoopHandler {
             .send_event(CooltraptionEvent::Init)
             .expect("Send init event");
 
-        self.event_loop.run(move |event, _, control_flow| {
+        self.event_loop.run(move |mut event, _, control_flow| {
             *control_flow = ControlFlow::Wait;
 
             let mut new_event_handlers = vec![];
 
-            for event_handler in &self.handlers {
-                let mut context = Context {
-                    control_flow,
-                    window: &self.window,
-                    wgpu_state: &mut self.wgpu_state,
-                    event_loop_proxy: &self.event_loop_proxy,
-                    event_handlers: &mut new_event_handlers,
-                };
+            let mut context = Context {
+                control_flow,
+                window: &self.window,
+                wgpu_state: &mut self.wgpu_state,
+                event_loop_proxy: &self.event_loop_proxy,
+                event_handlers: &mut new_event_handlers,
+            };
 
-                event_handler
-                    .borrow_mut()
-                    .handle_event(&event, &mut context);
-            }
+            self.handlers.iter().for_each(|handler| {
+                handler.borrow_mut().handle_event(&mut event, &mut context);
+            });
 
             self.handlers.append(&mut new_event_handlers);
         });

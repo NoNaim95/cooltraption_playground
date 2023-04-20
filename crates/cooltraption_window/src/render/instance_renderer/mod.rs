@@ -40,7 +40,7 @@ pub struct InstanceRendererInitializer {
 }
 
 impl EventHandler for InstanceRenderer {
-    fn handle_event(&mut self, event: &Event<CooltraptionEvent>, context: &mut Context) {
+    fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context) {
         self.camera.handle_event(event, context);
     }
 }

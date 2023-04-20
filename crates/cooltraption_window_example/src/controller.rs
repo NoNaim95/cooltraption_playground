@@ -3,6 +3,7 @@ use cgmath::*;
 use cooltraption_window::camera::controls::{
     ButtonMap, CameraController, CameraControls, KeyboardState, MouseState, VirtualKeyCode,
 };
+use cooltraption_window::gui::debug_window::DebugWindow;
 use cooltraption_window::window::event_handler::{
     Context, ElementState, Event, EventHandler, EventLoopProxy, MouseScrollDelta, WindowEvent,
 };
@@ -54,7 +55,7 @@ impl Controller {
 }
 
 impl EventHandler for Controller {
-    fn handle_event(&mut self, event: &Event<CooltraptionEvent>, context: &mut Context) {
+    fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context) {
         match event {
             Event::WindowEvent { event, window_id } => {
                 if window_id != &context.window.id() {
@@ -71,7 +72,9 @@ impl EventHandler for Controller {
                             {
                                 context
                                     .event_loop_proxy
-                                    .send_event(CooltraptionEvent::OpenGUI)
+                                    .send_event(CooltraptionEvent::OpenGUI(Some(
+                                        Box::<DebugWindow>::default(),
+                                    )))
                                     .expect("Send OpenGUI event");
                             }
                         }
