@@ -2,11 +2,11 @@ pub struct EventPublisher<'a, T> {
     event_handlers: Vec<Box<dyn EventHandler<T> + 'a>>,
 }
 
-
 impl<'a, T> EventPublisher<'a, T> {
     pub fn add_event_handler(&mut self, event_handler: impl EventHandler<T> + 'a) {
         self.event_handlers.push(Box::new(event_handler));
     }
+
     pub fn publish(&mut self, payload: &T) {
         for event_handler in &mut self.event_handlers {
             event_handler.handle_event(payload);
@@ -16,7 +16,9 @@ impl<'a, T> EventPublisher<'a, T> {
 
 impl<'a, T> Default for EventPublisher<'a, T> {
     fn default() -> Self {
-        Self { event_handlers: Default::default() }
+        Self {
+            event_handlers: Default::default(),
+        }
     }
 }
 
@@ -38,12 +40,13 @@ impl<T> MutEventPublisher<T> {
 
 impl<T> Default for MutEventPublisher<T> {
     fn default() -> Self {
-        Self { event_handlers: Default::default() }
+        Self {
+            event_handlers: Default::default(),
+        }
     }
 }
 
-pub trait EventHandler<T>
-{
+pub trait EventHandler<T> {
     fn handle_event(&mut self, event: &T);
 }
 

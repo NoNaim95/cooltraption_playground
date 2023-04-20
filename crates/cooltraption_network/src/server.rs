@@ -1,46 +1,38 @@
-use std::collections::HashSet;
+use cooltraption_common::events::MutEventPublisher;
 
-use crate::common::NetworkingEngine;
-use cooltraption_common::events::{EventHandler, EventPublisher};
-use message_io::network::ResourceId;
 pub use message_io::network::{Endpoint, NetEvent, Transport};
-pub use message_io::node::{self, NodeEvent, NodeHandler, NodeListener};
+pub use message_io::node::{self, NodeHandler, NodeListener, StoredNodeEvent};
 
-pub struct ServerNetworkingEngine {
-}
+pub struct ServerNetworkingEngine {}
 
 impl ServerNetworkingEngine {
-    pub fn run<T>(&mut self, port: u16, mut node_event_publisher: EventPublisher<(NodeEvent<Signal>, Context)>)
-    {
-        let (mut handler, listener) = node::split();
+    pub fn run<T>(
+        &mut self,
+        port: u16,
+        mut node_event_publisher: MutEventPublisher<(StoredNodeEvent<Signal>, Context)>,
+    ) {
+        let (handler, listener) = node::split();
         handler
             .network()
             .listen(Transport::Tcp, format!("0.0.0.0:{}", port))
             .expect("The port to be free");
 
+        let (_task, mut events) = listener.enqueue();
 
-        let node_event_handler = move |node_event: NodeEvent<Signal>| {
-            let context = Context{ node_handler: &mut handler };
-            node_event_publisher.publish(&(node_event, context))
-        };
+        loop {
+            let event = events.receive();
+            let context = Context {
+                node_handler: handler.clone(),
+            };
 
-        listener.for_each(node_event_handler);
+            node_event_publisher.publish(&mut (event, context));
+        }
     }
 }
 
-pub struct Context<'a> {
-    pub node_handler: &'a mut NodeHandler<Signal>,
+pub struct Context {
+    pub node_handler: NodeHandler<Signal>,
 }
-
-impl ServerNetworkingEngine {}
-
-pub fn run_event_handler(
-    listener: NodeListener<Signal>,
-    event_handler: impl FnMut(NodeEvent<Signal>),
-) {
-    listener.for_each(event_handler);
-}
-
 
 #[derive(Default, Debug)]
 pub struct MessageStorage {
