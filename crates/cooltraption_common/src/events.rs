@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 pub struct EventPublisher<'a, T> {
     event_handlers: Vec<Box<dyn EventHandler<T> + 'a>>,
 }
@@ -22,12 +24,21 @@ impl<'a, T> Default for EventPublisher<'a, T> {
     }
 }
 
-pub struct MutEventPublisher<T> {
-    event_handlers: Vec<Box<dyn MutEventHandler<T>>>,
+impl<'a, T> Debug for EventPublisher<'a, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "self.event_handlers has {} handlers registered",
+            self.event_handlers.len()
+        ))
+    }
 }
 
-impl<T> MutEventPublisher<T> {
-    pub fn add_event_handler(&mut self, event_handler: impl MutEventHandler<T> + 'static) {
+pub struct MutEventPublisher<'a, T> {
+    event_handlers: Vec<Box<dyn MutEventHandler<T> + 'a>>,
+}
+
+impl<'a, T> MutEventPublisher<'a, T> {
+    pub fn add_event_handler(&mut self, event_handler: impl MutEventHandler<T> + 'a) {
         self.event_handlers.push(Box::new(event_handler));
     }
 
@@ -38,11 +49,20 @@ impl<T> MutEventPublisher<T> {
     }
 }
 
-impl<T> Default for MutEventPublisher<T> {
+impl<'a, T> Default for MutEventPublisher<'a, T> {
     fn default() -> Self {
         Self {
             event_handlers: Default::default(),
         }
+    }
+}
+
+impl<'a, T> Debug for MutEventPublisher<'a, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "self.event_handlers has {} handlers registered",
+            self.event_handlers.len()
+        ))
     }
 }
 

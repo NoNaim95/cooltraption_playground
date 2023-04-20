@@ -2,11 +2,10 @@ use cooltraption_common::events::MutEventPublisher;
 
 pub use message_io::network::{Endpoint, NetEvent, Transport};
 pub use message_io::node::{self, NodeHandler, NodeListener, StoredNodeEvent};
-
 pub struct ServerNetworkingEngine {}
 
 impl ServerNetworkingEngine {
-    pub fn run<T>(
+    pub fn run(
         &mut self,
         port: u16,
         mut node_event_publisher: MutEventPublisher<(StoredNodeEvent<Signal>, Context)>,
@@ -30,6 +29,7 @@ impl ServerNetworkingEngine {
     }
 }
 
+#[derive(Clone)]
 pub struct Context {
     pub node_handler: NodeHandler<Signal>,
 }
@@ -39,6 +39,7 @@ pub struct MessageStorage {
     pub sent_messages: Vec<(Endpoint, String)>,
 }
 
+#[derive(Debug, Clone)]
 pub enum Signal {
     DisconnectClient(Endpoint),
 }

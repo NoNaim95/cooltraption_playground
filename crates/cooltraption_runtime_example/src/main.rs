@@ -1,39 +1,36 @@
 use crate::render_component::Renderer;
-use cooltraption_network::client_storage::{ClientStorage, ClientStorageEventHandler};
-use cooltraption_network::server::{
-    run_event_handler, listen, node, NetEvent, NodeEvent, Signal, ServerNetworkingEngine,
-};
-use cooltraption_network::*;
+use cooltraption_common::events::MutEventPublisher;
+use cooltraption_network::network_state::NetworkStateEventHandler;
+use cooltraption_network::network_state_handler::NetworkStateHandler;
+use cooltraption_network::server::ServerNetworkingEngine;
 use cooltraption_simulation::action::Action;
 use cooltraption_simulation::simulation_state::ComponentIter;
 use cooltraption_simulation::stages::physics_stage::Vec2f;
 use cooltraption_simulation::*;
 use fixed::prelude::ToFixed;
 use pipeline_rs::pipes::receive_pipe::*;
-use pipeline_rs::pipes::send_pipe::SendPipe;
-use pipeline_rs::pipes::transformer_pipe::TransformerPipe;
 use std::sync::mpsc::channel;
 use std::thread::sleep;
 use std::time::Duration;
-
-use base64::encode;
 
 pub mod render_component;
 
 fn main() {
     //cooltraption_runtime::run();
     //query_example();
-    let (handler, listener) = node::split();
-    listen(&handler, 5000);
+    server_example();
+}
 
+pub fn server_example() {
+    let network_state_handler = NetworkStateHandler::new(2);
 
-    let x = ClientStorageEventHandler::default();
+    let mut network_state_event_handler = NetworkStateEventHandler::default();
+    network_state_event_handler.add_handler(network_state_handler);
 
-    let server = ServerNetworkingEngine::new();
-    server.run(5000, x);
+    let mut event_publisher = MutEventPublisher::default();
+    event_publisher.add_event_handler(network_state_event_handler);
 
-    listener.for_each(server.into_handler());
-    println!("dispatch_event_handler");
+    ServerNetworkingEngine {}.run(5000, event_publisher);
 }
 
 pub fn run() {

@@ -50,16 +50,16 @@ pub trait Simulation {
 }
 
 #[derive(Default)]
-pub struct SimulationImpl<I: Iterator<Item = Action>> {
+pub struct SimulationImpl<'a, I: Iterator<Item = Action>> {
     simulation_state: SimulationState,
     schedule: Schedule,
     action_queue: I,
     action_table: HashMap<Tick, Vec<Action>>,
-    state_complete_event: MutEventPublisher<SimulationState>,
-    publish_action_packet: EventPublisher<ActionPacket>,
+    state_complete_event: MutEventPublisher<'a, SimulationState>,
+    publish_action_packet: EventPublisher<'a, ActionPacket>,
 }
 
-impl<I: Iterator<Item = Action>> SimulationImpl<I> {
+impl<'a, I: Iterator<Item = Action>> SimulationImpl<'a, I> {
     pub fn new(mut options: SimulationOptions<I>) -> Self {
         let mut schedule = Schedule::default();
         schedule.add_stage(
@@ -102,7 +102,7 @@ impl<I: Iterator<Item = Action>> SimulationImpl<I> {
     }
 }
 
-impl<I: Iterator<Item = Action>> Simulation for SimulationImpl<I> {
+impl<'a, I: Iterator<Item = Action>> Simulation for SimulationImpl<'a, I> {
     fn step_simulation(&mut self, dt: Duration) {
         for action in &mut self.action_queue {
             let action_packet = ActionPacket::new(self.simulation_state.current_tick(), action);
@@ -127,6 +127,6 @@ impl<I: Iterator<Item = Action>> Simulation for SimulationImpl<I> {
         mut f: impl FnMut(ComponentIter<C>) + 'static,
     ) {
         self.state_complete_event
-            .add_event_handler(move |s| s.query(|i| f(i)));
+            .add_event_handler(move |s: &mut SimulationState| s.query(|i| f(i)));
     }
 }
