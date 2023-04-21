@@ -19,11 +19,7 @@ pub struct Controller {
 impl CameraController for Controller {}
 
 impl Controller {
-    fn send_controls(
-        &self,
-        event_loop_proxy: &EventLoopProxy<CooltraptionEvent>,
-        delta_time: &Duration,
-    ) {
+    fn send_controls(&self, context: &mut Context, delta_time: &Duration) {
         let mut controls = CameraControls::default();
 
         let zoom_speed = 60.0 * delta_time.as_secs_f32();
@@ -48,9 +44,7 @@ impl Controller {
             controls.move_vec = controls.move_vec.normalize_to(move_speed);
         }
 
-        event_loop_proxy
-            .send_event(CooltraptionEvent::CameraControls(controls))
-            .expect("Send camera controls event");
+        context.send_event(CooltraptionEvent::CameraControls(controls));
     }
 }
 
@@ -71,11 +65,9 @@ impl EventHandler for Controller {
                             if vk_code == VirtualKeyCode::F3 && input.state == ElementState::Pressed
                             {
                                 context
-                                    .event_loop_proxy
                                     .send_event(CooltraptionEvent::OpenGUI(Some(
                                         Box::<DebugWindow>::default(),
-                                    )))
-                                    .expect("Send OpenGUI event");
+                                    )));
                             }
                         }
                     }
@@ -97,7 +89,7 @@ impl EventHandler for Controller {
                 }
             }
             Event::UserEvent(CooltraptionEvent::Render(delta_time)) => {
-                self.send_controls(context.event_loop_proxy, delta_time);
+                self.send_controls(context, delta_time);
                 self.mouse_state.reset();
             }
             _ => {}

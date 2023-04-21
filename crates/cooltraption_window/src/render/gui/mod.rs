@@ -125,7 +125,7 @@ impl RendererInitializer for GuiInitializer {
             windows: HashMap::new(),
         }));
 
-        context.event_handlers.push(gui.clone());
+        context.register_event_handler(gui.clone());
 
         gui
     }

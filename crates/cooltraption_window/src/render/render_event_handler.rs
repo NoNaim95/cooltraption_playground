@@ -68,12 +68,9 @@ impl EventHandler for RenderEventHandler {
                     Err(e) => error!("{}", e),
                 }
 
-                context
-                    .event_loop_proxy
-                    .send_event(CooltraptionEvent::Render(
-                        Instant::now() - self.prev_frame_time,
-                    ))
-                    .expect("Send render event");
+                context.send_event(CooltraptionEvent::Render(
+                    Instant::now() - self.prev_frame_time,
+                ));
 
                 self.prev_frame_time = Instant::now();
             }

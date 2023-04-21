@@ -216,7 +216,7 @@ impl RendererInitializer for InstanceRendererInitializer {
             world_state: [Default::default(), Default::default()],
         }));
 
-        context.event_handlers.push(instance_renderer.clone());
+        context.register_event_handler(instance_renderer.clone());
 
         instance_renderer
     }

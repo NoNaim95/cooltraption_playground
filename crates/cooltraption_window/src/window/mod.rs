@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use crate::camera::controls::CameraControls;
+use crate::render::render_frame::RenderFrame;
 use crate::window::event_handler::{Context, EventHandler};
 use winit::dpi::PhysicalSize;
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy};
@@ -24,7 +25,6 @@ pub struct EventLoopHandler {
     window: Window,
 }
 
-//#[derive(Debug, Copy, Clone)]
 pub enum CooltraptionEvent {
     Init,
     Render(Duration),
@@ -83,13 +83,13 @@ impl EventLoopHandler {
 
             let mut new_event_handlers = vec![];
 
-            let mut context = Context {
+            let mut context = Context::new(
                 control_flow,
-                window: &self.window,
-                wgpu_state: &mut self.wgpu_state,
-                event_loop_proxy: &self.event_loop_proxy,
-                event_handlers: &mut new_event_handlers,
-            };
+                &self.window,
+                &mut self.wgpu_state,
+                &self.event_loop_proxy,
+                &mut new_event_handlers,
+            );
 
             self.handlers.iter().for_each(|handler| {
                 handler.borrow_mut().handle_event(&mut event, &mut context);
