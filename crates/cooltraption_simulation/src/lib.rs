@@ -67,10 +67,10 @@ impl<'a, I: Iterator<Item = Action>> SimulationImpl<'a, I> {
             SystemStage::parallel().with_system(physics_stage::solve_movement),
         );
 
-        for _ in 0..10 {
+        for i in 0..10 {
             options.state.world_mut().spawn(PhysicsBundle {
                 pos: Position::default(),
-                vel: Velocity(Vec2f::new(10.to_fixed(), 20.to_fixed())),
+                vel: Velocity(Vec2f::new((i*10).to_fixed(), (i*30).to_fixed())),
                 acc: Acceleration::default(),
             });
         }
@@ -88,12 +88,14 @@ impl<'a, I: Iterator<Item = Action>> SimulationImpl<'a, I> {
     pub fn run(&mut self) {
         let mut start_time = Instant::now();
         let mut frame_time = start_time - Instant::now();
+        let fps: u64 = 24;
 
         loop {
-            self.step_simulation(frame_time);
             frame_time = Instant::now() - start_time;
+            self.step_simulation(frame_time);
             start_time = Instant::now();
-            sleep(Duration::from_millis(30));
+            let max = std::cmp::max(0, (1000/fps) - frame_time.as_millis() as u64);
+            sleep(Duration::from_millis(max));
         }
     }
 

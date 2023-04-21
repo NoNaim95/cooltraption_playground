@@ -19,8 +19,8 @@ pub mod render_component;
 
 fn main() {
     //cooltraption_runtime::run();
-    //query_example();
-    server_example();
+    query_example();
+    //server_example();
 }
 
 pub fn server_example() {
@@ -83,7 +83,7 @@ pub fn query_example() {
     let sim_options = SimulationOptions::new(action_recv.into_try_iter());
     let mut sim = SimulationImpl::new(sim_options);
     sim.add_component_handler(move |pos: ComponentIter<Position>| {
-        let _ = s.send(pos.cloned().collect());
+        s.send(pos.cloned().collect()).unwrap();
     });
 
     sim.run();

@@ -42,12 +42,12 @@ impl<'s> Drawable for Bullet<'s> {
 }
 
 pub struct Renderer<I: Iterator<Item = Vec<Position>>> {
-    position_generator: I,
+    positions_generator: I,
 }
 
 impl<I: Iterator<Item = Vec<Position>>> Renderer<I> {
     pub fn new(generator: I) -> Self{
-        Self { position_generator: generator }
+        Self { positions_generator: generator }
     }
 
     pub fn render(&mut self) {
@@ -71,16 +71,16 @@ impl<I: Iterator<Item = Vec<Position>>> Renderer<I> {
                 }
             }
             //window.draw(&bullet);
-            window.clear(Color::BLACK);
-            for positions in &mut self.position_generator {
-                let mut circle = CircleShape::new(20.0, 512);
+            let mut circle = CircleShape::new(20.0, 512);
+            for positions in &mut self.positions_generator {
+                window.clear(Color::BLACK);
                 for pos in positions{
                     let sfml_pos = Vector2f::new(f32::from_fixed(pos.x), f32::from_fixed(pos.y));
                     circle.set_position(sfml_pos);
                     window.draw(&circle);
                 }
+                window.display();
             }
-            window.display();
         }
     }
 }
