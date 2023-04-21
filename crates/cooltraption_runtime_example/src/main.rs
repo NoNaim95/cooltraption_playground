@@ -3,7 +3,7 @@ use cooltraption_common::events::MutEventPublisher;
 use cooltraption_network::network_state::NetworkStateEventHandler;
 use cooltraption_network::network_state_handler::NetworkStateHandler;
 use cooltraption_network::server::ServerNetworkingEngine;
-use cooltraption_simulation::action::Action;
+use cooltraption_simulation::action::{Action, SpawnBallAction};
 use cooltraption_simulation::simulation_state::ComponentIter;
 use cooltraption_simulation::stages::physics_stage::Vec2f;
 use cooltraption_simulation::*;
@@ -16,6 +16,8 @@ use std::thread::sleep;
 use std::time::Duration;
 
 pub mod render_component;
+
+use rand::random;
 
 fn main() {
     //cooltraption_runtime::run();
@@ -70,10 +72,17 @@ pub fn query_example() {
 
     let mut i = 1;
     let action_generator = move || {
-        if rand::random::<bool>() {
+        if random::<u32>() % 4 == 0 {
             i += 1;
-            let pos = Position(Vec2f::new(i.to_fixed(), (i * 3).to_fixed()));
-            let action = Action::SpawnBall { pos };
+            let pos = Position(Vec2f::new((i * (rand::random::<u32>() % 16)).to_fixed(), (i * 3).to_fixed()));
+            let pos2 = Position(Vec2f::new(1000.to_fixed(), 1000.to_fixed()));
+            let action;
+            if random::<u32>() % 32 == 0{
+                action = Action::OutwardForce(action::OutwardForceAction { position: pos2, strength: 10.to_fixed() });
+            }
+            else {
+                action = Action::SpawnBall(SpawnBallAction{ position: pos});
+            }
             Some(action)
         } else {
             None

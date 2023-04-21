@@ -72,15 +72,15 @@ impl<I: Iterator<Item = Vec<Position>>> Renderer<I> {
             }
             //window.draw(&bullet);
             let mut circle = CircleShape::new(20.0, 512);
-            for positions in &mut self.positions_generator {
+            if let Some(positions) = self.positions_generator.next(){
                 window.clear(Color::BLACK);
                 for pos in positions{
                     let sfml_pos = Vector2f::new(f32::from_fixed(pos.x), f32::from_fixed(pos.y));
                     circle.set_position(sfml_pos);
                     window.draw(&circle);
                 }
-                window.display();
             }
+            window.display();
         }
     }
 }

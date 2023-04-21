@@ -24,5 +24,18 @@ impl ActionPacket {
 
 #[derive(Resource, Clone, Debug, Copy)]
 pub enum Action {
-    SpawnBall { pos: Position },
+    SpawnBall(SpawnBallAction),
+    OutwardForce(OutwardForceAction),
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct SpawnBallAction {
+    pub position: Position,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct OutwardForceAction {
+    pub position: Position,
+    pub strength: Float,
+}
+

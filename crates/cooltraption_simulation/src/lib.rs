@@ -9,6 +9,7 @@ pub use bevy_ecs::schedule::{Schedule, Stage, SystemStage};
 pub use bevy_ecs::system::Resource;
 pub use bevy_ecs::world::*;
 use fixed::prelude::ToFixed;
+use stages::action_stage::{self, ActionStage};
 
 use crate::simulation_state::ComponentIter;
 use crate::stages::physics_stage::Vec2f;
@@ -67,10 +68,17 @@ impl<'a, I: Iterator<Item = Action>> SimulationImpl<'a, I> {
             SystemStage::parallel().with_system(physics_stage::solve_movement),
         );
 
+        schedule.add_stage(
+            ActionStage,
+            SystemStage::parallel()
+                .with_system(action_stage::apply_spawn_ball_action)
+                .with_system(action_stage::apply_outward_force_action),
+        );
+
         for i in 0..10 {
             options.state.world_mut().spawn(PhysicsBundle {
                 pos: Position::default(),
-                vel: Velocity(Vec2f::new((i*10).to_fixed(), (i*30).to_fixed())),
+                vel: Velocity(Vec2f::new((i * 10).to_fixed(), (i * 30).to_fixed())),
                 acc: Acceleration::default(),
             });
         }
@@ -87,15 +95,14 @@ impl<'a, I: Iterator<Item = Action>> SimulationImpl<'a, I> {
 
     pub fn run(&mut self) {
         let mut start_time = Instant::now();
-        let mut frame_time = start_time - Instant::now();
-        let fps: u64 = 24;
+        const FPS: u64 = 60;
 
         loop {
-            frame_time = Instant::now() - start_time;
+            let frame_time = Instant::now() - start_time;
             self.step_simulation(frame_time);
             start_time = Instant::now();
-            let max = std::cmp::max(0, (1000/fps) - frame_time.as_millis() as u64);
-            sleep(Duration::from_millis(max));
+            //let max = std::cmp::max(0, (1000 / FPS) - frame_time.as_millis() as u64);
+            sleep(Duration::from_millis(10));
         }
     }
 
@@ -121,7 +128,8 @@ impl<'a, I: Iterator<Item = Action>> Simulation for SimulationImpl<'a, I> {
         self.simulation_state.load_delta_time(dt.into());
 
         self.schedule.run(self.simulation_state.world_mut());
-        self.state_complete_event.publish(&mut self.simulation_state);
+        self.state_complete_event
+            .publish(&mut self.simulation_state);
     }
 
     fn add_component_handler<C: Component>(
