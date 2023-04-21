@@ -1,7 +1,6 @@
 use winit::dpi::PhysicalSize;
 use winit::event::Event;
 
-use crate::render::gui::gui_window::UiState;
 use crate::render::gui::GuiWindow;
 use crate::window::event_handler::{Context, EventHandler};
 use crate::window::CooltraptionEvent;
@@ -23,22 +22,21 @@ impl Default for DebugWindow {
 impl EventHandler for DebugWindow {
     fn handle_event(&mut self, _event: &mut Event<CooltraptionEvent>, context: &mut Context) {
         self.window_size = context.window.inner_size();
+
+        if !self.is_open {
+            context.send_event(CooltraptionEvent::CloseGUI(self.id()));
+        }
     }
 }
 
 impl GuiWindow for DebugWindow {
-    fn show(&mut self, context: &egui::Context) -> UiState {
+    fn show(&mut self, context: &egui::Context) {
         egui::Window::new("Debug")
             .open(&mut self.is_open)
             .resizable(false)
             .show(context, |ui| {
                 ui.label(format!("{:?}", self.window_size));
             });
-
-        match self.is_open {
-            true => UiState::KeepOpen,
-            false => UiState::Close,
-        }
     }
 
     fn id(&self) -> &'static str {

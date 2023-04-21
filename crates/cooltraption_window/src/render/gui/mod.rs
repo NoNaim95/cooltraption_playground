@@ -7,7 +7,7 @@ use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use winit::event::Event;
 
-pub use crate::render::gui::gui_window::{GuiWindow, UiState};
+pub use crate::render::gui::gui_window::GuiWindow;
 use crate::render::{RenderFrame, Renderer, RendererInitializer, SharedRenderer};
 use crate::window::event_handler::{Context, EventHandler};
 use crate::window::CooltraptionEvent;
@@ -64,9 +64,9 @@ impl Renderer for GuiRenderer {
         self.platform.begin_frame();
 
         // Draw all ui elements
-        self.windows.retain(|_id, window| {
-            matches!(window.show(&self.platform.context()), UiState::KeepOpen)
-        });
+        for window in self.windows.values_mut() {
+            window.show(&self.platform.context());
+        }
 
         // End the UI frame. We could now handle the output and draw the UI with the backend.
         let full_output = self.platform.end_frame(Some(render_frame.window));
