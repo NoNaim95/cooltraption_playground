@@ -8,7 +8,7 @@ use egui_winit_platform::{Platform, PlatformDescriptor};
 use winit::event::Event;
 
 pub use crate::render::gui::gui_window::{GuiWindow, UiState};
-use crate::render::{RenderFrame, Renderer, RendererInitializer};
+use crate::render::{RenderFrame, Renderer, RendererInitializer, SharedRenderer};
 use crate::window::event_handler::{Context, EventHandler};
 use crate::window::CooltraptionEvent;
 
@@ -107,7 +107,7 @@ impl Renderer for Gui {
 }
 
 impl RendererInitializer for GuiInitializer {
-    fn init(self: Box<Self>, context: &mut Context) -> Rc<RefCell<dyn Renderer>> {
+    fn init(self: Box<Self>, context: &mut Context) -> SharedRenderer {
         let gui = Rc::new(RefCell::new(Gui {
             start_time: Instant::now(),
             platform: Platform::new(PlatformDescriptor {

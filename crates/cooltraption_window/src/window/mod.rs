@@ -1,11 +1,8 @@
-use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
-use std::rc::Rc;
 use std::time::Duration;
 
 use crate::camera::controls::CameraControls;
-use crate::render::render_frame::RenderFrame;
-use crate::window::event_handler::{Context, EventHandler};
+use crate::window::event_handler::{Context, EventHandler, SharedEventHandler};
 use winit::dpi::PhysicalSize;
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy};
 use winit::window::{Window, WindowBuilder};
@@ -20,7 +17,7 @@ mod window_event_handler;
 pub struct EventLoopHandler {
     event_loop: EventLoop<CooltraptionEvent>,
     event_loop_proxy: EventLoopProxy<CooltraptionEvent>,
-    handlers: Vec<Rc<RefCell<dyn EventHandler>>>,
+    handlers: Vec<SharedEventHandler>,
     wgpu_state: WgpuState,
     window: Window,
 }
@@ -69,7 +66,7 @@ impl EventLoopHandler {
         }
     }
 
-    pub fn add_handler(&mut self, handler: Rc<RefCell<dyn EventHandler>>) {
+    pub fn add_handler(&mut self, handler: SharedEventHandler) {
         self.handlers.push(handler);
     }
 

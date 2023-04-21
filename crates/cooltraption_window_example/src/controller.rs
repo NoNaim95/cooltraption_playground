@@ -5,7 +5,7 @@ use cooltraption_window::camera::controls::{
 };
 use cooltraption_window::gui::debug_window::DebugWindow;
 use cooltraption_window::window::event_handler::{
-    Context, ElementState, Event, EventHandler, EventLoopProxy, MouseScrollDelta, WindowEvent,
+    Context, ElementState, Event, EventHandler, MouseScrollDelta, WindowEvent,
 };
 use cooltraption_window::window::CooltraptionEvent;
 use std::time::Duration;

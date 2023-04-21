@@ -12,7 +12,7 @@ pub use crate::render::instance_renderer::render_instance::{RenderInstance, Rend
 pub use crate::render::instance_renderer::world_state::WorldState;
 use crate::render::render_frame::RenderFrame;
 use crate::render::vertex::{Vertex, INDICES, VERTICES};
-use crate::render::{Renderer, RendererInitializer};
+use crate::render::{Renderer, RendererInitializer, SharedRenderer};
 use crate::window::event_handler::{Context, EventHandler};
 use crate::window::CooltraptionEvent;
 
@@ -118,7 +118,7 @@ fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
 }
 
 impl RendererInitializer for InstanceRendererInitializer {
-    fn init(self: Box<Self>, context: &mut Context) -> Rc<RefCell<dyn Renderer>> {
+    fn init(self: Box<Self>, context: &mut Context) -> SharedRenderer {
         let wgpu_state = &context.wgpu_state;
 
         let texture_atlas = self

@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use log::error;
@@ -7,14 +5,14 @@ use wgpu::{CommandEncoderDescriptor, SurfaceError, TextureViewDescriptor};
 use winit::event::Event;
 use winit::window::Window;
 
-use crate::render::{RenderFrame, Renderer, RendererInitializer};
+use crate::render::{BoxedRendererInitializer, RenderFrame, SharedRenderer};
 use crate::window::event_handler::{Context, EventHandler};
 use crate::window::{CooltraptionEvent, WgpuState};
 
 pub struct RenderEventHandler {
     prev_frame_time: Instant,
-    initializers: Vec<Box<dyn RendererInitializer>>,
-    renderers: Vec<Rc<RefCell<dyn Renderer>>>,
+    initializers: Vec<BoxedRendererInitializer>,
+    renderers: Vec<SharedRenderer>,
 }
 
 impl Default for RenderEventHandler {
@@ -28,12 +26,8 @@ impl Default for RenderEventHandler {
 }
 
 impl RenderEventHandler {
-    pub fn add_initializer(&mut self, initializer: Box<dyn RendererInitializer>) {
+    pub fn add_initializer(&mut self, initializer: BoxedRendererInitializer) {
         self.initializers.push(initializer);
-    }
-
-    pub fn add_renderer(&mut self, renderer: Rc<RefCell<dyn Renderer>>) {
-        self.renderers.push(renderer);
     }
 }
 

@@ -12,7 +12,7 @@ pub struct Context<'a> {
     pub window: &'a Window,
     pub wgpu_state: &'a mut WgpuState,
     event_loop_proxy: &'a EventLoopProxy<CooltraptionEvent>,
-    event_handlers: &'a mut Vec<Rc<RefCell<dyn EventHandler>>>,
+    event_handlers: &'a mut Vec<SharedEventHandler>,
 }
 
 impl<'a> Context<'a> {
@@ -21,7 +21,7 @@ impl<'a> Context<'a> {
         window: &'a Window,
         wgpu_state: &'a mut WgpuState,
         event_loop_proxy: &'a EventLoopProxy<CooltraptionEvent>,
-        event_handlers: &'a mut Vec<Rc<RefCell<dyn EventHandler>>>,
+        event_handlers: &'a mut Vec<SharedEventHandler>,
     ) -> Self {
         Self {
             control_flow,
@@ -32,7 +32,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn register_event_handler(&mut self, handler: Rc<RefCell<dyn EventHandler>>) {
+    pub fn register_event_handler(&mut self, handler: SharedEventHandler) {
         self.event_handlers.push(handler);
     }
 
@@ -40,6 +40,8 @@ impl<'a> Context<'a> {
         self.event_loop_proxy.send_event(event).expect("send event");
     }
 }
+
+pub type SharedEventHandler = Rc<RefCell<dyn EventHandler>>;
 
 pub trait EventHandler {
     fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context);
