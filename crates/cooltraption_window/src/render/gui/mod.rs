@@ -15,7 +15,7 @@ use crate::window::CooltraptionEvent;
 pub mod debug_window;
 mod gui_window;
 
-struct Gui {
+struct GuiRenderer {
     start_time: Instant,
     platform: Platform,
     render_pass: RenderPass,
@@ -24,14 +24,14 @@ struct Gui {
 
 pub struct GuiInitializer {}
 
-impl Gui {
+impl GuiRenderer {
     #[allow(unused)]
     pub fn add_window(&mut self, window: Box<dyn GuiWindow>) {
         self.windows.insert(window.id(), window);
     }
 }
 
-impl EventHandler for Gui {
+impl EventHandler for GuiRenderer {
     fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context) {
         self.platform.handle_event(event);
 
@@ -56,7 +56,7 @@ impl EventHandler for Gui {
     }
 }
 
-impl Renderer for Gui {
+impl Renderer for GuiRenderer {
     fn render(&mut self, render_frame: &mut RenderFrame) {
         // Begin to draw the UI frame.
         self.platform
@@ -108,7 +108,7 @@ impl Renderer for Gui {
 
 impl RendererInitializer for GuiInitializer {
     fn init(self: Box<Self>, context: &mut Context) -> SharedRenderer {
-        let gui = Rc::new(RefCell::new(Gui {
+        let gui = Rc::new(RefCell::new(GuiRenderer {
             start_time: Instant::now(),
             platform: Platform::new(PlatformDescriptor {
                 physical_width: context.window.inner_size().width,

@@ -3,20 +3,20 @@ use guillotiere::Rectangle;
 use wgpu::BufferAddress;
 
 #[derive(Debug)]
-pub struct RenderInstance {
+pub struct RenderEntity {
     pub position: Vector3<f32>,
     pub rotation: Quaternion<f32>,
     pub scale: Vector3<f32>,
     pub atlas_region: Rectangle,
 }
 
-impl RenderInstance {
-    pub(crate) fn to_raw(&self) -> RenderInstanceRaw {
-        RenderInstanceRaw {
+impl RenderEntity {
+    pub(crate) fn to_raw(&self) -> RenderEntityRaw {
+        RenderEntityRaw {
             transform: (Matrix4::from_translation(self.position)
                 * Matrix4::from_nonuniform_scale(self.scale.x, self.scale.y, self.scale.z)
                 * Matrix4::from(self.rotation))
-                .into(),
+            .into(),
             region_offset: self.atlas_region.min.to_array(),
             region_size: self.atlas_region.size().to_array(),
         }
@@ -25,13 +25,13 @@ impl RenderInstance {
 
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct RenderInstanceRaw {
+pub struct RenderEntityRaw {
     transform: [[f32; 4]; 4],
     region_offset: [i32; 2],
     region_size: [i32; 2],
 }
 
-impl RenderInstanceRaw {
+impl RenderEntityRaw {
     pub(crate) fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
         wgpu::VertexBufferLayout {

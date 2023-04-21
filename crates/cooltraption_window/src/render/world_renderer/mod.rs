@@ -8,18 +8,18 @@ use winit::event::Event;
 
 use crate::asset_bundle::{AssetBundle, TextureAtlas, TextureAtlasBuilder};
 use crate::camera::Camera;
-pub use crate::render::instance_renderer::render_instance::{RenderInstance, RenderInstanceRaw};
-pub use crate::render::instance_renderer::world_state::WorldState;
 use crate::render::render_frame::RenderFrame;
 use crate::render::vertex::{Vertex, INDICES, VERTICES};
+pub use crate::render::world_renderer::render_entity::{RenderEntity, RenderEntityRaw};
+pub use crate::render::world_renderer::world_state::WorldState;
 use crate::render::{Renderer, RendererInitializer, SharedRenderer};
 use crate::window::event_handler::{Context, EventHandler};
 use crate::window::CooltraptionEvent;
 
-mod render_instance;
+mod render_entity;
 pub mod world_state;
 
-struct InstanceRenderer {
+struct WorldRenderer {
     render_pipeline: RenderPipeline,
     vertex_buffer: Buffer,
     index_buffer: Buffer,
@@ -33,19 +33,19 @@ struct InstanceRenderer {
     world_state: [WorldState; 2],
 }
 
-pub struct InstanceRendererInitializer {
+pub struct WorldRendererInitializer {
     pub texture_atlas_builder: TextureAtlasBuilder,
     pub assets: AssetBundle,
     pub state_recv: Receiver<WorldState>,
 }
 
-impl EventHandler for InstanceRenderer {
+impl EventHandler for WorldRenderer {
     fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context) {
         self.camera.handle_event(event, context);
     }
 }
 
-impl Renderer for InstanceRenderer {
+impl Renderer for WorldRenderer {
     fn render(&mut self, render_frame: &mut RenderFrame) {
         while let Ok(state) = self.state_recv.try_recv() {
             self.update_state(state);
@@ -79,7 +79,7 @@ impl Renderer for InstanceRenderer {
 
         let instances_raw = instances
             .iter()
-            .map(RenderInstance::to_raw)
+            .map(RenderEntity::to_raw)
             .collect::<Vec<_>>();
         let instance_data = bytemuck::cast_slice::<_, u8>(&instances_raw);
 
@@ -102,7 +102,7 @@ impl Renderer for InstanceRenderer {
     }
 }
 
-impl InstanceRenderer {
+impl WorldRenderer {
     fn update_state(&mut self, new_state: WorldState) {
         self.world_state.swap(0, 1);
         self.world_state[0] = new_state;
@@ -117,7 +117,7 @@ fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
     })
 }
 
-impl RendererInitializer for InstanceRendererInitializer {
+impl RendererInitializer for WorldRendererInitializer {
     fn init(self: Box<Self>, context: &mut Context) -> SharedRenderer {
         let wgpu_state = &context.wgpu_state;
 
@@ -202,7 +202,7 @@ impl RendererInitializer for InstanceRendererInitializer {
             });
         let num_indices = INDICES.len() as u32;
 
-        let instance_renderer = Rc::new(RefCell::new(InstanceRenderer {
+        let world_renderer = Rc::new(RefCell::new(WorldRenderer {
             render_pipeline,
             vertex_buffer,
             index_buffer,
@@ -216,13 +216,13 @@ impl RendererInitializer for InstanceRendererInitializer {
             world_state: [Default::default(), Default::default()],
         }));
 
-        context.register_event_handler(instance_renderer.clone());
+        context.register_event_handler(world_renderer.clone());
 
-        instance_renderer
+        world_renderer
     }
 }
 
-impl InstanceRendererInitializer {
+impl WorldRendererInitializer {
     pub fn create_pipeline(
         device: &Device,
         format: &TextureFormat,
@@ -242,7 +242,7 @@ impl InstanceRendererInitializer {
                 // TODO: Load shaders from assets
                 module: shader,
                 entry_point: "vs_main",
-                buffers: &[Vertex::desc(), RenderInstanceRaw::desc()],
+                buffers: &[Vertex::desc(), RenderEntityRaw::desc()],
             },
             fragment: Some(FragmentState {
                 module: shader,

@@ -3,7 +3,7 @@ use num_traits::Zero;
 
 use crate::asset_bundle::{AssetBundle, TextureAsset, TextureAtlas};
 
-use super::RenderInstance;
+use super::RenderEntity;
 
 #[derive(Clone, Debug)]
 pub struct Position(pub Vector2<f32>);
@@ -56,7 +56,7 @@ impl WorldState {
         new: &WorldState,
         assets: &AssetBundle,
         texture_atlas: &TextureAtlas,
-    ) -> Vec<RenderInstance> {
+    ) -> Vec<RenderEntity> {
         new.drawables
             .iter()
             .filter_map(|d| {
@@ -68,7 +68,7 @@ impl WorldState {
                     })?;
                 let atlas_region = *texture_atlas.get_texture_region(asset.texture_hash)?;
 
-                Some(RenderInstance {
+                Some(RenderEntity {
                     position: Vector3::new(d.position.0.x, d.position.0.y, 0.0),
                     scale: Vector3::new(d.scale.0.x, d.scale.0.y, 1.0),
                     rotation: Quaternion::zero(),

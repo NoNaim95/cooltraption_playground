@@ -5,7 +5,7 @@ use crate::window::event_handler::Context;
 use render_frame::RenderFrame;
 
 pub mod gui;
-pub mod instance_renderer;
+pub mod world_renderer;
 pub mod render_event_handler;
 pub mod render_frame;
 pub mod vertex;

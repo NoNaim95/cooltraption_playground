@@ -1,5 +1,5 @@
 pub use render::gui;
-pub use render::instance_renderer;
+pub use render::world_renderer;
 
 pub mod asset_bundle;
 pub mod camera;

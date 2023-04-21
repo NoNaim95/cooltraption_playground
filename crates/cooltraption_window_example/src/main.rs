@@ -5,8 +5,8 @@ use cgmath::num_traits::Float;
 use cgmath::*;
 use cooltraption_window::asset_bundle::{FileAssetLoader, LoadAssetBundle, TextureAtlasBuilder};
 use cooltraption_window::gui::GuiInitializer;
-use cooltraption_window::instance_renderer::world_state::{Drawable, Id, Position, Scale};
-use cooltraption_window::instance_renderer::{InstanceRendererInitializer, WorldState};
+use cooltraption_window::world_renderer::world_state::{Drawable, Id, Position, Scale};
+use cooltraption_window::world_renderer::{WorldRendererInitializer, WorldState};
 use cooltraption_window::render::render_event_handler::RenderEventHandler;
 use cooltraption_window::window::{EventLoopHandler, WindowEventHandler};
 use log::info;
@@ -39,7 +39,7 @@ async fn main() {
         .load(&mut texture_atlas_builder)
         .expect("load assets");
 
-        Box::new(InstanceRendererInitializer {
+        Box::new(WorldRendererInitializer {
             texture_atlas_builder,
             assets,
             state_recv,
