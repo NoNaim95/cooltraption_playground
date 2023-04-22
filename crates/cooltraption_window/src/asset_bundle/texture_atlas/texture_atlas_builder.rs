@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 
-use guillotiere::{Allocation, AllocId, AtlasAllocator, Size, size2};
+use guillotiere::{size2, AllocId, Allocation, AtlasAllocator, Size};
 use image::{DynamicImage, GenericImage, RgbaImage};
 use wgpu::{Device, Queue};
 
@@ -57,7 +57,10 @@ impl TextureAtlasBuilder {
                 .expect("copy texture to allocated region in texture atlas");
         }
 
-        atlas_rgba.save(PathBuf::from("atlas.png")).unwrap();
+        #[cfg(feature = "debug")]
+        {
+            atlas_rgba.save(PathBuf::from("atlas.png")).unwrap();
+        }
 
         let texture_size = wgpu::Extent3d {
             width: atlas_rgba.width(),
