@@ -1,9 +1,10 @@
 use crate::render_component::Renderer;
 use cooltraption_common::events::MutEventPublisher;
+use cooltraption_network::client;
 use cooltraption_network::network_state::NetworkStateEventHandler;
 use cooltraption_network::network_state_handler::NetworkStateHandler;
 use cooltraption_network::server::ServerNetworkingEngine;
-use cooltraption_simulation::action::{Action, SpawnBallAction};
+use cooltraption_simulation::action::{Action, ActionPacket, SpawnBallAction};
 use cooltraption_simulation::simulation_state::ComponentIter;
 use cooltraption_simulation::stages::physics_stage::Vec2f;
 use cooltraption_simulation::*;
@@ -21,12 +22,21 @@ use rand::random;
 
 fn main() {
     //cooltraption_runtime::run();
-    query_example();
-    //server_example();
+    std::thread::spawn(|| {
+        println!("Launching server...");
+        server_example();
+    });
+    std::thread::sleep(Duration::from_secs(4));
+    std::thread::spawn(||{
+        println!("Launching 1 client...");
+        query_example();
+    });
+    println!("Launching 1 headless_simulation...");
+    headless_simulation();
 }
 
 pub fn server_example() {
-    let network_state_handler = NetworkStateHandler::new(2);
+    let network_state_handler = NetworkStateHandler::new(3);
 
     let mut network_state_event_handler = NetworkStateEventHandler::default();
     network_state_event_handler.add_handler(network_state_handler);
@@ -72,28 +82,95 @@ pub fn query_example() {
 
     let mut i = 1;
     let action_generator = move || {
+        return None;
         if random::<u32>() % 4 == 0 {
             i += 1;
-            let pos = Position(Vec2f::new((i * (rand::random::<u32>() % 16)).to_fixed(), (i * 3).to_fixed()));
+            let pos = Position(Vec2f::new(
+                (i * (rand::random::<u32>() % 16)).to_fixed(),
+                (i * 3).to_fixed(),
+            ));
             let pos2 = Position(Vec2f::new(1000.to_fixed(), 1000.to_fixed()));
             let action;
-            if random::<u32>() % 32 == 0{
-                action = Action::OutwardForce(action::OutwardForceAction { position: pos2, strength: 10.to_fixed() });
-            }
-            else {
-                action = Action::SpawnBall(SpawnBallAction{ position: pos});
+            if random::<u32>() % 32 == 0 {
+                action = Action::OutwardForce(action::OutwardForceAction {
+                    position: pos2,
+                    strength: 10.to_fixed(),
+                });
+            } else {
+                action = Action::SpawnBall(SpawnBallAction { position: pos });
             }
             Some(action)
         } else {
             None
         }
     };
-    let action_recv = ReceivePipe::new(action_generator);
-    let sim_options = SimulationOptions::new(action_recv.into_try_iter());
+
+    println!("[main] going to connect");
+    let (node_handler, mut event_receiver, node_task, server) =
+        client::Client::connect("127.0.0.1:5000".parse().unwrap(), Duration::from_secs(3))
+            .expect("could not connect from main");
+    println!("Connected to Server!");
+    let iter = std::iter::from_fn(move || event_receiver.try_receive()).map(|stored_event| {
+        match stored_event.network() {
+            cooltraption_network::server::node::StoredNetEvent::Message(_, message) => {
+                println!("Trying to parse: {} bytes", message.len());
+                return serde_yaml::from_slice::<ActionPacket>(&message).unwrap();
+            }
+            cooltraption_network::server::node::StoredNetEvent::Disconnected(_) => {
+                panic!("We got disconnected")
+            }
+            _ => unreachable!(),
+        }
+    });
+    let sim_options = SimulationOptions::new(std::iter::from_fn(action_generator), iter);
     let mut sim = SimulationImpl::new(sim_options);
     sim.add_component_handler(move |pos: ComponentIter<Position>| {
         s.send(pos.cloned().collect()).unwrap();
     });
+    sim.add_local_action_handler(move |action_packet| {
+        node_handler
+            .network()
+            .send(server, serde_yaml::to_string(action_packet).unwrap().as_bytes());
+    });
+    sim.run();
+}
 
+pub fn headless_simulation() {
+    let (node_handler, mut event_receiver, node_task, server) =
+        client::Client::connect("127.0.0.1:5000".parse().unwrap(), Duration::from_secs(3))
+            .expect("could not connect from main");
+
+    let mut i = 1;
+    let action_generator = move || {
+        if random::<u32>() % 4 == 0 {
+            i += 1;
+            let pos = Position(Vec2f::new(
+                (i * (rand::random::<u32>() % 16)).to_fixed(),
+                (i * 3).to_fixed(),
+            ));
+            let pos2 = Position(Vec2f::new(1000.to_fixed(), 1000.to_fixed()));
+            let action;
+            if random::<u32>() % 32 == 0 {
+                action = Action::OutwardForce(action::OutwardForceAction {
+                    position: pos2,
+                    strength: 10.to_fixed(),
+                });
+            } else {
+                action = Action::SpawnBall(SpawnBallAction { position: pos });
+            }
+            Some(action)
+        } else {
+            None
+        }
+    };
+
+    let mut sim_options = SimulationOptions::new(std::iter::from_fn(action_generator), std::iter::from_fn(||None));
+    sim_options.state.load_current_tick(Tick(30));
+    let mut sim = SimulationImpl::new(sim_options);
+    sim.add_local_action_handler(move |action_packet| {
+        node_handler
+            .network()
+            .send(server, serde_yaml::to_string(action_packet).unwrap().as_bytes());
+    });
     sim.run();
 }

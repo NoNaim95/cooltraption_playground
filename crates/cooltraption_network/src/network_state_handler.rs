@@ -29,6 +29,13 @@ impl MutEventHandler<(NetworkState, StoredNodeEvent<Signal>, Context)> for Netwo
                         network_state.disconnect_client(context.node_handler.clone(), *endpoint)
                     }
                 }
+                StoredNetEvent::Message(endpoint, msg) => {
+                    for client in &network_state.connected_clients {
+                        if client != endpoint {
+                            context.node_handler.network().send(*client, msg);
+                        }
+                    }
+                }
                 _ => {}
             }
         }

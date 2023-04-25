@@ -19,28 +19,40 @@ use cooltraption_common::events::{EventPublisher, MutEventPublisher};
 use simulation_state::SimulationState;
 use stages::physics_stage::{self, PhysicsStage};
 
+use serde::{Deserialize, Serialize};
+
 pub mod action;
 pub mod components;
 pub mod simulation_state;
 pub mod stages;
 
-#[derive(Debug, Resource, Clone, Default, Eq, Hash, PartialEq, Copy)]
-pub struct Tick(u64);
+#[derive(Debug, Resource, Clone, Default, Eq, Hash, PartialEq, Copy, Serialize, Deserialize)]
+pub struct Tick(pub u64);
 
 #[derive(Resource, Clone, Default)]
 pub struct Actions(Vec<Action>);
 
 #[derive(Default)]
-pub struct SimulationOptions<I: Iterator<Item = Action>> {
-    state: SimulationState,
+pub struct SimulationOptions<I, IP>
+where
+    I: Iterator<Item = Action>,
+    IP: Iterator<Item = ActionPacket>,
+{
+    pub state: SimulationState,
     action_queue: I,
+    action_packet_queue: IP,
 }
 
-impl<I: Iterator<Item = Action>> SimulationOptions<I> {
-    pub fn new(generator: I) -> Self {
+impl<I, IP> SimulationOptions<I, IP>
+where
+    I: Iterator<Item = Action>,
+    IP: Iterator<Item = ActionPacket>,
+{
+    pub fn new(action_generator: I, action_packet_generator: IP) -> Self {
         Self {
             state: Default::default(),
-            action_queue: generator,
+            action_queue: action_generator,
+            action_packet_queue: action_packet_generator,
         }
     }
 }
@@ -48,20 +60,30 @@ impl<I: Iterator<Item = Action>> SimulationOptions<I> {
 pub trait Simulation {
     fn step_simulation(&mut self, dt: Duration);
     fn add_component_handler<C: Component>(&mut self, f: impl FnMut(ComponentIter<C>) + 'static);
+    fn add_local_action_handler(&mut self, f: impl FnMut(&ActionPacket) + 'static);
 }
 
 #[derive(Default)]
-pub struct SimulationImpl<'a, I: Iterator<Item = Action>> {
+pub struct SimulationImpl<'a, I, IP>
+where
+    I: Iterator<Item = Action>,
+    IP: Iterator<Item = ActionPacket>,
+{
     simulation_state: SimulationState,
     schedule: Schedule,
     action_queue: I,
+    action_packet_queue: IP,
     action_table: HashMap<Tick, Vec<Action>>,
     state_complete_event: MutEventPublisher<'a, SimulationState>,
-    publish_action_packet: EventPublisher<'a, ActionPacket>,
+    local_action_packet_event: EventPublisher<'a, ActionPacket>,
 }
 
-impl<'a, I: Iterator<Item = Action>> SimulationImpl<'a, I> {
-    pub fn new(mut options: SimulationOptions<I>) -> Self {
+impl<'a, I, IP> SimulationImpl<'a, I, IP>
+where
+    I: Iterator<Item = Action>,
+    IP: Iterator<Item = ActionPacket>,
+{
+    pub fn new(mut options: SimulationOptions<I, IP>) -> Self {
         let mut schedule = Schedule::default();
         schedule.add_stage(
             PhysicsStage,
@@ -89,14 +111,14 @@ impl<'a, I: Iterator<Item = Action>> SimulationImpl<'a, I> {
             action_table: HashMap::default(),
             state_complete_event: Default::default(),
             action_queue: options.action_queue,
-            publish_action_packet: Default::default(),
+            action_packet_queue: options.action_packet_queue,
+            local_action_packet_event: Default::default(),
         }
     }
 
     pub fn run(&mut self) {
         let mut start_time = Instant::now();
         const FPS: u64 = 60;
-
         loop {
             let frame_time = Instant::now() - start_time;
             self.step_simulation(frame_time);
@@ -111,14 +133,24 @@ impl<'a, I: Iterator<Item = Action>> SimulationImpl<'a, I> {
     }
 }
 
-impl<'a, I: Iterator<Item = Action>> Simulation for SimulationImpl<'a, I> {
+impl<'a, I, IP> Simulation for SimulationImpl<'a, I, IP>
+where
+    I: Iterator<Item = Action>,
+    IP: Iterator<Item = ActionPacket>,
+{
     fn step_simulation(&mut self, dt: Duration) {
-        for action in &mut self.action_queue {
-            let action_packet = ActionPacket::new(self.simulation_state.current_tick(), action);
-            self.publish_action_packet.publish(&action_packet);
+        for action_packet in (&mut self.action_queue)
+            .map(|action| ActionPacket::new(self.simulation_state.current_tick(), action))
+        {
+            self.local_action_packet_event.publish(&action_packet);
             let actions_for_tick = self.action_table.entry(action_packet.tick).or_default();
             actions_for_tick.push(action_packet.action);
         }
+        for action_packet in &mut self.action_packet_queue {
+            let actions_for_tick = self.action_table.entry(action_packet.tick).or_default();
+            actions_for_tick.push(action_packet.action);
+        }
+
         let actions_in_table = self
             .action_table
             .entry(self.simulation_state.current_tick())
@@ -130,6 +162,8 @@ impl<'a, I: Iterator<Item = Action>> Simulation for SimulationImpl<'a, I> {
         self.schedule.run(self.simulation_state.world_mut());
         self.state_complete_event
             .publish(&mut self.simulation_state);
+        let current_tick = self.simulation_state.current_tick();
+        self.simulation_state.load_current_tick(Tick(current_tick.0 + 1));
     }
 
     fn add_component_handler<C: Component>(
@@ -138,5 +172,9 @@ impl<'a, I: Iterator<Item = Action>> Simulation for SimulationImpl<'a, I> {
     ) {
         self.state_complete_event
             .add_event_handler(move |s: &mut SimulationState| s.query(|i| f(i)));
+    }
+
+    fn add_local_action_handler(&mut self, f: impl FnMut(&ActionPacket) + 'static) {
+        self.local_action_packet_event.add_event_handler(f);
     }
 }

@@ -13,7 +13,7 @@ impl ServerNetworkingEngine {
         let (handler, listener) = node::split();
         handler
             .network()
-            .listen(Transport::Tcp, format!("0.0.0.0:{}", port))
+            .listen(Transport::FramedTcp, format!("0.0.0.0:{}", port))
             .expect("The port to be free");
 
         let (_task, mut events) = listener.enqueue();

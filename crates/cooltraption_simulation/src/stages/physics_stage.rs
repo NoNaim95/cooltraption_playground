@@ -1,9 +1,12 @@
 use std::time::Duration;
 
 use bevy_ecs::{prelude::*, system::Query};
-use fixed::types::I48F16;
+pub use fixed::types::I48F16;
+pub use fixed::FixedI64;
+pub use fixed::types::extra::U16;
 use fixed_macro::fixed;
 use nalgebra::Vector2;
+use serde::Deserialize;
 
 use crate::components::{Acceleration, Position, Velocity};
 

@@ -4,9 +4,12 @@ use bevy_ecs::prelude::*;
 
 use crate::stages::physics_stage::Vec2f;
 
-#[derive(Component, Default, Clone, Debug, Copy)]
-pub struct Position(pub Vec2f);
+use serde::{Serialize, Deserialize};
+use super::physics_stage::FixedI64;
+use super::physics_stage::U16;
 
+#[derive(Component, Default, Clone, Debug, Copy, Serialize, Deserialize)]
+pub struct Position(pub Vec2f);
 #[derive(Component, Default, Clone, Debug)]
 pub struct Velocity(pub Vec2f);
 

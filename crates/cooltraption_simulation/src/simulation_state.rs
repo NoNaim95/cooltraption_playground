@@ -4,9 +4,16 @@ use bevy_ecs::query::QueryIter;
 
 use crate::{stages::physics_stage::DeltaTime, Actions, Tick};
 
-#[derive(Default)]
 pub struct SimulationState {
     world: World,
+}
+
+impl Default for SimulationState {
+    fn default() -> Self {
+        let mut state = Self { world: Default::default() };
+        state.load_current_tick(Tick(0));
+        state
+    }
 }
 
 pub struct ComponentIter<'a, C: Component>(QueryIter<'a, 'a, &'a C, ()>);
@@ -46,6 +53,6 @@ impl SimulationState {
     }
 
     pub fn current_tick(&self) -> Tick {
-        *self.world.get_resource::<Tick>().unwrap_or(&Tick(420))
+        *self.world.get_resource::<Tick>().unwrap()
     }
 }
