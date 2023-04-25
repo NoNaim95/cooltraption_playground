@@ -5,15 +5,14 @@ use std::fmt::Debug;
 use as_any::AsAny;
 use serde::{Deserialize, Serialize};
 
+use crate::texture_atlas::*;
 pub use file_asset_loader::*;
 pub use strings_asset::*;
 pub use texture_asset::*;
-pub use texture_atlas::*;
 
 mod file_asset_loader;
 mod strings_asset;
 mod texture_asset;
-mod texture_atlas;
 
 pub struct AssetBundle {
     assets: HashMap<String, Box<dyn Asset>>,

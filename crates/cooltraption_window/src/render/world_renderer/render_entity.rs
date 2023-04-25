@@ -1,5 +1,5 @@
 use cgmath::{Matrix4, Quaternion, Vector3};
-use guillotiere::Rectangle;
+use cooltraption_assets::texture_atlas::Rectangle;
 use wgpu::BufferAddress;
 
 #[derive(Debug)]

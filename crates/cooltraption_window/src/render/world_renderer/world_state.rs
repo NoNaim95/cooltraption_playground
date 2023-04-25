@@ -1,7 +1,7 @@
 use cgmath::{Quaternion, Vector2, Vector3};
+use cooltraption_assets::asset_bundle::{AssetBundle, TextureAsset};
+use cooltraption_assets::texture_atlas::TextureAtlas;
 use num_traits::Zero;
-
-use crate::asset_bundle::{AssetBundle, TextureAsset, TextureAtlas};
 
 use super::RenderEntity;
 

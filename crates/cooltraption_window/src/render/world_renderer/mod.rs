@@ -2,11 +2,12 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 
+use cooltraption_assets::asset_bundle::AssetBundle;
+use cooltraption_assets::texture_atlas::{TextureAtlas, TextureAtlasBuilder};
 use wgpu::util::DeviceExt;
 use wgpu::*;
 use winit::event::Event;
 
-use crate::asset_bundle::{AssetBundle, TextureAtlas, TextureAtlasBuilder};
 use crate::camera::Camera;
 use crate::render::render_frame::RenderFrame;
 use crate::render::vertex::{Vertex, INDICES, VERTICES};
@@ -24,7 +25,7 @@ struct WorldRenderer {
     vertex_buffer: Buffer,
     index_buffer: Buffer,
     num_indices: u32,
-    texture_bind_group: BindGroup,
+    atlas_bind_group: BindGroup,
     instance_buffer: Buffer,
     texture_atlas: TextureAtlas,
     camera: Camera,
@@ -92,7 +93,7 @@ impl Renderer for WorldRenderer {
         }
 
         render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_bind_group(0, &self.texture_bind_group, &[]);
+        render_pass.set_bind_group(0, &self.atlas_bind_group, &[]);
         render_pass.set_bind_group(1, self.camera.camera_bind_group(), &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
@@ -121,13 +122,61 @@ impl RendererInitializer for WorldRendererInitializer {
     fn init(self: Box<Self>, context: &mut Context) -> SharedRenderer {
         let wgpu_state = &context.wgpu_state;
 
-        let texture_atlas = self
-            .texture_atlas_builder
-            .build(&wgpu_state.device, &wgpu_state.queue);
+        let texture_atlas = self.texture_atlas_builder.build();
+
+        let texture_size = Extent3d {
+            width: texture_atlas.rgba().width(),
+            height: texture_atlas.rgba().height(),
+            depth_or_array_layers: 1,
+        };
+
+        let atlas_texture = context
+            .wgpu_state
+            .device
+            .create_texture(&TextureDescriptor {
+                size: texture_size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: TextureDimension::D2,
+                format: TextureFormat::Rgba8UnormSrgb,
+                usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
+                label: Some("atlas_texture"),
+                view_formats: &[TextureFormat::Rgba8UnormSrgb],
+            });
+
+        context.wgpu_state.queue.write_texture(
+            ImageCopyTexture {
+                texture: &atlas_texture,
+                mip_level: 0,
+                origin: Origin3d::ZERO,
+                aspect: TextureAspect::All,
+            },
+            &texture_atlas.rgba(),
+            ImageDataLayout {
+                offset: 0,
+                bytes_per_row: std::num::NonZeroU32::new(4 * texture_atlas.rgba().width()),
+                rows_per_image: std::num::NonZeroU32::new(texture_atlas.rgba().height()),
+            },
+            texture_size,
+        );
+
+        let atlas_view = atlas_texture.create_view(&TextureViewDescriptor::default());
+        let atlas_sampler = context
+            .wgpu_state
+            .device
+            .create_sampler(&SamplerDescriptor {
+                address_mode_u: AddressMode::ClampToEdge,
+                address_mode_v: AddressMode::ClampToEdge,
+                address_mode_w: AddressMode::ClampToEdge,
+                mag_filter: FilterMode::Nearest,
+                min_filter: FilterMode::Nearest,
+                mipmap_filter: FilterMode::Nearest,
+                ..Default::default()
+            });
 
         let camera = Camera::init(wgpu_state);
 
-        let texture_bind_group_layout =
+        let atlas_bind_group_layout =
             wgpu_state
                 .device
                 .create_bind_group_layout(&BindGroupLayoutDescriptor {
@@ -151,22 +200,22 @@ impl RendererInitializer for WorldRendererInitializer {
                             count: None,
                         },
                     ],
-                    label: Some("texture_bind_group_layout"),
+                    label: Some("atlas_bind_group_layout"),
                 });
 
-        let texture_bind_group = wgpu_state.device.create_bind_group(&BindGroupDescriptor {
-            layout: &texture_bind_group_layout,
+        let atlas_bind_group = wgpu_state.device.create_bind_group(&BindGroupDescriptor {
+            layout: &atlas_bind_group_layout,
             entries: &[
                 BindGroupEntry {
                     binding: 0,
-                    resource: BindingResource::TextureView(texture_atlas.view()),
+                    resource: BindingResource::TextureView(&atlas_view),
                 },
                 BindGroupEntry {
                     binding: 1,
-                    resource: BindingResource::Sampler(texture_atlas.sampler()),
+                    resource: BindingResource::Sampler(&atlas_sampler),
                 },
             ],
-            label: Some("texture_bind_group"),
+            label: Some("atlas_bind_group"),
         });
 
         let shader = wgpu_state
@@ -178,10 +227,7 @@ impl RendererInitializer for WorldRendererInitializer {
         let render_pipeline = Self::create_pipeline(
             &wgpu_state.device,
             &wgpu_state.config.format,
-            &[
-                &texture_bind_group_layout,
-                camera.camera_bind_group_layout(),
-            ],
+            &[&atlas_bind_group_layout, camera.camera_bind_group_layout()],
             &shader,
         );
 
@@ -207,7 +253,7 @@ impl RendererInitializer for WorldRendererInitializer {
             vertex_buffer,
             index_buffer,
             num_indices,
-            texture_bind_group,
+            atlas_bind_group,
             instance_buffer,
             texture_atlas,
             camera,

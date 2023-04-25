@@ -11,6 +11,7 @@ use log::{debug, info};
 use crate::asset_bundle::strings_asset::StringsAsset;
 use crate::asset_bundle::texture_asset::{LoadTextureError, TextureAsset};
 use crate::asset_bundle::*;
+use crate::texture_atlas::TextureAtlasBuilder;
 
 #[derive(Debug)]
 pub enum LoadAssetError {
@@ -65,6 +66,32 @@ impl FileAssetLoader {
     }
 }
 
+impl FileAssetLoader {
+    fn parse_asset(
+        &self,
+        file: &DirEntry,
+        atlas_builder: &mut TextureAtlasBuilder,
+    ) -> Result<(String, Box<dyn Asset>), LoadAssetError> {
+        let file_content = fs::read_to_string(file.path())?;
+        let asset_config: AssetConfig = serde_yaml::from_str(file_content.as_str())?;
+        let asset_name = file_stem(file).ok_or_else(|| LoadAssetError::PathError(file.path()))?;
+
+        match asset_config {
+            AssetConfig::Texture(path) => {
+                let texture_path = file
+                    .path()
+                    .parent()
+                    .ok_or_else(|| LoadAssetError::PathError(path.clone().into()))?
+                    .join(path);
+                let bytes = fs::read(texture_path)?;
+                let texture = TextureAsset::decode(bytes.as_slice(), atlas_builder)?;
+                Ok((asset_name, Box::new(texture)))
+            }
+            AssetConfig::Strings(map) => Ok((asset_name, Box::new(StringsAsset::from(map)))),
+        }
+    }
+}
+
 impl LoadAssetBundle<LoadAssetError> for FileAssetLoader {
     fn load(&self, atlas_builder: &mut TextureAtlasBuilder) -> Result<AssetBundle, LoadAssetError> {
         info!("Loading assets from {:?}", self.path);
@@ -74,10 +101,14 @@ impl LoadAssetBundle<LoadAssetError> for FileAssetLoader {
                 assets: HashMap::new(),
             };
 
-            // Insert missing.png texture which can be used by the renderer when get_asset returns None
-            bundle
-                .assets
-                .insert("missing".to_string(), create_missing_asset(atlas_builder));
+            #[cfg(feature = "missing")]
+            {
+                // Insert missing.png texture which can be used by the renderer when get_asset returns None
+                debug!("Include missing texture in asset bundle (feature 'missing')");
+                bundle
+                    .assets
+                    .insert("missing".to_string(), create_missing_asset(atlas_builder));
+            }
 
             // Load all yml files
             for file in fs::read_dir(&self.path)?.flat_map(|r| r.ok()).filter(|f| {
@@ -87,27 +118,8 @@ impl LoadAssetBundle<LoadAssetError> for FileAssetLoader {
                     false
                 };
             }) {
-                let file_content = fs::read_to_string(file.path())?;
-                let asset_config: AssetConfig = serde_yaml::from_str(file_content.as_str())?;
-                let asset_name =
-                    file_stem(&file).ok_or_else(|| LoadAssetError::PathError(file.path()))?;
-
-                let asset: Box<dyn Asset> = match asset_config {
-                    AssetConfig::Texture(path) => {
-                        let texture_path = file
-                            .path()
-                            .parent()
-                            .ok_or_else(|| LoadAssetError::PathError(path.clone().into()))?
-                            .join(path);
-                        let bytes = fs::read(texture_path)?;
-                        let texture = TextureAsset::decode(bytes.as_slice(), atlas_builder)?;
-                        Box::new(texture)
-                    }
-                    AssetConfig::Strings(map) => Box::new(StringsAsset::from(map)),
-                };
-
+                let (asset_name, asset) = self.parse_asset(&file, atlas_builder)?;
                 debug!("Loaded asset {} {:?}", asset_name, asset);
-
                 bundle.assets.insert(asset_name.to_owned(), asset);
             }
 
@@ -118,6 +130,7 @@ impl LoadAssetBundle<LoadAssetError> for FileAssetLoader {
     }
 }
 
+#[cfg(feature = "missing")]
 fn create_missing_asset(atlas_builder: &mut TextureAtlasBuilder) -> Box<dyn Asset> {
     let bytes = include_bytes!("missing.png");
     Box::new(

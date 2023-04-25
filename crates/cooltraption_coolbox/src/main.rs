@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::sync::mpsc;
 
-use cooltraption_window::asset_bundle::file_asset_loader::FileAssetLoader;
+use cooltraption_window::asset::file_asset_loader::FileAssetLoader;
 use cooltraption_window::render::WorldState;
 use cooltraption_window::window::{EventLoopHandler, EventLoopHandlerConfig};
 use log::info;
