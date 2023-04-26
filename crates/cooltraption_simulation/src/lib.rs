@@ -33,57 +33,43 @@ pub struct Tick(pub u64);
 pub struct Actions(Vec<Action>);
 
 #[derive(Default)]
-pub struct SimulationOptions<I, IP>
-where
-    I: Iterator<Item = Action>,
-    IP: Iterator<Item = ActionPacket>,
+pub struct SimulationOptions
 {
     pub state: SimulationState,
-    action_queue: I,
-    action_packet_queue: IP,
 }
 
-impl<I, IP> SimulationOptions<I, IP>
-where
-    I: Iterator<Item = Action>,
-    IP: Iterator<Item = ActionPacket>,
+impl SimulationOptions
 {
-    pub fn new(action_generator: I, action_packet_generator: IP) -> Self {
+    pub fn new() -> Self {
         Self {
             state: Default::default(),
-            action_queue: action_generator,
-            action_packet_queue: action_packet_generator,
         }
     }
 }
 
 pub trait Simulation {
-    fn step_simulation(&mut self, dt: Duration);
+    fn step_simulation<I, IP>(&mut self, dt: Duration, action_generator: &mut I, action_packet_generator: &mut IP)
+where
+    I: Iterator<Item = Action>,
+    IP: Iterator<Item = ActionPacket>;
+
     fn add_component_handler<C: Component>(&mut self, f: impl FnMut(ComponentIter<C>) + 'static);
     fn add_local_action_handler(&mut self, f: impl FnMut(&ActionPacket) + 'static);
 }
 
 #[derive(Default)]
-pub struct SimulationImpl<'a, I, IP>
-where
-    I: Iterator<Item = Action>,
-    IP: Iterator<Item = ActionPacket>,
+pub struct SimulationImpl<'a>
 {
     simulation_state: SimulationState,
     schedule: Schedule,
-    action_queue: I,
-    action_packet_queue: IP,
     action_table: HashMap<Tick, Vec<Action>>,
     state_complete_event: MutEventPublisher<'a, SimulationState>,
     local_action_packet_event: EventPublisher<'a, ActionPacket>,
 }
 
-impl<'a, I, IP> SimulationImpl<'a, I, IP>
-where
-    I: Iterator<Item = Action>,
-    IP: Iterator<Item = ActionPacket>,
+impl<'a> SimulationImpl<'a>
 {
-    pub fn new(mut options: SimulationOptions<I, IP>) -> Self {
+    pub fn new(mut options: SimulationOptions) -> Self {
         let mut schedule = Schedule::default();
         schedule.add_stage(
             PhysicsStage,
@@ -110,18 +96,20 @@ where
             schedule,
             action_table: HashMap::default(),
             state_complete_event: Default::default(),
-            action_queue: options.action_queue,
-            action_packet_queue: options.action_packet_queue,
             local_action_packet_event: Default::default(),
         }
     }
 
-    pub fn run(&mut self) {
+    pub fn run<I, IP>(&mut self, mut action_generator: I, mut action_packet_generator: IP)
+    where
+        I: Iterator<Item = Action>,
+        IP: Iterator<Item = ActionPacket>,
+    {
         let mut start_time = Instant::now();
         const FPS: u64 = 60;
         loop {
             let frame_time = Instant::now() - start_time;
-            self.step_simulation(frame_time);
+            self.step_simulation(frame_time, &mut action_generator, &mut action_packet_generator);
             start_time = Instant::now();
             //let max = std::cmp::max(0, (1000 / FPS) - frame_time.as_millis() as u64);
             sleep(Duration::from_millis(10));
@@ -133,20 +121,21 @@ where
     }
 }
 
-impl<'a, I, IP> Simulation for SimulationImpl<'a, I, IP>
-where
-    I: Iterator<Item = Action>,
-    IP: Iterator<Item = ActionPacket>,
+impl<'a> Simulation for SimulationImpl<'a>
 {
-    fn step_simulation(&mut self, dt: Duration) {
-        for action_packet in (&mut self.action_queue)
+    fn step_simulation<I, IP>(&mut self, dt: Duration, actions: &mut I, action_packets: &mut IP)
+    where
+        I: Iterator<Item = Action>,
+        IP: Iterator<Item = ActionPacket>,
+    {
+        for action_packet in actions
             .map(|action| ActionPacket::new(self.simulation_state.current_tick(), action))
         {
             self.local_action_packet_event.publish(&action_packet);
             let actions_for_tick = self.action_table.entry(action_packet.tick).or_default();
             actions_for_tick.push(action_packet.action);
         }
-        for action_packet in &mut self.action_packet_queue {
+        for action_packet in action_packets {
             let actions_for_tick = self.action_table.entry(action_packet.tick).or_default();
             actions_for_tick.push(action_packet.action);
         }
