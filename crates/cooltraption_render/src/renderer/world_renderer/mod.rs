@@ -137,10 +137,10 @@ impl RendererInitializer for WorldRendererInitializer {
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: TextureDimension::D2,
-                format: TextureFormat::Rgba8UnormSrgb,
+                format: context.wgpu_state.config.format,
                 usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
                 label: Some("atlas_texture"),
-                view_formats: &[TextureFormat::Rgba8UnormSrgb],
+                view_formats: &[context.wgpu_state.config.format],
             });
 
         context.wgpu_state.queue.write_texture(
