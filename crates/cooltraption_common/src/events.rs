@@ -1,42 +1,11 @@
-type EventHandler<T> = Box<dyn FnMut(&T)>;
-type MutEventHandler<T> = Box<dyn FnMut(&mut T)>;
+pub trait Context {}
+pub trait Event {}
 
-pub struct Event<T> {
-    event_handlers: Vec<EventHandler<T>>,
+pub trait EventProxy<'s, E: Event, C: Context, H> {
+    fn register_event_handler(&'s mut self, handler: H);
+    fn send_event(&'s mut self, event: &mut E);
 }
 
-impl<T> Event<T> {
-    pub fn add_event_handler(&mut self, f: impl FnMut(&T) + 'static) {
-        self.event_handlers.push(Box::new(f));
-    }
-    pub fn invoke(&mut self, payload: &T) {
-        for event_handler in &mut self.event_handlers {
-            event_handler(payload);
-        }
-    }
-}
-
-impl<T> Default for Event<T> {
-    fn default() -> Self {
-        Event {
-            event_handlers: Default::default(),
-        }
-    }
-}
-
-#[derive(Default)]
-pub struct MutEvent<T> {
-    event_handlers: Vec<MutEventHandler<T>>,
-}
-
-impl<T> MutEvent<T> {
-    pub fn add_event_handler(&mut self, f: impl FnMut(&mut T) + 'static) {
-        self.event_handlers.push(Box::new(f));
-    }
-
-    pub fn invoke(&mut self, payload: &mut T) {
-        for event_handler in &mut self.event_handlers {
-            event_handler(payload);
-        }
-    }
+pub trait EventHandler<'s, E: Event, C: Context> {
+    fn handle_event(&'s mut self, event: &mut E, context: &mut C);
 }

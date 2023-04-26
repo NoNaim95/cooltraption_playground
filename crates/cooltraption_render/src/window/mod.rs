@@ -4,10 +4,9 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use crate::camera::controls::CameraControls;
-use crate::{Context, Event, EventHandler};
+use cooltraption_common::events::{Context, Event, EventHandler};
 pub use winit;
 use winit::dpi::PhysicalSize;
-pub use winit::event::Event as WinitEvent;
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy};
 use winit::window::{Window, WindowBuilder};
 
@@ -25,7 +24,9 @@ pub struct WinitEventLoopHandler {
     window: Window,
 }
 
-impl Event for WinitEvent<'_, WindowEvent> {}
+pub struct WinitEvent<'a, 'b>(pub &'a mut winit::event::Event<'b, WindowEvent>);
+
+impl Event for WinitEvent<'_, '_> {}
 
 pub enum WindowEvent {
     Init,
@@ -104,8 +105,12 @@ impl WinitEventLoopHandler {
                 &mut new_event_handlers,
             );
 
+            let mut winit_event = WinitEvent(&mut event);
+
             self.handlers.iter().for_each(|handler| {
-                handler.borrow_mut().handle_event(&mut event, &mut context);
+                handler
+                    .borrow_mut()
+                    .handle_event(&mut winit_event, &mut context);
             });
 
             self.handlers.append(&mut new_event_handlers);
@@ -149,12 +154,5 @@ impl<'a> WindowContext<'a> {
     }
 }
 
-pub type SharedEventHandler = Rc<
-    RefCell<
-        dyn for<'s, 'a, 'b> EventHandler<
-            's,
-            winit::event::Event<'a, WindowEvent>,
-            WindowContext<'b>,
-        >,
-    >,
->;
+pub type SharedEventHandler =
+    Rc<RefCell<dyn for<'s, 'a, 'b, 'c> EventHandler<'s, WinitEvent<'a, 'b>, WindowContext<'c>>>>;

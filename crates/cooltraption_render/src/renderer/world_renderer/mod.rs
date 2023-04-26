@@ -4,9 +4,9 @@ use std::sync::mpsc::Receiver;
 
 use cooltraption_assets::asset_bundle::AssetBundle;
 use cooltraption_assets::texture_atlas::{TextureAtlas, TextureAtlasBuilder};
+use cooltraption_common::events::EventHandler;
 use wgpu::util::DeviceExt;
 use wgpu::*;
-use winit::event::Event;
 
 use crate::camera::Camera;
 use crate::renderer::render_frame::RenderFrame;
@@ -14,8 +14,7 @@ use crate::renderer::vertex::{Vertex, INDICES, VERTICES};
 pub use crate::renderer::world_renderer::render_entity::{RenderEntity, RenderEntityRaw};
 pub use crate::renderer::world_renderer::world_state::WorldState;
 use crate::renderer::{Renderer, RendererInitializer, SharedRenderer};
-use crate::window::{WindowContext, WindowEvent};
-use crate::EventHandler;
+use crate::window::{WindowContext, WinitEvent};
 
 mod render_entity;
 pub mod world_state;
@@ -40,8 +39,8 @@ pub struct WorldRendererInitializer {
     pub state_recv: Receiver<WorldState>,
 }
 
-impl<'s> EventHandler<'s, Event<'_, WindowEvent>, WindowContext<'_>> for WorldRenderer {
-    fn handle_event(&mut self, event: &mut Event<WindowEvent>, context: &mut WindowContext) {
+impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for WorldRenderer {
+    fn handle_event(&mut self, event: &mut WinitEvent, context: &mut WindowContext) {
         self.camera.handle_event(event, context);
     }
 }

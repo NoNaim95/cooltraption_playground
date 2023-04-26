@@ -1,8 +1,7 @@
-use crate::window::{WindowContext, WindowEvent};
-use crate::EventHandler;
+use crate::window::{WindowContext, WinitEvent};
 use cgmath::Vector2;
+use cooltraption_common::events::EventHandler;
 use num_traits::Zero;
-use winit::event::Event;
 
 pub use self::keyboard_state::*;
 pub use self::mouse_state::*;
@@ -34,6 +33,6 @@ impl Default for CameraControls {
 }
 
 pub trait CameraController:
-    for<'a, 'b> EventHandler<'a, Event<'b, WindowEvent>, WindowContext<'b>>
+    for<'s, 'a, 'b, 'c> EventHandler<'s, WinitEvent<'a, 'b>, WindowContext<'c>>
 {
 }

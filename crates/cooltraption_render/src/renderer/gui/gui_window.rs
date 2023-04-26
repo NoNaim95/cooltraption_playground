@@ -1,10 +1,9 @@
-use crate::window::{WindowContext, WindowEvent};
-use crate::EventHandler;
+use crate::window::{WindowContext, WinitEvent};
+use cooltraption_common::events::EventHandler;
 use egui::Context;
-use winit::event::Event;
 
 pub trait GuiWindow<'s>:
-    for<'a, 'b> EventHandler<'s, Event<'a, WindowEvent>, WindowContext<'b>>
+    for<'a, 'b, 'c> EventHandler<'s, WinitEvent<'a, 'b>, WindowContext<'c>>
 {
     fn show(&mut self, context: &Context);
     fn id(&self) -> &'static str;

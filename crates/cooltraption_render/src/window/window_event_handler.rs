@@ -1,18 +1,14 @@
-use crate::EventHandler;
+use cooltraption_common::events::EventHandler;
 use winit::event_loop::ControlFlow;
 
-use crate::window::{WindowContext, WindowEvent, WinitEvent};
+use crate::window::{WindowContext, WinitEvent};
 
 pub struct WindowEventHandler {}
 
-impl<'s> EventHandler<'s, WinitEvent<'_, WindowEvent>, WindowContext<'_>> for WindowEventHandler {
-    fn handle_event(
-        &'s mut self,
-        event: &mut WinitEvent<WindowEvent>,
-        context: &mut WindowContext,
-    ) {
-        match event {
-            WinitEvent::WindowEvent {
+impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for WindowEventHandler {
+    fn handle_event(&'s mut self, event: &mut WinitEvent, context: &mut WindowContext) {
+        match event.0 {
+            winit::event::Event::WindowEvent {
                 ref event,
                 window_id: event_window_id,
             } if event_window_id == &context.window.id() => match event {

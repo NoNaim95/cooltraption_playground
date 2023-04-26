@@ -10,6 +10,7 @@ debug = []
 
 [dependencies]
 cooltraption_assets = { path = "../cooltraption_assets", features = ["debug", "missing"] }
+cooltraption_common = { path = "../cooltraption_common" }
 
 log = "0.4"
 env_logger = "0.10"

@@ -1,9 +1,8 @@
-use crate::EventHandler;
+use cooltraption_common::events::EventHandler;
 use winit::dpi::PhysicalSize;
-use winit::event::Event;
 
 use crate::renderer::gui::GuiWindow;
-use crate::window::{WindowContext, WindowEvent};
+use crate::window::{WindowContext, WindowEvent, WinitEvent};
 
 pub struct DebugWindow {
     window_size: PhysicalSize<u32>,
@@ -19,8 +18,8 @@ impl Default for DebugWindow {
     }
 }
 
-impl<'s> EventHandler<'s, Event<'_, WindowEvent>, WindowContext<'_>> for DebugWindow {
-    fn handle_event(&mut self, _event: &mut Event<WindowEvent>, context: &mut WindowContext) {
+impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for DebugWindow {
+    fn handle_event(&mut self, _event: &mut WinitEvent, context: &mut WindowContext) {
         self.window_size = context.window.inner_size();
 
         if !self.is_open {

@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Instant;
 
-use crate::EventHandler;
+use cooltraption_common::events::EventHandler;
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use winit::event::Event;
 
 pub use crate::renderer::gui::gui_window::GuiWindow;
 use crate::renderer::{RenderFrame, Renderer, RendererInitializer, SharedRenderer};
-use crate::window::{WindowContext, WindowEvent};
+use crate::window::{WindowContext, WindowEvent, WinitEvent};
 
 pub mod debug_window;
 mod gui_window;
@@ -31,15 +31,11 @@ impl GuiRenderer {
     }
 }
 
-impl<'s> EventHandler<'s, Event<'_, WindowEvent>, WindowContext<'_>> for GuiRenderer {
-    fn handle_event(
-        &'s mut self,
-        event: &mut Event<'_, WindowEvent>,
-        context: &mut WindowContext<'_>,
-    ) {
-        self.platform.handle_event(event);
+impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for GuiRenderer {
+    fn handle_event(&'s mut self, event: &mut WinitEvent<'_, '_>, context: &mut WindowContext<'_>) {
+        self.platform.handle_event(event.0);
 
-        if let Event::UserEvent(event) = event {
+        if let Event::UserEvent(event) = event.0 {
             match event {
                 WindowEvent::OpenGUI(window) => match window.take() {
                     None => {}

@@ -1,13 +1,13 @@
 use std::time::{Duration, Instant};
 
-use crate::EventHandler;
+use cooltraption_common::events::EventHandler;
 use log::error;
 use wgpu::{CommandEncoderDescriptor, SurfaceError, TextureViewDescriptor};
 use winit::event::Event;
 use winit::window::Window;
 
 use crate::renderer::{BoxedRendererInitializer, RenderFrame, SharedRenderer};
-use crate::window::{WgpuState, WindowContext, WindowEvent};
+use crate::window::{WgpuState, WindowContext, WindowEvent, WinitEvent};
 
 pub struct RenderEventHandler {
     prev_frame_time: Instant,
@@ -31,9 +31,9 @@ impl RenderEventHandler {
     }
 }
 
-impl<'s> EventHandler<'s, Event<'_, WindowEvent>, WindowContext<'_>> for RenderEventHandler {
-    fn handle_event(&'s mut self, event: &mut Event<WindowEvent>, context: &mut WindowContext) {
-        match event {
+impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for RenderEventHandler {
+    fn handle_event(&'s mut self, event: &mut WinitEvent, context: &mut WindowContext) {
+        match event.0 {
             Event::UserEvent(WindowEvent::Init) => {
                 for initializer in self.initializers.drain(0..self.initializers.len()) {
                     let renderer = initializer.init(context);
@@ -42,7 +42,9 @@ impl<'s> EventHandler<'s, Event<'_, WindowEvent>, WindowContext<'_>> for RenderE
 
                 self.prev_frame_time = Instant::now();
             }
-            Event::RedrawRequested(event_window_id) if &context.window.id() == event_window_id => {
+            Event::RedrawRequested(ref event_window_id)
+                if &context.window.id() == event_window_id =>
+            {
                 context.window.request_redraw();
             }
             Event::RedrawEventsCleared => {

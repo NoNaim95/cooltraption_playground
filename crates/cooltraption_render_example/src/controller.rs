@@ -1,12 +1,12 @@
 use cgmath::num_traits::*;
 use cgmath::*;
+use cooltraption_common::events::EventHandler;
 use cooltraption_render::camera::controls::{
     ButtonMap, CameraController, CameraControls, KeyboardState, MouseState, VirtualKeyCode,
 };
 use cooltraption_render::gui::debug_window::DebugWindow;
 use cooltraption_render::window::winit::event::{ElementState, MouseScrollDelta};
 use cooltraption_render::window::{winit, WindowContext, WindowEvent, WinitEvent};
-use cooltraption_render::EventHandler;
 use std::time::Duration;
 
 #[derive(Default)]
@@ -47,14 +47,10 @@ impl Controller {
     }
 }
 
-impl<'s> EventHandler<'s, WinitEvent<'_, WindowEvent>, WindowContext<'_>> for Controller {
-    fn handle_event(
-        &'s mut self,
-        event: &mut WinitEvent<WindowEvent>,
-        context: &mut WindowContext,
-    ) {
-        match event {
-            WinitEvent::WindowEvent { event, window_id } => {
+impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for Controller {
+    fn handle_event(&'s mut self, event: &mut WinitEvent, context: &mut WindowContext) {
+        match event.0 {
+            winit::event::Event::WindowEvent { event, window_id } => {
                 if window_id != &context.window.id() {
                     return;
                 }
@@ -90,7 +86,7 @@ impl<'s> EventHandler<'s, WinitEvent<'_, WindowEvent>, WindowContext<'_>> for Co
                     _ => {}
                 }
             }
-            WinitEvent::UserEvent(WindowEvent::Render(delta_time)) => {
+            winit::event::Event::UserEvent(WindowEvent::Render(delta_time)) => {
                 self.send_controls(context, delta_time);
                 self.mouse_state.reset();
             }

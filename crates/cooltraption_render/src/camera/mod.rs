@@ -1,11 +1,11 @@
 use cgmath::Vector3;
+use cooltraption_common::events::EventHandler;
 use wgpu::util::DeviceExt;
 use wgpu::*;
 
 use crate::camera::camera_state::{CameraState, CameraUniform};
 use crate::camera::controls::CameraControls;
 use crate::window::{WgpuState, WindowContext, WindowEvent, WinitEvent};
-use crate::EventHandler;
 
 pub mod camera_state;
 pub mod controls;
@@ -18,14 +18,13 @@ pub struct Camera {
     camera_bind_group_layout: BindGroupLayout,
 }
 
-impl<'s> EventHandler<'s, WinitEvent<'_, WindowEvent>, WindowContext<'_>> for Camera {
-    fn handle_event(
-        &'s mut self,
-        event: &mut WinitEvent<'_, WindowEvent>,
-        context: &mut WindowContext<'_>,
-    ) {
-        match event {
-            WinitEvent::WindowEvent { event, window_id } => {
+impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for Camera {
+    fn handle_event(&'s mut self, event: &mut WinitEvent<'_, '_>, context: &mut WindowContext<'_>) {
+        match event.0 {
+            winit::event::Event::WindowEvent {
+                event,
+                ref window_id,
+            } => {
                 if window_id != &context.window.id() {
                     return;
                 }
@@ -38,7 +37,7 @@ impl<'s> EventHandler<'s, WinitEvent<'_, WindowEvent>, WindowContext<'_>> for Ca
                     _ => {}
                 }
             }
-            WinitEvent::UserEvent(event) => match event {
+            winit::event::Event::UserEvent(event) => match event {
                 WindowEvent::Render(_) => self.update_camera_buffer(&context.wgpu_state.queue),
                 WindowEvent::CameraControls(controls) => self.apply_controls(controls),
                 _ => {}
