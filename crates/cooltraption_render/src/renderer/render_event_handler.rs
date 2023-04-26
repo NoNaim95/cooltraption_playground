@@ -1,13 +1,13 @@
 use std::time::{Duration, Instant};
 
+use crate::EventHandler;
 use log::error;
 use wgpu::{CommandEncoderDescriptor, SurfaceError, TextureViewDescriptor};
 use winit::event::Event;
 use winit::window::Window;
 
 use crate::renderer::{BoxedRendererInitializer, RenderFrame, SharedRenderer};
-use crate::window::event_handler::{Context, EventHandler};
-use crate::window::{CooltraptionEvent, WgpuState};
+use crate::window::{WgpuState, WindowContext, WindowEvent};
 
 pub struct RenderEventHandler {
     prev_frame_time: Instant,
@@ -31,10 +31,10 @@ impl RenderEventHandler {
     }
 }
 
-impl EventHandler for RenderEventHandler {
-    fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context) {
+impl<'s> EventHandler<'s, Event<'_, WindowEvent>, WindowContext<'_>> for RenderEventHandler {
+    fn handle_event(&'s mut self, event: &mut Event<WindowEvent>, context: &mut WindowContext) {
         match event {
-            Event::UserEvent(CooltraptionEvent::Init) => {
+            Event::UserEvent(WindowEvent::Init) => {
                 for initializer in self.initializers.drain(0..self.initializers.len()) {
                     let renderer = initializer.init(context);
                     self.renderers.push(renderer);
@@ -62,9 +62,7 @@ impl EventHandler for RenderEventHandler {
                     Err(e) => error!("{}", e),
                 }
 
-                context.send_event(CooltraptionEvent::Render(
-                    Instant::now() - self.prev_frame_time,
-                ));
+                context.send_event(WindowEvent::Render(Instant::now() - self.prev_frame_time));
 
                 self.prev_frame_time = Instant::now();
             }

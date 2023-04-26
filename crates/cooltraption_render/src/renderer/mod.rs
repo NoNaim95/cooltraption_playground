@@ -1,14 +1,14 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::window::event_handler::Context;
+use crate::window::WindowContext;
 use render_frame::RenderFrame;
 
 pub mod gui;
-pub mod world_renderer;
 pub mod render_event_handler;
 pub mod render_frame;
 pub mod vertex;
+pub mod world_renderer;
 
 pub type SharedRenderer = Rc<RefCell<dyn Renderer>>;
 pub type BoxedRendererInitializer = Box<dyn RendererInitializer>;
@@ -18,5 +18,5 @@ pub trait Renderer {
 }
 
 pub trait RendererInitializer {
-    fn init(self: Box<Self>, context: &mut Context) -> SharedRenderer;
+    fn init(self: Box<Self>, context: &mut WindowContext) -> SharedRenderer;
 }

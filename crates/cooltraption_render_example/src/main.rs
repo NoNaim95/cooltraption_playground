@@ -7,7 +7,7 @@ use cooltraption_assets::asset_bundle::*;
 use cooltraption_assets::texture_atlas::TextureAtlasBuilder;
 use cooltraption_render::gui::GuiInitializer;
 use cooltraption_render::renderer::render_event_handler::RenderEventHandler;
-use cooltraption_render::window::{EventLoopHandler, WindowEventHandler};
+use cooltraption_render::window::{WindowEventHandler, WinitEventLoopHandler};
 use cooltraption_render::world_renderer::world_state::{Drawable, Id, Position, Scale};
 use cooltraption_render::world_renderer::{WorldRendererInitializer, WorldState};
 use log::info;
@@ -54,11 +54,11 @@ async fn main() {
 
     let camera_controller = Controller::default();
 
-    let mut event_loop_handler = EventLoopHandler::new().await;
+    let mut event_loop_handler = WinitEventLoopHandler::new().await;
 
-    event_loop_handler.add_handler(Rc::new(RefCell::new(WindowEventHandler {})));
-    event_loop_handler.add_handler(Rc::new(RefCell::new(render_event_handler)));
-    event_loop_handler.add_handler(Rc::new(RefCell::new(camera_controller)));
+    event_loop_handler.register_event_handler(Rc::new(RefCell::new(WindowEventHandler {})));
+    event_loop_handler.register_event_handler(Rc::new(RefCell::new(render_event_handler)));
+    event_loop_handler.register_event_handler(Rc::new(RefCell::new(camera_controller)));
 
     event_loop_handler.run_event_loop();
 }

@@ -1,6 +1,8 @@
-use crate::window::event_handler::EventHandler;
+use crate::window::{WindowContext, WindowEvent};
+use crate::EventHandler;
 use cgmath::Vector2;
 use num_traits::Zero;
+use winit::event::Event;
 
 pub use self::keyboard_state::*;
 pub use self::mouse_state::*;
@@ -31,4 +33,7 @@ impl Default for CameraControls {
     }
 }
 
-pub trait CameraController: EventHandler {}
+pub trait CameraController:
+    for<'a, 'b> EventHandler<'a, Event<'b, WindowEvent>, WindowContext<'b>>
+{
+}

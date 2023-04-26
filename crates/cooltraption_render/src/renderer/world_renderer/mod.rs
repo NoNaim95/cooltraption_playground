@@ -14,8 +14,8 @@ use crate::renderer::vertex::{Vertex, INDICES, VERTICES};
 pub use crate::renderer::world_renderer::render_entity::{RenderEntity, RenderEntityRaw};
 pub use crate::renderer::world_renderer::world_state::WorldState;
 use crate::renderer::{Renderer, RendererInitializer, SharedRenderer};
-use crate::window::event_handler::{Context, EventHandler};
-use crate::window::CooltraptionEvent;
+use crate::window::{WindowContext, WindowEvent};
+use crate::EventHandler;
 
 mod render_entity;
 pub mod world_state;
@@ -40,8 +40,8 @@ pub struct WorldRendererInitializer {
     pub state_recv: Receiver<WorldState>,
 }
 
-impl EventHandler for WorldRenderer {
-    fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context) {
+impl<'s> EventHandler<'s, Event<'_, WindowEvent>, WindowContext<'_>> for WorldRenderer {
+    fn handle_event(&mut self, event: &mut Event<WindowEvent>, context: &mut WindowContext) {
         self.camera.handle_event(event, context);
     }
 }
@@ -119,7 +119,7 @@ fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
 }
 
 impl RendererInitializer for WorldRendererInitializer {
-    fn init(self: Box<Self>, context: &mut Context) -> SharedRenderer {
+    fn init(self: Box<Self>, context: &mut WindowContext) -> SharedRenderer {
         let wgpu_state = &context.wgpu_state;
 
         let texture_atlas = self.texture_atlas_builder.build();
@@ -151,7 +151,7 @@ impl RendererInitializer for WorldRendererInitializer {
                 origin: Origin3d::ZERO,
                 aspect: TextureAspect::All,
             },
-            &texture_atlas.rgba(),
+            texture_atlas.rgba(),
             ImageDataLayout {
                 offset: 0,
                 bytes_per_row: std::num::NonZeroU32::new(4 * texture_atlas.rgba().width()),

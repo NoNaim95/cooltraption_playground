@@ -1,50 +1,66 @@
+use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
+use std::rc::Rc;
 use std::time::Duration;
 
 use crate::camera::controls::CameraControls;
-use crate::window::event_handler::{Context, EventHandler, SharedEventHandler};
+use crate::{Context, Event, EventHandler};
+pub use winit;
 use winit::dpi::PhysicalSize;
+pub use winit::event::Event as WinitEvent;
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy};
 use winit::window::{Window, WindowBuilder};
 
 pub use self::wgpu_state::WgpuState;
 pub use self::window_event_handler::WindowEventHandler;
 
-pub mod event_handler;
 mod wgpu_state;
 mod window_event_handler;
 
-pub struct EventLoopHandler {
-    event_loop: EventLoop<CooltraptionEvent>,
-    event_loop_proxy: EventLoopProxy<CooltraptionEvent>,
+pub struct WinitEventLoopHandler {
+    event_loop: EventLoop<WindowEvent>,
+    event_loop_proxy: EventLoopProxy<WindowEvent>,
     handlers: Vec<SharedEventHandler>,
     wgpu_state: WgpuState,
     window: Window,
 }
 
-pub enum CooltraptionEvent {
+impl Event for WinitEvent<'_, WindowEvent> {}
+
+pub enum WindowEvent {
     Init,
     Render(Duration),
     CameraControls(CameraControls),
-    OpenGUI(Option<Box<dyn crate::gui::GuiWindow>>),
+    OpenGUI(Option<Box<dyn for<'a> crate::gui::GuiWindow<'a>>>),
     CloseGUI(&'static str),
 }
 
-impl Debug for CooltraptionEvent {
+impl Debug for WindowEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            CooltraptionEvent::Init => write!(f, "Init"),
-            CooltraptionEvent::Render(duration) => write!(f, "Render({:?})", duration),
-            CooltraptionEvent::CameraControls(controls) => {
+            WindowEvent::Init => write!(f, "Init"),
+            WindowEvent::Render(duration) => write!(f, "Render({:?})", duration),
+            WindowEvent::CameraControls(controls) => {
                 write!(f, "CameraControls({:?})", controls)
             }
-            CooltraptionEvent::OpenGUI(_) => write!(f, "OpenGUI"),
-            CooltraptionEvent::CloseGUI(id) => write!(f, "CloseGUI({})", id),
+            WindowEvent::OpenGUI(_) => write!(f, "OpenGUI"),
+            WindowEvent::CloseGUI(id) => write!(f, "CloseGUI({})", id),
         }
     }
 }
+/*
+impl<'s>
+    EventProxy<
+        's,
+        winit::event::Event<'_, CooltraptionEvent>,
+        WindowContext<'_>,
+        SharedEventHandler,
+    > for WinitEventLoopHandler
+{
 
-impl EventLoopHandler {
+}*/
+
+impl WinitEventLoopHandler {
     pub async fn new() -> Self {
         let event_loop = EventLoopBuilder::with_user_event().build();
         let event_loop_proxy = event_loop.create_proxy();
@@ -66,13 +82,13 @@ impl EventLoopHandler {
         }
     }
 
-    pub fn add_handler(&mut self, handler: SharedEventHandler) {
+    pub fn register_event_handler(&mut self, handler: SharedEventHandler) {
         self.handlers.push(handler);
     }
 
     pub fn run_event_loop(mut self) {
         self.event_loop_proxy
-            .send_event(CooltraptionEvent::Init)
+            .send_event(WindowEvent::Init)
             .expect("Send init event");
 
         self.event_loop.run(move |mut event, _, control_flow| {
@@ -80,7 +96,7 @@ impl EventLoopHandler {
 
             let mut new_event_handlers = vec![];
 
-            let mut context = Context::new(
+            let mut context = WindowContext::new(
                 control_flow,
                 &self.window,
                 &mut self.wgpu_state,
@@ -96,3 +112,49 @@ impl EventLoopHandler {
         });
     }
 }
+
+pub struct WindowContext<'a> {
+    pub control_flow: &'a mut ControlFlow,
+    pub window: &'a Window,
+    pub wgpu_state: &'a mut WgpuState,
+    event_loop_proxy: &'a EventLoopProxy<WindowEvent>,
+    event_handlers: &'a mut Vec<SharedEventHandler>,
+}
+
+impl Context for WindowContext<'_> {}
+
+impl<'a> WindowContext<'a> {
+    pub fn new(
+        control_flow: &'a mut ControlFlow,
+        window: &'a Window,
+        wgpu_state: &'a mut WgpuState,
+        event_loop_proxy: &'a EventLoopProxy<WindowEvent>,
+        event_handlers: &'a mut Vec<SharedEventHandler>,
+    ) -> Self {
+        Self {
+            control_flow,
+            window,
+            wgpu_state,
+            event_loop_proxy,
+            event_handlers,
+        }
+    }
+
+    pub fn register_event_handler(&mut self, handler: SharedEventHandler) {
+        self.event_handlers.push(handler);
+    }
+
+    pub fn send_event(&self, event: WindowEvent) {
+        self.event_loop_proxy.send_event(event).expect("send event");
+    }
+}
+
+pub type SharedEventHandler = Rc<
+    RefCell<
+        dyn for<'s, 'a, 'b> EventHandler<
+            's,
+            winit::event::Event<'a, WindowEvent>,
+            WindowContext<'b>,
+        >,
+    >,
+>;

@@ -4,10 +4,9 @@ use cooltraption_render::camera::controls::{
     ButtonMap, CameraController, CameraControls, KeyboardState, MouseState, VirtualKeyCode,
 };
 use cooltraption_render::gui::debug_window::DebugWindow;
-use cooltraption_render::window::event_handler::{
-    Context, ElementState, Event, EventHandler, MouseScrollDelta, WindowEvent,
-};
-use cooltraption_render::window::CooltraptionEvent;
+use cooltraption_render::window::winit::event::{ElementState, MouseScrollDelta};
+use cooltraption_render::window::{winit, WindowContext, WindowEvent, WinitEvent};
+use cooltraption_render::EventHandler;
 use std::time::Duration;
 
 #[derive(Default)]
@@ -19,7 +18,7 @@ pub struct Controller {
 impl CameraController for Controller {}
 
 impl Controller {
-    fn send_controls(&self, context: &mut Context, delta_time: &Duration) {
+    fn send_controls(&self, context: &mut WindowContext, delta_time: &Duration) {
         let mut controls = CameraControls::default();
 
         let zoom_speed = 60.0 * delta_time.as_secs_f32();
@@ -44,42 +43,45 @@ impl Controller {
             controls.move_vec = controls.move_vec.normalize_to(move_speed);
         }
 
-        context.send_event(CooltraptionEvent::CameraControls(controls));
+        context.send_event(WindowEvent::CameraControls(controls));
     }
 }
 
-impl EventHandler for Controller {
-    fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context) {
+impl<'s> EventHandler<'s, WinitEvent<'_, WindowEvent>, WindowContext<'_>> for Controller {
+    fn handle_event(
+        &'s mut self,
+        event: &mut WinitEvent<WindowEvent>,
+        context: &mut WindowContext,
+    ) {
         match event {
-            Event::WindowEvent { event, window_id } => {
+            WinitEvent::WindowEvent { event, window_id } => {
                 if window_id != &context.window.id() {
                     return;
                 }
 
                 match event {
-                    WindowEvent::KeyboardInput { input, .. } => {
+                    winit::event::WindowEvent::KeyboardInput { input, .. } => {
                         if let Some(vk_code) = input.virtual_keycode {
                             self.keyboard_state
                                 .set_btn(&vk_code, input.state == ElementState::Pressed);
 
                             if vk_code == VirtualKeyCode::F3 && input.state == ElementState::Pressed
                             {
-                                context
-                                    .send_event(CooltraptionEvent::OpenGUI(Some(
-                                        Box::<DebugWindow>::default(),
-                                    )));
+                                context.send_event(WindowEvent::OpenGUI(Some(
+                                    Box::<DebugWindow>::default(),
+                                )));
                             }
                         }
                     }
-                    WindowEvent::CursorMoved { position, .. } => {
+                    winit::event::WindowEvent::CursorMoved { position, .. } => {
                         self.mouse_state
                             .set_pos(Vector2::new(position.x, position.y));
                     }
-                    WindowEvent::MouseInput { state, button, .. } => {
+                    winit::event::WindowEvent::MouseInput { state, button, .. } => {
                         self.mouse_state
                             .set_btn(button, *state == ElementState::Pressed);
                     }
-                    WindowEvent::MouseWheel {
+                    winit::event::WindowEvent::MouseWheel {
                         delta: MouseScrollDelta::LineDelta(_x, y),
                         ..
                     } => {
@@ -88,7 +90,7 @@ impl EventHandler for Controller {
                     _ => {}
                 }
             }
-            Event::UserEvent(CooltraptionEvent::Render(delta_time)) => {
+            WinitEvent::UserEvent(WindowEvent::Render(delta_time)) => {
                 self.send_controls(context, delta_time);
                 self.mouse_state.reset();
             }

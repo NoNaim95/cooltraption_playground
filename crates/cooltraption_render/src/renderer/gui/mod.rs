@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Instant;
 
+use crate::EventHandler;
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use winit::event::Event;
 
 pub use crate::renderer::gui::gui_window::GuiWindow;
 use crate::renderer::{RenderFrame, Renderer, RendererInitializer, SharedRenderer};
-use crate::window::event_handler::{Context, EventHandler};
-use crate::window::CooltraptionEvent;
+use crate::window::{WindowContext, WindowEvent};
 
 pub mod debug_window;
 mod gui_window;
@@ -19,31 +19,35 @@ struct GuiRenderer {
     start_time: Instant,
     platform: Platform,
     render_pass: RenderPass,
-    windows: HashMap<&'static str, Box<dyn GuiWindow>>,
+    windows: HashMap<&'static str, Box<dyn for<'a> GuiWindow<'a>>>,
 }
 
 pub struct GuiInitializer {}
 
 impl GuiRenderer {
     #[allow(unused)]
-    pub fn add_window(&mut self, window: Box<dyn GuiWindow>) {
+    pub fn add_window(&mut self, window: Box<dyn for<'a> GuiWindow<'a>>) {
         self.windows.insert(window.id(), window);
     }
 }
 
-impl EventHandler for GuiRenderer {
-    fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context) {
+impl<'s> EventHandler<'s, Event<'_, WindowEvent>, WindowContext<'_>> for GuiRenderer {
+    fn handle_event(
+        &'s mut self,
+        event: &mut Event<'_, WindowEvent>,
+        context: &mut WindowContext<'_>,
+    ) {
         self.platform.handle_event(event);
 
         if let Event::UserEvent(event) = event {
             match event {
-                CooltraptionEvent::OpenGUI(window) => match window.take() {
+                WindowEvent::OpenGUI(window) => match window.take() {
                     None => {}
                     Some(window) => {
                         self.add_window(window);
                     }
                 },
-                CooltraptionEvent::CloseGUI(id) => {
+                WindowEvent::CloseGUI(id) => {
                     self.windows.remove(id);
                 }
                 _ => {}
@@ -107,7 +111,7 @@ impl Renderer for GuiRenderer {
 }
 
 impl RendererInitializer for GuiInitializer {
-    fn init(self: Box<Self>, context: &mut Context) -> SharedRenderer {
+    fn init(self: Box<Self>, context: &mut WindowContext) -> SharedRenderer {
         let gui = Rc::new(RefCell::new(GuiRenderer {
             start_time: Instant::now(),
             platform: Platform::new(PlatformDescriptor {

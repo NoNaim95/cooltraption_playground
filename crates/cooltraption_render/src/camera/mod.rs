@@ -1,12 +1,11 @@
 use cgmath::Vector3;
 use wgpu::util::DeviceExt;
 use wgpu::*;
-use winit::event::{Event, WindowEvent};
 
 use crate::camera::camera_state::{CameraState, CameraUniform};
 use crate::camera::controls::CameraControls;
-use crate::window::event_handler::{Context, EventHandler};
-use crate::window::{CooltraptionEvent, WgpuState};
+use crate::window::{WgpuState, WindowContext, WindowEvent, WinitEvent};
+use crate::EventHandler;
 
 pub mod camera_state;
 pub mod controls;
@@ -19,26 +18,29 @@ pub struct Camera {
     camera_bind_group_layout: BindGroupLayout,
 }
 
-impl EventHandler for Camera {
-    fn handle_event(&mut self, event: &mut Event<CooltraptionEvent>, context: &mut Context) {
+impl<'s> EventHandler<'s, WinitEvent<'_, WindowEvent>, WindowContext<'_>> for Camera {
+    fn handle_event(
+        &'s mut self,
+        event: &mut WinitEvent<'_, WindowEvent>,
+        context: &mut WindowContext<'_>,
+    ) {
         match event {
-            Event::WindowEvent { event, window_id } => {
+            WinitEvent::WindowEvent { event, window_id } => {
                 if window_id != &context.window.id() {
                     return;
                 }
 
                 match event {
-                    WindowEvent::Resized(_) | WindowEvent::ScaleFactorChanged { .. } => {
+                    winit::event::WindowEvent::Resized(_)
+                    | winit::event::WindowEvent::ScaleFactorChanged { .. } => {
                         self.camera_state.aspect = context.wgpu_state.aspect();
                     }
                     _ => {}
                 }
             }
-            Event::UserEvent(event) => match event {
-                CooltraptionEvent::Render(_) => {
-                    self.update_camera_buffer(&context.wgpu_state.queue)
-                }
-                CooltraptionEvent::CameraControls(controls) => self.apply_controls(controls),
+            WinitEvent::UserEvent(event) => match event {
+                WindowEvent::Render(_) => self.update_camera_buffer(&context.wgpu_state.queue),
+                WindowEvent::CameraControls(controls) => self.apply_controls(controls),
                 _ => {}
             },
             _ => {}
