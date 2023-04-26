@@ -1,15 +1,22 @@
 [package]
-name = "cooltraption_runtime"
+name = "cooltraption_runtime_example"
 version = "0.1.0"
 edition = "2021"
-
-[lib]
-crate-type = ["lib"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cooltraption_runtime = { path = "../cooltraption_runtime" }
 cooltraption_simulation = { path = "../cooltraption_simulation" }
-cooltraption_render = { path = "../cooltraption_render" }
 
 pipeline_rs = { git = "https://github.com/NoNaim95/pipeline_rs", branch = "master" }
+sfml = "0.20.0"
+log = "0.4"
+env_logger = "0.10"
+cgmath = "0.18"
+nalgebra = "0.32"
+simba = "0.7"
+fixed = "1.21"
+fixed-macro = "1.1"
+num-traits = "0.2"
+rand = "0.8"
