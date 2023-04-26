@@ -10,8 +10,8 @@ use cooltraption_simulation::stages::physics_stage::Vec2f;
 use cooltraption_simulation::*;
 use fixed::prelude::ToFixed;
 use pipeline_rs::pipes::receive_pipe::*;
-use pipeline_rs::pipes::send_pipe::SendPipe;
-use pipeline_rs::pipes::transformer_pipe::TransformerPipe;
+
+
 use std::sync::mpsc::channel;
 use std::thread::sleep;
 use std::time::Duration;
@@ -82,7 +82,7 @@ pub fn query_example() {
 
     let action_generator = || None;
 
-    let (node_handler, mut event_receiver, node_task, server) =
+    let (node_handler, mut event_receiver, _node_task, server) =
         client::Client::connect("127.0.0.1:5000".parse().unwrap(), Duration::from_secs(3))
             .expect("could not connect from main");
     let iter = std::iter::from_fn(move || event_receiver.try_receive()).map(|stored_event| {
@@ -111,7 +111,7 @@ pub fn query_example() {
 }
 
 pub fn headless_simulation() {
-    let (node_handler, mut event_receiver, node_task, server) =
+    let (node_handler, _event_receiver, _node_task, server) =
         client::Client::connect("127.0.0.1:5000".parse().unwrap(), Duration::from_secs(3))
             .expect("could not connect from main");
 

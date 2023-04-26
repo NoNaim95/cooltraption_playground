@@ -1,6 +1,6 @@
-use std::{thread::sleep, time::Duration};
 
-use cooltraption_simulation::{components::Position, stages::physics_stage::Vec2f};
+
+use cooltraption_simulation::{components::Position};
 use sfml::{
     graphics::{
         CircleShape, Color, Drawable, RectangleShape, RenderStates, RenderTarget, RenderWindow,
@@ -9,7 +9,7 @@ use sfml::{
     window::{Event, Key, Style}, system::Vector2f,
 };
 use fixed::traits::FromFixed;
-use fixed::traits::ToFixed;
+
 
 struct Bullet<'s> {
     head: CircleShape<'s>,
@@ -59,7 +59,7 @@ impl<I: Iterator<Item = Vec<Position>>> Renderer<I> {
         );
         window.set_vertical_sync_enabled(true);
 
-        let bullet = Bullet::new();
+        let _bullet = Bullet::new();
         loop {
             while let Some(event) = window.poll_event() {
                 match event {
