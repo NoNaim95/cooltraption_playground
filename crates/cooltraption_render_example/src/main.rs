@@ -5,11 +5,11 @@ use cgmath::num_traits::Float;
 use cgmath::*;
 use cooltraption_assets::asset_bundle::*;
 use cooltraption_assets::texture_atlas::TextureAtlasBuilder;
-use cooltraption_window::gui::GuiInitializer;
-use cooltraption_window::render::render_event_handler::RenderEventHandler;
-use cooltraption_window::window::{EventLoopHandler, WindowEventHandler};
-use cooltraption_window::world_renderer::world_state::{Drawable, Id, Position, Scale};
-use cooltraption_window::world_renderer::{WorldRendererInitializer, WorldState};
+use cooltraption_render::gui::GuiInitializer;
+use cooltraption_render::renderer::render_event_handler::RenderEventHandler;
+use cooltraption_render::window::{EventLoopHandler, WindowEventHandler};
+use cooltraption_render::world_renderer::world_state::{Drawable, Id, Position, Scale};
+use cooltraption_render::world_renderer::{WorldRendererInitializer, WorldState};
 use log::info;
 use std::cell::RefCell;
 use std::env;
@@ -30,12 +30,12 @@ async fn main() {
 
     tokio::spawn(async move { run_mock_simulation(state_send) });
 
-    let instance_renderer = {
+    let world_renderer = {
         let mut texture_atlas_builder = TextureAtlasBuilder::default();
         let assets = FileAssetLoader::new(
             current_dir()
                 .unwrap()
-                .join("cooltraption_window_example/assets"),
+                .join("cooltraption_render_example/assets"),
         )
         .load(&mut texture_atlas_builder)
         .expect("load assets");
@@ -49,7 +49,7 @@ async fn main() {
     let gui = Box::new(GuiInitializer {});
 
     let mut render_event_handler = RenderEventHandler::default();
-    render_event_handler.add_initializer(instance_renderer);
+    render_event_handler.add_initializer(world_renderer);
     render_event_handler.add_initializer(gui);
 
     let camera_controller = Controller::default();

@@ -1,7 +1,7 @@
 use winit::dpi::PhysicalSize;
 use winit::event::Event;
 
-use crate::render::gui::GuiWindow;
+use crate::renderer::gui::GuiWindow;
 use crate::window::event_handler::{Context, EventHandler};
 use crate::window::CooltraptionEvent;
 

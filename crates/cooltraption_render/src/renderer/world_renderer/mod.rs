@@ -9,11 +9,11 @@ use wgpu::*;
 use winit::event::Event;
 
 use crate::camera::Camera;
-use crate::render::render_frame::RenderFrame;
-use crate::render::vertex::{Vertex, INDICES, VERTICES};
-pub use crate::render::world_renderer::render_entity::{RenderEntity, RenderEntityRaw};
-pub use crate::render::world_renderer::world_state::WorldState;
-use crate::render::{Renderer, RendererInitializer, SharedRenderer};
+use crate::renderer::render_frame::RenderFrame;
+use crate::renderer::vertex::{Vertex, INDICES, VERTICES};
+pub use crate::renderer::world_renderer::render_entity::{RenderEntity, RenderEntityRaw};
+pub use crate::renderer::world_renderer::world_state::WorldState;
+use crate::renderer::{Renderer, RendererInitializer, SharedRenderer};
 use crate::window::event_handler::{Context, EventHandler};
 use crate::window::CooltraptionEvent;
 

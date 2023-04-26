@@ -5,7 +5,7 @@ use wgpu::{CommandEncoderDescriptor, SurfaceError, TextureViewDescriptor};
 use winit::event::Event;
 use winit::window::Window;
 
-use crate::render::{BoxedRendererInitializer, RenderFrame, SharedRenderer};
+use crate::renderer::{BoxedRendererInitializer, RenderFrame, SharedRenderer};
 use crate::window::event_handler::{Context, EventHandler};
 use crate::window::{CooltraptionEvent, WgpuState};
 

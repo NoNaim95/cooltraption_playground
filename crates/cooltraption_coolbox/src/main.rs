@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::sync::mpsc;
 
 use cooltraption_window::asset::file_asset_loader::FileAssetLoader;
-use cooltraption_window::render::WorldState;
+use cooltraption_window::renderer::WorldState;
 use cooltraption_window::window::{EventLoopHandler, EventLoopHandlerConfig};
 use log::info;
 

@@ -1,13 +1,13 @@
 use cgmath::num_traits::*;
 use cgmath::*;
-use cooltraption_window::camera::controls::{
+use cooltraption_render::camera::controls::{
     ButtonMap, CameraController, CameraControls, KeyboardState, MouseState, VirtualKeyCode,
 };
-use cooltraption_window::gui::debug_window::DebugWindow;
-use cooltraption_window::window::event_handler::{
+use cooltraption_render::gui::debug_window::DebugWindow;
+use cooltraption_render::window::event_handler::{
     Context, ElementState, Event, EventHandler, MouseScrollDelta, WindowEvent,
 };
-use cooltraption_window::window::CooltraptionEvent;
+use cooltraption_render::window::CooltraptionEvent;
 use std::time::Duration;
 
 #[derive(Default)]

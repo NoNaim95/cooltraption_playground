@@ -7,8 +7,8 @@ use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use winit::event::Event;
 
-pub use crate::render::gui::gui_window::GuiWindow;
-use crate::render::{RenderFrame, Renderer, RendererInitializer, SharedRenderer};
+pub use crate::renderer::gui::gui_window::GuiWindow;
+use crate::renderer::{RenderFrame, Renderer, RendererInitializer, SharedRenderer};
 use crate::window::event_handler::{Context, EventHandler};
 use crate::window::CooltraptionEvent;
 

@@ -1,5 +1,5 @@
 [package]
-name = "cooltraption_window_example"
+name = "cooltraption_render_example"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,7 +10,7 @@ log = "0.4"
 env_logger = "0.10"
 tokio = { version = "1", features = ["full"] }
 cgmath = "0.18"
-cooltraption_window = { path = "../cooltraption_window", features = ["debug"] }
+cooltraption_render = { path = "../cooltraption_render", features = ["debug"] }
 cooltraption_assets = { path = "../cooltraption_assets", features = ["debug", "missing"] }
 
 [build-dependencies]
