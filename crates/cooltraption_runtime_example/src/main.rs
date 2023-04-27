@@ -138,7 +138,6 @@ pub fn headless_simulation() {
             None
         }
     };
-
     let mut sim_options = SimulationOptions::new();
     sim_options.state.load_current_tick(Tick(30));
     let mut sim = SimulationImpl::new(sim_options);

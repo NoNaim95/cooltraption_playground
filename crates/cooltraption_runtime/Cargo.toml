@@ -10,6 +10,6 @@ crate-type = ["lib"]
 
 [dependencies]
 cooltraption_simulation = { path = "../cooltraption_simulation" }
-cooltraption_window = { path = "../cooltraption_window" }
+cooltraption_render = { path = "../cooltraption_render" }
 
 pipeline_rs = { git = "https://github.com/NoNaim95/pipeline_rs", branch = "master" }

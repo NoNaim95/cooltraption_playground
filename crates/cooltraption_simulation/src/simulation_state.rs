@@ -1,6 +1,5 @@
-use bevy_ecs::component::Component;
-use bevy_ecs::prelude::World;
-use bevy_ecs::query::QueryIter;
+use bevy_ecs::prelude::{World, Component};
+use bevy_ecs::query::{QueryIter, WorldQuery};
 
 use crate::{stages::physics_stage::DeltaTime, Actions, Tick};
 
