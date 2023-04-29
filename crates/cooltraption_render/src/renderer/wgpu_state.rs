@@ -57,7 +57,29 @@ impl WgpuState {
         .block_on()
         .expect("Request adapter and device");
 
-        let formats = surface.get_capabilities(&adapter).formats;
+        let formats: Vec<TextureFormat> = surface
+            .get_capabilities(&adapter)
+            .formats
+            .into_iter()
+            .filter(|format| {
+                !matches!(
+                    format,
+                    TextureFormat::Rgba8Unorm
+                        | TextureFormat::Rgba8UnormSrgb
+                        | TextureFormat::Rgba8Snorm
+                        | TextureFormat::Rgba8Uint
+                        | TextureFormat::Rgba8Sint
+                        | TextureFormat::Rgba16Uint
+                        | TextureFormat::Rgba16Sint
+                        | TextureFormat::Rgba16Unorm
+                        | TextureFormat::Rgba16Snorm
+                        | TextureFormat::Rgba16Float
+                        | TextureFormat::Rgba32Uint
+                        | TextureFormat::Rgba32Sint
+                        | TextureFormat::Rgba32Float
+                )
+            })
+            .collect();
 
         let config = SurfaceConfiguration {
             usage: TextureUsages::RENDER_ATTACHMENT,
