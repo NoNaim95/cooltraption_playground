@@ -130,10 +130,10 @@ impl<C: CameraController + 'static> RendererInitializer for WorldRendererInitial
             mip_level_count: 1,
             sample_count: 1,
             dimension: TextureDimension::D2,
-            format: wgpu_state.config.format,
+            format: TextureFormat::Rgba8UnormSrgb,
             usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
             label: Some("atlas_texture"),
-            view_formats: &[wgpu_state.config.format],
+            view_formats: &[TextureFormat::Rgba8UnormSrgb],
         });
 
         wgpu_state.queue.write_texture(
