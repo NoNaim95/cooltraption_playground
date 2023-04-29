@@ -46,7 +46,7 @@ impl ControllerEventHandler {
         let zoom_speed = 60.0 * delta_time.as_secs_f32();
         let move_speed = 2.0 * delta_time.as_secs_f32();
 
-        controls.zoom *= (1.0 + zoom_speed).pow(self.mouse_state.scroll());
+        controls.zoom *= (1.0 + zoom_speed).pow(self.mouse_state.scroll(&delta_time));
 
         if self.keyboard_state.is_down(&VirtualKeyCode::W) {
             controls.move_vec.y += 1.0;
@@ -110,7 +110,7 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for ControllerEventHand
             }
             winit::event::Event::UserEvent(WindowEvent::Render(delta_time)) => {
                 self.send_controls(delta_time);
-                self.mouse_state.reset();
+                self.mouse_state.reset(delta_time);
             }
             _ => {}
         }
