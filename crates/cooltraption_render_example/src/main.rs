@@ -55,7 +55,7 @@ async fn main() {
     wgpu_initializer.add_initializer(world_renderer);
     wgpu_initializer.add_initializer(Box::new(gui));
 
-    let mut event_loop_handler = WinitEventLoopHandler::new().await;
+    let mut event_loop_handler = WinitEventLoopHandler::default();
 
     event_loop_handler.register_event_handler(Rc::new(RefCell::new(WindowEventHandler {})));
     event_loop_handler.register_event_handler(Rc::new(RefCell::new(gui_event_handler)));

@@ -42,8 +42,8 @@ impl Debug for WindowEvent {
     }
 }
 
-impl WinitEventLoopHandler {
-    pub async fn new() -> Self {
+impl Default for WinitEventLoopHandler {
+    fn default() -> Self {
         let event_loop = EventLoopBuilder::with_user_event().build();
         let event_loop_proxy = event_loop.create_proxy();
         let window = WindowBuilder::new()
@@ -60,7 +60,9 @@ impl WinitEventLoopHandler {
             window,
         }
     }
+}
 
+impl WinitEventLoopHandler {
     pub fn register_event_handler(&mut self, handler: SharedEventHandler) {
         self.handlers.push(handler);
     }
