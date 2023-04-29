@@ -21,8 +21,7 @@ use std::sync::mpsc::SyncSender;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-#[tokio::main]
-async fn main() {
+fn main() {
     env::set_var("RUST_LOG", "info");
     env_logger::init();
 
@@ -55,7 +54,7 @@ async fn main() {
     wgpu_initializer.add_initializer(world_renderer);
     wgpu_initializer.add_initializer(Box::new(gui));
 
-    let mut event_loop_handler = WinitEventLoopHandler::new().await;
+    let mut event_loop_handler = WinitEventLoopHandler::default();
 
     event_loop_handler.register_event_handler(Rc::new(RefCell::new(WindowEventHandler {})));
     event_loop_handler.register_event_handler(Rc::new(RefCell::new(gui_event_handler)));
