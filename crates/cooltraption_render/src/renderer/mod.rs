@@ -44,8 +44,8 @@ impl WgpuInitializer {
     }
 }
 
-impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for WgpuInitializer {
-    fn handle_event(&'s mut self, event: &mut WinitEvent, context: &mut WindowContext) {
+impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for WgpuInitializer {
+    fn handle_event(&mut self, event: &mut WinitEvent, context: &mut WindowContext) {
         if let Event::UserEvent(WindowEvent::Init) = event.0 {
             let mut wgpu_state = WgpuState::new(context.window);
             let renderers: Vec<_> = self
@@ -65,8 +65,8 @@ impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for WgpuInitial
     }
 }
 
-impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for WgpuWindowRenderer {
-    fn handle_event(&'s mut self, event: &mut WinitEvent, context: &mut WindowContext) {
+impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for WgpuWindowRenderer {
+    fn handle_event(&mut self, event: &mut WinitEvent, context: &mut WindowContext) {
         match event.0 {
             Event::RedrawRequested(ref event_window_id)
                 if &context.window.id() == event_window_id =>

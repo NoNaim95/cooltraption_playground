@@ -27,7 +27,7 @@ impl Event for WinitEvent<'_, '_> {}
 pub enum WindowEvent {
     Init,
     Render(Duration),
-    OpenGUI(Option<Box<dyn for<'a> crate::gui::GuiWindow<'a>>>),
+    OpenGUI(Option<Box<dyn crate::gui::GuiWindow>>),
     CloseGUI(&'static str),
 }
 
@@ -129,4 +129,4 @@ impl<'a> WindowContext<'a> {
 }
 
 pub type SharedEventHandler =
-    Rc<RefCell<dyn for<'s, 'a, 'b, 'c> EventHandler<'s, WinitEvent<'a, 'b>, WindowContext<'c>>>>;
+    Rc<RefCell<dyn for<'a, 'b, 'c> EventHandler<WinitEvent<'a, 'b>, WindowContext<'c>>>>;

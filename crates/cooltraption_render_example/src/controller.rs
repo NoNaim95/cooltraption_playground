@@ -69,8 +69,8 @@ impl ControllerEventHandler {
     }
 }
 
-impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for ControllerEventHandler {
-    fn handle_event(&'s mut self, event: &mut WinitEvent, context: &mut WindowContext) {
+impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for ControllerEventHandler {
+    fn handle_event(&mut self, event: &mut WinitEvent, context: &mut WindowContext) {
         match event.0 {
             winit::event::Event::WindowEvent { event, window_id } => {
                 if window_id != &context.window.id() {

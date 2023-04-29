@@ -5,8 +5,8 @@ use crate::window::{WindowContext, WinitEvent};
 
 pub struct WindowEventHandler {}
 
-impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for WindowEventHandler {
-    fn handle_event(&'s mut self, event: &mut WinitEvent, context: &mut WindowContext) {
+impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for WindowEventHandler {
+    fn handle_event(&mut self, event: &mut WinitEvent, context: &mut WindowContext) {
         match event.0 {
             winit::event::Event::WindowEvent {
                 ref event,
