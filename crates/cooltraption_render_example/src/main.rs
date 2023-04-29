@@ -21,7 +21,8 @@ use std::sync::mpsc::SyncSender;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-fn main() {
+#[tokio::main]
+async fn main() {
     env::set_var("RUST_LOG", "info");
     env_logger::init();
 
