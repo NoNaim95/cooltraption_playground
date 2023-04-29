@@ -1,28 +1,38 @@
-use std::ops::Deref;
+use derive_more::{Add, Mul, Sub, Div, From, Into, AddAssign, Neg, Deref};
 
 use bevy_ecs::prelude::*;
 
-use crate::stages::physics_stage::Vec2f;
+use crate::system_sets::physics_set::Vec2f;
+use crate::system_sets::physics_set::FromNum2;
 
 use serde::{Serialize, Deserialize};
-use super::physics_stage::FixedI64;
-use super::physics_stage::U16;
 
-#[derive(Component, Default, Clone, Debug, Copy, Serialize, Deserialize)]
+#[derive(Component, Clone, Debug, Copy, Serialize, Deserialize, Deref, Add, Mul, Sub, Div, From, Into, AddAssign, Neg)]
 pub struct Position(pub Vec2f);
-#[derive(Component, Default, Clone, Debug)]
+impl Default for Position{
+    fn default() -> Self {
+        Position(Vec2f::from_num(0,0))
+    }
+}
+
+#[derive(Component, Clone, Debug, Copy, Serialize, Deserialize, Deref, Add, Mul, Sub, Div, From, Into, AddAssign, Neg)]
 pub struct Velocity(pub Vec2f);
 
-#[derive(Component, Default, Clone, Debug)]
+#[derive(Component, Clone, Debug, Copy, Serialize, Deserialize, Deref, Add, Mul, Sub, Div, From, Into, AddAssign, Neg)]
 pub struct Acceleration(pub Vec2f);
+impl Default for Acceleration{
+    fn default() -> Self {
+        Acceleration(Vec2f::from_num(0,0))
+    }
+}
 
-#[derive(Component, Clone)]
+#[derive(Component, Default, Clone, Debug, Copy, Serialize, Deserialize, Deref, Add, Mul, Sub, Div, From, Into, AddAssign, Neg)]
 pub struct Weight(pub f64);
 
-#[derive(Component, Clone)]
+#[derive(Component, Default, Clone, Debug, Copy, Serialize, Deserialize, Deref, Add, Mul, Sub, Div, From, Into, AddAssign, Neg)]
 pub struct Force(pub f64);
 
-#[derive(Component, Clone, Debug)]
+#[derive(Component, Default, Clone, Debug, Serialize, Deserialize, Deref, From, Into)]
 pub struct Drawable {
     pub asset: String,
 }
@@ -32,12 +42,4 @@ pub struct PhysicsBundle {
     pub acc: Acceleration,
     pub vel: Velocity,
     pub pos: Position,
-}
-
-impl Deref for Position {
-    type Target = Vec2f;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
 }

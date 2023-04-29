@@ -20,6 +20,6 @@ impl Client {
             }
         }
         handler.stop();
-        return None;
+        None
     }
 }

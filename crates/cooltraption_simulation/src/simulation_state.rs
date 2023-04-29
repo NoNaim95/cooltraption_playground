@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::{World, Component};
-use bevy_ecs::query::{QueryIter, WorldQuery};
+use bevy_ecs::query::{QueryIter};
 
-use crate::{stages::physics_stage::DeltaTime, Actions, Tick};
+use crate::{system_sets::physics_set::DeltaTime, Actions, Tick};
 
 pub struct SimulationState {
     world: World,
@@ -32,6 +32,9 @@ impl SimulationState {
 
     pub fn world_mut(&mut self) -> &mut World {
         &mut self.world
+    }
+    pub fn advance_tick(&mut self){
+        self.load_current_tick(Tick(self.current_tick().0 + 1))
     }
 
     pub fn load_current_tick(&mut self, current_tick: Tick) {

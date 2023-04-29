@@ -8,7 +8,7 @@ use sfml::{
     },
     window::{Event, Key, Style}, system::Vector2f,
 };
-use fixed::traits::FromFixed;
+
 
 
 struct Bullet<'s> {
@@ -50,7 +50,7 @@ impl<I: Iterator<Item = Vec<Position>>> Renderer<I> {
         Self { positions_generator: generator }
     }
 
-    pub fn render(&mut self) {
+    pub fn render(mut self) {
         let mut window = RenderWindow::new(
             (1920, 1080),
             "Custom drawable",
@@ -75,7 +75,7 @@ impl<I: Iterator<Item = Vec<Position>>> Renderer<I> {
             if let Some(positions) = self.positions_generator.next(){
                 window.clear(Color::BLACK);
                 for pos in positions{
-                    let sfml_pos = Vector2f::new(f32::from_fixed(pos.x), f32::from_fixed(pos.y));
+                    let sfml_pos = Vector2f::new(pos.x.0.to_num(), pos.y.0.to_num());
                     circle.set_position(sfml_pos);
                     window.draw(&circle);
                 }

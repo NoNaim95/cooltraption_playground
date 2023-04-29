@@ -64,10 +64,12 @@ async fn main() {
 }
 
 fn run_mock_simulation(state_send: SyncSender<WorldState>) {
-    let start = Instant::now();
 
+
+
+    let start = Instant::now();
     loop {
-        let (pos1, pos2, pos3) = {
+        let (pos1, _pos2, _pos3) = {
             let time = start.elapsed().as_secs_f32() / 10.0;
 
             (
@@ -80,34 +82,10 @@ fn run_mock_simulation(state_send: SyncSender<WorldState>) {
         let world_state = WorldState {
             drawables: vec![
                 Drawable {
-                    id: Id(0),
-                    position: Position(pos3.neg()),
-                    scale: Scale(Vector2::new(0.8, 0.8)),
-                    asset_name: "cloud".to_string(),
-                },
-                Drawable {
-                    id: Id(1),
-                    position: Position(pos2),
-                    asset_name: "plane".to_string(),
-                    ..Default::default()
-                },
-                Drawable {
-                    id: Id(2),
-                    position: Position(pos1),
-                    scale: Scale(Vector2::new(0.4, 0.4)),
-                    asset_name: "house".to_string(),
-                },
-                Drawable {
                     id: Id(3),
                     position: Position(pos1.neg()),
                     scale: Scale(Vector2::new(0.2, 0.2)),
                     asset_name: "dude".to_string(),
-                },
-                Drawable {
-                    id: Id(4),
-                    position: Position(pos3),
-                    asset_name: "cloud".to_string(),
-                    ..Default::default()
                 },
             ],
         };
