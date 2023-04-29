@@ -1,3 +1,4 @@
+use pollster::FutureExt;
 use wgpu::*;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
@@ -12,7 +13,7 @@ pub struct WgpuState {
 }
 
 impl WgpuState {
-    pub async fn new(window: &Window) -> Self {
+    pub fn new(window: &Window) -> Self {
         let size = window.inner_size();
 
         // The instance is a handle to our GPU
@@ -22,32 +23,39 @@ impl WgpuState {
             dx12_shader_compiler: Default::default(),
         });
         let surface = unsafe { instance.create_surface(window) }.expect("Create surface");
-        let adapter = instance
-            .request_adapter(&RequestAdapterOptions {
-                power_preference: PowerPreference::default(),
-                compatible_surface: Some(&surface),
-                force_fallback_adapter: false,
-            })
-            .await
-            .unwrap();
 
-        let (device, queue) = adapter
-            .request_device(
-                &DeviceDescriptor {
-                    features: Features::empty(),
-                    // WebGL doesn't support all of wgpu's features, so if
-                    // we're building for the web we'll have to disable some.
-                    limits: if cfg!(target_arch = "wasm32") {
-                        Limits::downlevel_webgl2_defaults()
-                    } else {
-                        Limits::default()
+        let (surface, adapter, device, queue) = tokio::spawn(async move {
+            let adapter = instance
+                .request_adapter(&RequestAdapterOptions {
+                    power_preference: PowerPreference::default(),
+                    compatible_surface: Some(&surface),
+                    force_fallback_adapter: false,
+                })
+                .await
+                .unwrap();
+
+            let (device, queue) = adapter
+                .request_device(
+                    &DeviceDescriptor {
+                        features: Features::empty(),
+                        // WebGL doesn't support all of wgpu's features, so if
+                        // we're building for the web we'll have to disable some.
+                        limits: if cfg!(target_arch = "wasm32") {
+                            Limits::downlevel_webgl2_defaults()
+                        } else {
+                            Limits::default()
+                        },
+                        label: None,
                     },
-                    label: None,
-                },
-                None, // Trace path
-            )
-            .await
-            .unwrap();
+                    None, // Trace path
+                )
+                .await
+                .unwrap();
+
+            (surface, adapter, device, queue)
+        })
+        .block_on()
+        .expect("Request adapter and device");
 
         let formats = surface.get_capabilities(&adapter).formats;
 
@@ -78,9 +86,5 @@ impl WgpuState {
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
         }
-    }
-
-    pub fn aspect(&self) -> f32 {
-        self.size.width as f32 / self.size.height as f32
     }
 }

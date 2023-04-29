@@ -1,4 +1,4 @@
-use cgmath::{Matrix4, Point3, Vector3};
+use cgmath::{Matrix4, Point3, Vector2, Vector3};
 
 #[rustfmt::skip]
 pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
@@ -17,10 +17,10 @@ pub struct CameraState {
 }
 
 impl CameraState {
-    pub fn new(aspect: f32) -> Self {
+    pub fn new(size: Vector2<f32>) -> Self {
         Self {
             target: Point3::new(0.0, 0.0, 0.0),
-            aspect,
+            aspect: size.x / size.y,
             z_near: 0.1,
             z_far: 100.0,
             zoom: 1.0,

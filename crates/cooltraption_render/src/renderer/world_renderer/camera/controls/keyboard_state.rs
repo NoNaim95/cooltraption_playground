@@ -1,4 +1,4 @@
-use crate::camera::controls::ButtonMap;
+use crate::world_renderer::camera::controls::ButtonMap;
 pub use winit::event::VirtualKeyCode;
 
 const KEY_COUNT: usize = 163;

@@ -1,25 +1,25 @@
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 
 use cooltraption_assets::asset_bundle::AssetBundle;
 use cooltraption_assets::texture_atlas::{TextureAtlas, TextureAtlasBuilder};
-use crate::events::EventHandler;
 use wgpu::util::DeviceExt;
 use wgpu::*;
+use winit::window::Window;
 
-use crate::camera::Camera;
 use crate::renderer::render_frame::RenderFrame;
 use crate::renderer::vertex::{Vertex, INDICES, VERTICES};
+use crate::renderer::wgpu_state::WgpuState;
 pub use crate::renderer::world_renderer::render_entity::{RenderEntity, RenderEntityRaw};
 pub use crate::renderer::world_renderer::world_state::WorldState;
-use crate::renderer::{Renderer, RendererInitializer, SharedRenderer};
-use crate::window::{WindowContext, WinitEvent};
+use crate::renderer::{BoxedRenderer, Renderer, RendererInitializer};
+use crate::world_renderer::camera::controls::CameraController;
+use crate::world_renderer::camera::Camera;
 
+pub mod camera;
 mod render_entity;
 pub mod world_state;
 
-struct WorldRenderer {
+struct WorldRenderer<C: CameraController> {
     render_pipeline: RenderPipeline,
     vertex_buffer: Buffer,
     index_buffer: Buffer,
@@ -27,25 +27,20 @@ struct WorldRenderer {
     atlas_bind_group: BindGroup,
     instance_buffer: Buffer,
     texture_atlas: TextureAtlas,
-    camera: Camera,
+    camera: Camera<C>,
     assets: AssetBundle,
     state_recv: Receiver<WorldState>,
     world_state: [WorldState; 2],
 }
 
-pub struct WorldRendererInitializer {
+pub struct WorldRendererInitializer<C: CameraController> {
     pub texture_atlas_builder: TextureAtlasBuilder,
     pub assets: AssetBundle,
+    pub controller: C,
     pub state_recv: Receiver<WorldState>,
 }
 
-impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for WorldRenderer {
-    fn handle_event(&mut self, event: &mut WinitEvent, context: &mut WindowContext) {
-        self.camera.handle_event(event, context);
-    }
-}
-
-impl Renderer for WorldRenderer {
+impl<C: CameraController> Renderer for WorldRenderer<C> {
     fn render(&mut self, render_frame: &mut RenderFrame) {
         while let Ok(state) = self.state_recv.try_recv() {
             self.update_state(state);
@@ -91,6 +86,9 @@ impl Renderer for WorldRenderer {
                 .write_buffer(&self.instance_buffer, 0, instance_data);
         }
 
+        self.camera.update_camera_buffer(render_frame.queue);
+        self.camera.set_view_size(render_frame.window.inner_size());
+
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.atlas_bind_group, &[]);
         render_pass.set_bind_group(1, self.camera.camera_bind_group(), &[]);
@@ -102,7 +100,7 @@ impl Renderer for WorldRenderer {
     }
 }
 
-impl WorldRenderer {
+impl<C: CameraController> WorldRenderer<C> {
     fn update_state(&mut self, new_state: WorldState) {
         self.world_state.swap(0, 1);
         self.world_state[0] = new_state;
@@ -117,10 +115,8 @@ fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
     })
 }
 
-impl RendererInitializer for WorldRendererInitializer {
-    fn init(self: Box<Self>, context: &mut WindowContext) -> SharedRenderer {
-        let wgpu_state = &context.wgpu_state;
-
+impl<C: CameraController + 'static> RendererInitializer for WorldRendererInitializer<C> {
+    fn init(self: Box<Self>, wgpu_state: &mut WgpuState, _window: &Window) -> BoxedRenderer {
         let texture_atlas = self.texture_atlas_builder.build();
 
         let texture_size = Extent3d {
@@ -129,21 +125,18 @@ impl RendererInitializer for WorldRendererInitializer {
             depth_or_array_layers: 1,
         };
 
-        let atlas_texture = context
-            .wgpu_state
-            .device
-            .create_texture(&TextureDescriptor {
-                size: texture_size,
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: TextureDimension::D2,
-                format: context.wgpu_state.config.format,
-                usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
-                label: Some("atlas_texture"),
-                view_formats: &[context.wgpu_state.config.format],
-            });
+        let atlas_texture = wgpu_state.device.create_texture(&TextureDescriptor {
+            size: texture_size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format: wgpu_state.config.format,
+            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
+            label: Some("atlas_texture"),
+            view_formats: &[wgpu_state.config.format],
+        });
 
-        context.wgpu_state.queue.write_texture(
+        wgpu_state.queue.write_texture(
             ImageCopyTexture {
                 texture: &atlas_texture,
                 mip_level: 0,
@@ -160,20 +153,17 @@ impl RendererInitializer for WorldRendererInitializer {
         );
 
         let atlas_view = atlas_texture.create_view(&TextureViewDescriptor::default());
-        let atlas_sampler = context
-            .wgpu_state
-            .device
-            .create_sampler(&SamplerDescriptor {
-                address_mode_u: AddressMode::ClampToEdge,
-                address_mode_v: AddressMode::ClampToEdge,
-                address_mode_w: AddressMode::ClampToEdge,
-                mag_filter: FilterMode::Nearest,
-                min_filter: FilterMode::Nearest,
-                mipmap_filter: FilterMode::Nearest,
-                ..Default::default()
-            });
+        let atlas_sampler = wgpu_state.device.create_sampler(&SamplerDescriptor {
+            address_mode_u: AddressMode::ClampToEdge,
+            address_mode_v: AddressMode::ClampToEdge,
+            address_mode_w: AddressMode::ClampToEdge,
+            mag_filter: FilterMode::Nearest,
+            min_filter: FilterMode::Nearest,
+            mipmap_filter: FilterMode::Nearest,
+            ..Default::default()
+        });
 
-        let camera = Camera::init(wgpu_state);
+        let camera = Camera::init(self.controller, wgpu_state);
 
         let atlas_bind_group_layout =
             wgpu_state
@@ -223,7 +213,7 @@ impl RendererInitializer for WorldRendererInitializer {
 
         let instance_buffer = create_instance_buffer(&[0], &wgpu_state.device);
 
-        let render_pipeline = Self::create_pipeline(
+        let render_pipeline = create_pipeline(
             &wgpu_state.device,
             &wgpu_state.config.format,
             &[&atlas_bind_group_layout, camera.camera_bind_group_layout()],
@@ -247,7 +237,7 @@ impl RendererInitializer for WorldRendererInitializer {
             });
         let num_indices = INDICES.len() as u32;
 
-        let world_renderer = Rc::new(RefCell::new(WorldRenderer {
+        Box::new(WorldRenderer {
             render_pipeline,
             vertex_buffer,
             index_buffer,
@@ -259,64 +249,58 @@ impl RendererInitializer for WorldRendererInitializer {
             assets: self.assets,
             state_recv: self.state_recv,
             world_state: [Default::default(), Default::default()],
-        }));
-
-        context.register_event_handler(world_renderer.clone());
-
-        world_renderer
+        })
     }
 }
 
-impl WorldRendererInitializer {
-    pub fn create_pipeline(
-        device: &Device,
-        format: &TextureFormat,
-        bind_groups: &[&BindGroupLayout],
-        shader: &ShaderModule,
-    ) -> RenderPipeline {
-        let render_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
-            label: Some("Render Pipeline Layout"),
-            bind_group_layouts: bind_groups,
-            push_constant_ranges: &[],
-        });
+fn create_pipeline(
+    device: &Device,
+    format: &TextureFormat,
+    bind_groups: &[&BindGroupLayout],
+    shader: &ShaderModule,
+) -> RenderPipeline {
+    let render_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
+        label: Some("Render Pipeline Layout"),
+        bind_group_layouts: bind_groups,
+        push_constant_ranges: &[],
+    });
 
-        device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: VertexState {
-                // TODO: Load shaders from assets
-                module: shader,
-                entry_point: "vs_main",
-                buffers: &[Vertex::desc(), RenderEntityRaw::desc()],
-            },
-            fragment: Some(FragmentState {
-                module: shader,
-                entry_point: "fs_main",
-                targets: &[Some(ColorTargetState {
-                    format: *format,
-                    blend: Some(BlendState::ALPHA_BLENDING),
-                    write_mask: ColorWrites::ALL,
-                })],
-            }),
-            primitive: PrimitiveState {
-                topology: PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: FrontFace::Ccw,
-                cull_mode: Some(Face::Back),
-                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-                polygon_mode: PolygonMode::Fill,
-                // Requires Features::DEPTH_CLIP_CONTROL
-                unclipped_depth: false,
-                // Requires Features::CONSERVATIVE_RASTERIZATION
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-        })
-    }
+    device.create_render_pipeline(&RenderPipelineDescriptor {
+        label: Some("Render Pipeline"),
+        layout: Some(&render_pipeline_layout),
+        vertex: VertexState {
+            // TODO: Load shaders from assets
+            module: shader,
+            entry_point: "vs_main",
+            buffers: &[Vertex::desc(), RenderEntityRaw::desc()],
+        },
+        fragment: Some(FragmentState {
+            module: shader,
+            entry_point: "fs_main",
+            targets: &[Some(ColorTargetState {
+                format: *format,
+                blend: Some(BlendState::ALPHA_BLENDING),
+                write_mask: ColorWrites::ALL,
+            })],
+        }),
+        primitive: PrimitiveState {
+            topology: PrimitiveTopology::TriangleList,
+            strip_index_format: None,
+            front_face: FrontFace::Ccw,
+            cull_mode: Some(Face::Back),
+            // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+            polygon_mode: PolygonMode::Fill,
+            // Requires Features::DEPTH_CLIP_CONTROL
+            unclipped_depth: false,
+            // Requires Features::CONSERVATIVE_RASTERIZATION
+            conservative: false,
+        },
+        depth_stencil: None,
+        multisample: MultisampleState {
+            count: 1,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
+        multiview: None,
+    })
 }

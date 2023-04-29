@@ -1,6 +1,4 @@
-use crate::window::{WindowContext, WinitEvent};
 use cgmath::Vector2;
-use crate::events::EventHandler;
 use num_traits::Zero;
 
 pub use self::keyboard_state::*;
@@ -32,7 +30,6 @@ impl Default for CameraControls {
     }
 }
 
-pub trait CameraController:
-    for<'s, 'a, 'b, 'c> EventHandler<'s, WinitEvent<'a, 'b>, WindowContext<'c>>
-{
+pub trait CameraController {
+    fn get_controls(&self) -> Option<CameraControls>;
 }
