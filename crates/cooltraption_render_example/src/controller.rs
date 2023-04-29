@@ -1,24 +1,46 @@
 use cgmath::num_traits::*;
 use cgmath::*;
 use cooltraption_render::events::EventHandler;
-use cooltraption_render::camera::controls::{
-    ButtonMap, CameraController, CameraControls, KeyboardState, MouseState, VirtualKeyCode,
-};
 use cooltraption_render::gui::debug_window::DebugWindow;
 use cooltraption_render::window::winit::event::{ElementState, MouseScrollDelta};
 use cooltraption_render::window::{winit, WindowContext, WindowEvent, WinitEvent};
+use cooltraption_render::world_renderer::camera::controls::*;
+use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 
-#[derive(Default)]
 pub struct Controller {
-    keyboard_state: KeyboardState,
-    mouse_state: MouseState,
+    recv: Receiver<CameraControls>,
 }
 
-impl CameraController for Controller {}
+pub struct ControllerEventHandler {
+    keyboard_state: KeyboardState,
+    mouse_state: MouseState,
+    send: Sender<CameraControls>,
+}
 
 impl Controller {
-    fn send_controls(&self, context: &mut WindowContext, delta_time: &Duration) {
+    pub fn new() -> (Self, ControllerEventHandler) {
+        let (send, recv) = std::sync::mpsc::channel();
+
+        let controller = Controller { recv };
+        let event_handler = ControllerEventHandler {
+            keyboard_state: Default::default(),
+            mouse_state: Default::default(),
+            send,
+        };
+
+        (controller, event_handler)
+    }
+}
+
+impl CameraController for Controller {
+    fn get_controls(&self) -> Option<CameraControls> {
+        self.recv.try_recv().ok()
+    }
+}
+
+impl ControllerEventHandler {
+    fn send_controls(&self, delta_time: &Duration) {
         let mut controls = CameraControls::default();
 
         let zoom_speed = 60.0 * delta_time.as_secs_f32();
@@ -43,11 +65,11 @@ impl Controller {
             controls.move_vec = controls.move_vec.normalize_to(move_speed);
         }
 
-        context.send_event(WindowEvent::CameraControls(controls));
+        self.send.send(controls).expect("Send controls");
     }
 }
 
-impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for Controller {
+impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for ControllerEventHandler {
     fn handle_event(&'s mut self, event: &mut WinitEvent, context: &mut WindowContext) {
         match event.0 {
             winit::event::Event::WindowEvent { event, window_id } => {
@@ -87,7 +109,7 @@ impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for Controller 
                 }
             }
             winit::event::Event::UserEvent(WindowEvent::Render(delta_time)) => {
-                self.send_controls(context, delta_time);
+                self.send_controls(delta_time);
                 self.mouse_state.reset();
             }
             _ => {}

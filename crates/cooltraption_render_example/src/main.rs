@@ -6,7 +6,7 @@ use cgmath::*;
 use cooltraption_assets::asset_bundle::*;
 use cooltraption_assets::texture_atlas::TextureAtlasBuilder;
 use cooltraption_render::gui::GuiInitializer;
-use cooltraption_render::renderer::render_event_handler::RenderEventHandler;
+use cooltraption_render::renderer::WgpuInitializer;
 use cooltraption_render::window::{WindowEventHandler, WinitEventLoopHandler};
 use cooltraption_render::world_renderer::world_state::{Drawable, Id, Position, Scale};
 use cooltraption_render::world_renderer::{WorldRendererInitializer, WorldState};
@@ -30,6 +30,8 @@ async fn main() {
 
     tokio::spawn(async move { run_mock_simulation(state_send) });
 
+    let (controller, controller_event_handler) = Controller::new();
+
     let world_renderer = {
         let mut texture_atlas_builder = TextureAtlasBuilder::default();
         let assets = FileAssetLoader::new(
@@ -41,24 +43,24 @@ async fn main() {
         .expect("load assets");
 
         Box::new(WorldRendererInitializer {
+            controller,
             texture_atlas_builder,
             assets,
             state_recv,
         })
     };
-    let gui = Box::new(GuiInitializer {});
+    let (gui, gui_event_handler) = GuiInitializer::new();
 
-    let mut render_event_handler = RenderEventHandler::default();
-    render_event_handler.add_initializer(world_renderer);
-    render_event_handler.add_initializer(gui);
-
-    let camera_controller = Controller::default();
+    let mut wgpu_initializer = WgpuInitializer::default();
+    wgpu_initializer.add_initializer(world_renderer);
+    wgpu_initializer.add_initializer(Box::new(gui));
 
     let mut event_loop_handler = WinitEventLoopHandler::new().await;
 
     event_loop_handler.register_event_handler(Rc::new(RefCell::new(WindowEventHandler {})));
-    event_loop_handler.register_event_handler(Rc::new(RefCell::new(render_event_handler)));
-    event_loop_handler.register_event_handler(Rc::new(RefCell::new(camera_controller)));
+    event_loop_handler.register_event_handler(Rc::new(RefCell::new(gui_event_handler)));
+    event_loop_handler.register_event_handler(Rc::new(RefCell::new(wgpu_initializer)));
+    event_loop_handler.register_event_handler(Rc::new(RefCell::new(controller_event_handler)));
 
     event_loop_handler.run_event_loop();
 }

@@ -11,18 +11,11 @@ impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for WindowEvent
             winit::event::Event::WindowEvent {
                 ref event,
                 window_id: event_window_id,
-            } if event_window_id == &context.window.id() => match event {
-                winit::event::WindowEvent::CloseRequested => {
+            } if event_window_id == &context.window.id() => {
+                if event == &winit::event::WindowEvent::CloseRequested {
                     *context.control_flow = ControlFlow::Exit
                 }
-                winit::event::WindowEvent::Resized(physical_size) => {
-                    context.wgpu_state.set_size(*physical_size);
-                }
-                winit::event::WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                    context.wgpu_state.set_size(**new_inner_size);
-                }
-                _ => {}
-            },
+            }
             _ => {}
         }
     }

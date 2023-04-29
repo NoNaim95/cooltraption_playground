@@ -1,8 +1,7 @@
+use crate::world_renderer::camera::controls::ButtonMap;
 use cgmath::Vector2;
 use num_traits::Zero;
 use winit::event::MouseButton;
-
-use crate::camera::controls::ButtonMap;
 
 const BUTTON_COUNT: usize = 163;
 
