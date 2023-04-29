@@ -6,6 +6,6 @@ pub trait EventProxy<'s, E: Event, C: Context, H> {
     fn send_event(&'s mut self, event: &mut E);
 }
 
-pub trait EventHandler<'s, E: Event, C: Context> {
-    fn handle_event(&'s mut self, event: &mut E, context: &mut C);
+pub trait EventHandler<E: Event, C: Context> {
+    fn handle_event(&mut self, event: &mut E, context: &mut C);
 }

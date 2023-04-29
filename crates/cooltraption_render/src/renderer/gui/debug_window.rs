@@ -18,7 +18,7 @@ impl Default for DebugWindow {
     }
 }
 
-impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for DebugWindow {
+impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for DebugWindow {
     fn handle_event(&mut self, _event: &mut WinitEvent, context: &mut WindowContext) {
         self.window_size = context.window.inner_size();
 
@@ -28,7 +28,7 @@ impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for DebugWindow
     }
 }
 
-impl<'s> GuiWindow<'s> for DebugWindow {
+impl GuiWindow for DebugWindow {
     fn show(&mut self, context: &egui::Context) {
         egui::Window::new("Debug")
             .open(&mut self.is_open)

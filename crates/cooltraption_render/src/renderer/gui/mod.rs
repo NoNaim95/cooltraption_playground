@@ -17,7 +17,7 @@ pub mod debug_window;
 mod gui_window;
 
 type PlatformRef = Arc<Mutex<Option<Platform>>>;
-type WindowsMapRef = Arc<Mutex<HashMap<&'static str, Box<dyn for<'a> GuiWindow<'a>>>>>;
+type WindowsMapRef = Arc<Mutex<HashMap<&'static str, Box<dyn GuiWindow>>>>;
 
 struct GuiRenderer {
     start_time: Instant,
@@ -51,8 +51,8 @@ impl GuiInitializer {
     }
 }
 
-impl<'s> EventHandler<'s, WinitEvent<'_, '_>, WindowContext<'_>> for GuiEventHandler {
-    fn handle_event(&'s mut self, event: &mut WinitEvent<'_, '_>, context: &mut WindowContext<'_>) {
+impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for GuiEventHandler {
+    fn handle_event(&mut self, event: &mut WinitEvent<'_, '_>, context: &mut WindowContext<'_>) {
         if let Some(platform) = &mut *self.platform.lock().expect("lock platform") {
             platform.handle_event(event.0);
 
