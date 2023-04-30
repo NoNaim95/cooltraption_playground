@@ -1,6 +1,4 @@
-use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
-use std::rc::Rc;
 use std::time::Duration;
 
 use crate::events::{Context, Event, EventHandler};
@@ -16,7 +14,7 @@ mod window_event_handler;
 pub struct WinitEventLoopHandler {
     event_loop: EventLoop<WindowEvent>,
     event_loop_proxy: EventLoopProxy<WindowEvent>,
-    handlers: Vec<SharedEventHandler>,
+    handlers: Vec<BoxedEventHandler>,
     window: Window,
 }
 
@@ -63,7 +61,7 @@ impl Default for WinitEventLoopHandler {
 }
 
 impl WinitEventLoopHandler {
-    pub fn register_event_handler(&mut self, handler: SharedEventHandler) {
+    pub fn register_event_handler(&mut self, handler: BoxedEventHandler) {
         self.handlers.push(handler);
     }
 
@@ -86,10 +84,8 @@ impl WinitEventLoopHandler {
 
             let mut winit_event = WinitEvent(&mut event);
 
-            self.handlers.iter().for_each(|handler| {
-                handler
-                    .borrow_mut()
-                    .handle_event(&mut winit_event, &mut context);
+            self.handlers.iter_mut().for_each(|handler| {
+                handler.handle_event(&mut winit_event, &mut context);
             });
 
             self.handlers.append(&mut new_event_handlers);
@@ -101,7 +97,7 @@ pub struct WindowContext<'a> {
     pub control_flow: &'a mut ControlFlow,
     pub window: &'a Window,
     event_loop_proxy: &'a EventLoopProxy<WindowEvent>,
-    event_handlers: &'a mut Vec<SharedEventHandler>,
+    event_handlers: &'a mut Vec<BoxedEventHandler>,
 }
 
 impl Context for WindowContext<'_> {}
@@ -111,7 +107,7 @@ impl<'a> WindowContext<'a> {
         control_flow: &'a mut ControlFlow,
         window: &'a Window,
         event_loop_proxy: &'a EventLoopProxy<WindowEvent>,
-        event_handlers: &'a mut Vec<SharedEventHandler>,
+        event_handlers: &'a mut Vec<BoxedEventHandler>,
     ) -> Self {
         Self {
             control_flow,
@@ -121,7 +117,7 @@ impl<'a> WindowContext<'a> {
         }
     }
 
-    pub fn register_event_handler(&mut self, handler: SharedEventHandler) {
+    pub fn register_event_handler(&mut self, handler: BoxedEventHandler) {
         self.event_handlers.push(handler);
     }
 
@@ -130,5 +126,5 @@ impl<'a> WindowContext<'a> {
     }
 }
 
-pub type SharedEventHandler =
-    Rc<RefCell<dyn for<'a, 'b, 'c> EventHandler<WinitEvent<'a, 'b>, WindowContext<'c>>>>;
+pub type BoxedEventHandler =
+    Box<dyn for<'a, 'b, 'c> EventHandler<WinitEvent<'a, 'b>, WindowContext<'c>>>;

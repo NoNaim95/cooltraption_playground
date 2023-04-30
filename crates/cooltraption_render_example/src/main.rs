@@ -12,11 +12,9 @@ use cooltraption_render::world_renderer::texture_atlas::TextureAtlasBuilder;
 use cooltraption_render::world_renderer::world_state::{Drawable, Id, Position, Scale};
 use cooltraption_render::world_renderer::{WorldRendererInitializer, WorldState};
 use log::info;
-use std::cell::RefCell;
 use std::env;
 use std::env::current_dir;
 use std::ops::{Neg, Range};
-use std::rc::Rc;
 use std::sync::mpsc;
 use std::sync::mpsc::SyncSender;
 use std::thread::sleep;
@@ -58,10 +56,10 @@ async fn main() {
 
     let mut event_loop_handler = WinitEventLoopHandler::default();
 
-    event_loop_handler.register_event_handler(Rc::new(RefCell::new(WindowEventHandler {})));
-    event_loop_handler.register_event_handler(Rc::new(RefCell::new(gui_event_handler)));
-    event_loop_handler.register_event_handler(Rc::new(RefCell::new(wgpu_initializer)));
-    event_loop_handler.register_event_handler(Rc::new(RefCell::new(controller_event_handler)));
+    event_loop_handler.register_event_handler(Box::new(WindowEventHandler {}));
+    event_loop_handler.register_event_handler(Box::new(gui_event_handler));
+    event_loop_handler.register_event_handler(Box::new(wgpu_initializer));
+    event_loop_handler.register_event_handler(Box::new(controller_event_handler));
 
     event_loop_handler.run_event_loop();
 }
