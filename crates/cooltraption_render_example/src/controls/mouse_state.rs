@@ -1,23 +1,20 @@
-use crate::world_renderer::camera::controls::ButtonMap;
-use cgmath::Vector2;
-use num_traits::Zero;
-use std::time::Duration;
-use winit::event::MouseButton;
+use crate::controls::ButtonMap;
+use cgmath::{Vector2, Zero};
+use cooltraption_render::window::winit::event::MouseButton;
 
 const BUTTON_COUNT: usize = 163;
 
 #[derive(Clone)]
 pub struct MouseState {
     buttons: [bool; BUTTON_COUNT],
-    scroll_smoothness: f32,
     scroll: f32,
     pos: Vector2<f64>,
     pos_delta: Vector2<f64>,
 }
 
 impl MouseState {
-    pub fn reset(&mut self, delta_time: &Duration) {
-        self.scroll -= self.scroll(delta_time);
+    pub fn reset(&mut self) {
+        self.scroll = 0.0;
         self.pos_delta = Vector2::zero();
     }
 
@@ -25,10 +22,8 @@ impl MouseState {
         self.scroll += delta;
     }
 
-    pub fn scroll(&self, delta_time: &Duration) -> f32 {
-        (self.scroll * (1.0 / self.scroll_smoothness) * delta_time.as_secs_f32())
-            .max(-(self.scroll.abs()))
-            .min(self.scroll.abs())
+    pub fn scroll(&self) -> f32 {
+        self.scroll
     }
 
     pub fn set_pos(&mut self, pos: Vector2<f64>) {
@@ -36,14 +31,6 @@ impl MouseState {
 
         self.pos_delta += delta;
         self.pos = pos;
-    }
-
-    pub fn pos(&self) -> Vector2<f64> {
-        self.pos
-    }
-
-    pub fn pos_delta(&self) -> Vector2<f64> {
-        self.pos_delta
     }
 }
 
@@ -67,7 +54,6 @@ impl Default for MouseState {
     fn default() -> Self {
         Self {
             buttons: [false; BUTTON_COUNT],
-            scroll_smoothness: 0.2,
             scroll: 0.0,
             pos: Vector2::zero(),
             pos_delta: Vector2::zero(),

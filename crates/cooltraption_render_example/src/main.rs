@@ -1,4 +1,5 @@
 mod controller;
+mod controls;
 
 use crate::controller::Controller;
 use cgmath::num_traits::Float;
