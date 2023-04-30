@@ -8,8 +8,8 @@ use std::path::PathBuf;
 
 use log::{debug, info};
 
+use crate::asset_bundle::sprite_asset::{LoadTextureError, SpriteAsset};
 use crate::asset_bundle::strings_asset::StringsAsset;
-use crate::asset_bundle::texture_asset::{LoadTextureError, TextureAsset};
 use crate::asset_bundle::*;
 use crate::texture_atlas::TextureAtlasBuilder;
 
@@ -77,15 +77,15 @@ impl FileAssetLoader {
         let asset_name = file_stem(file).ok_or_else(|| LoadAssetError::PathError(file.path()))?;
 
         match asset_config {
-            AssetConfig::Texture(path) => {
+            AssetConfig::Sprite(path) => {
                 let texture_path = file
                     .path()
                     .parent()
                     .ok_or_else(|| LoadAssetError::PathError(path.clone().into()))?
                     .join(path);
                 let bytes = fs::read(texture_path)?;
-                let texture = TextureAsset::decode(bytes.as_slice(), atlas_builder)?;
-                Ok((asset_name, Box::new(texture)))
+                let sprite = SpriteAsset::decode(bytes.as_slice(), atlas_builder)?;
+                Ok((asset_name, Box::new(sprite)))
             }
             AssetConfig::Strings(map) => Ok((asset_name, Box::new(StringsAsset::from(map)))),
         }
@@ -134,7 +134,7 @@ impl LoadAssetBundle<LoadAssetError> for FileAssetLoader {
 fn create_missing_asset(atlas_builder: &mut TextureAtlasBuilder) -> Box<dyn Asset> {
     let bytes = include_bytes!("missing.png");
     Box::new(
-        TextureAsset::decode(bytes, atlas_builder)
+        SpriteAsset::decode(bytes, atlas_builder)
             .expect("decode missing.png file which is used for debugging"),
     )
 }

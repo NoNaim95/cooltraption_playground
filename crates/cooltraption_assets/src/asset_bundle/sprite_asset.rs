@@ -7,7 +7,7 @@ use crate::asset_bundle::Asset;
 use crate::texture_atlas::TextureAtlasBuilder;
 
 #[derive(Debug)]
-pub struct TextureAsset {
+pub struct SpriteAsset {
     pub texture_hash: u64,
 }
 
@@ -44,13 +44,13 @@ impl From<image::ImageError> for LoadTextureError {
     }
 }
 
-impl Asset for TextureAsset {}
+impl Asset for SpriteAsset {}
 
-impl TextureAsset {
+impl SpriteAsset {
     pub fn decode(
         bytes: &[u8],
         atlas_builder: &mut TextureAtlasBuilder,
-    ) -> Result<TextureAsset, LoadTextureError> {
+    ) -> Result<SpriteAsset, LoadTextureError> {
         let diffuse_image = image::load_from_memory(bytes)?;
 
         let asset = {
@@ -58,7 +58,7 @@ impl TextureAsset {
             diffuse_image.as_bytes().hash(&mut hasher);
             let texture_hash = hasher.finish();
 
-            TextureAsset { texture_hash }
+            SpriteAsset { texture_hash }
         };
 
         atlas_builder.add_texture(diffuse_image);

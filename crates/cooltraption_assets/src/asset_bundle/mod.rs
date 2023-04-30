@@ -7,12 +7,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::texture_atlas::*;
 pub use file_asset_loader::*;
+pub use sprite_asset::*;
 pub use strings_asset::*;
-pub use texture_asset::*;
 
 mod file_asset_loader;
+mod sprite_asset;
 mod strings_asset;
-mod texture_asset;
 
 pub struct AssetBundle {
     assets: HashMap<String, Box<dyn Asset>>,
@@ -27,7 +27,7 @@ impl AssetBundle {
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 enum AssetConfig {
-    Texture(String),
+    Sprite(String),
     Strings(BTreeMap<String, String>),
 }
 
