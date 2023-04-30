@@ -6,8 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cooltraption_render = { path = "../cooltraption_render", features = ["debug"] }
-cooltraption_assets = { path = "../cooltraption_assets", features = ["debug", "missing"] }
+cooltraption_render = { path = "../cooltraption_render", features = ["debug", "missing"] }
 cooltraption_common = { path = "../cooltraption_common" }
 log = "0.4"
 env_logger = "0.10"

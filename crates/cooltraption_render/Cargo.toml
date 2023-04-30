@@ -6,10 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-debug = []
+debug = ["cooltraption_assets/debug"]
+missing = ["cooltraption_assets/missing"]
 
 [dependencies]
-cooltraption_assets = { path = "../cooltraption_assets", features = ["debug", "missing"] }
+cooltraption_assets = { path = "../cooltraption_assets" }
 cooltraption_common = { path = "../cooltraption_common" }
 
 log = "0.4"
