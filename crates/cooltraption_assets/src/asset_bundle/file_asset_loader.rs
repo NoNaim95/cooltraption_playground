@@ -71,7 +71,7 @@ impl FileAssetLoader {
         &self,
         file: &DirEntry,
         atlas_builder: &mut TextureAtlasBuilder,
-    ) -> Result<(String, Box<dyn Asset>), LoadAssetError> {
+    ) -> Result<(String, Asset), LoadAssetError> {
         let file_content = fs::read_to_string(file.path())?;
         let asset_config: AssetConfig = serde_yaml::from_str(file_content.as_str())?;
         let asset_name = file_stem(file).ok_or_else(|| LoadAssetError::PathError(file.path()))?;
@@ -85,9 +85,9 @@ impl FileAssetLoader {
                     .join(path);
                 let bytes = fs::read(texture_path)?;
                 let sprite = SpriteAsset::decode(bytes.as_slice(), atlas_builder)?;
-                Ok((asset_name, Box::new(sprite)))
+                Ok((asset_name, Asset::Sprite(sprite)))
             }
-            AssetConfig::Strings(map) => Ok((asset_name, Box::new(StringsAsset::from(map)))),
+            AssetConfig::Strings(map) => Ok((asset_name, Asset::Strings(StringsAsset::from(map)))),
         }
     }
 }
@@ -131,9 +131,9 @@ impl LoadAssetBundle<LoadAssetError> for FileAssetLoader {
 }
 
 #[cfg(feature = "missing")]
-fn create_missing_asset(atlas_builder: &mut TextureAtlasBuilder) -> Box<dyn Asset> {
+fn create_missing_asset(atlas_builder: &mut TextureAtlasBuilder) -> Asset {
     let bytes = include_bytes!("missing.png");
-    Box::new(
+    Asset::Sprite(
         SpriteAsset::decode(bytes, atlas_builder)
             .expect("decode missing.png file which is used for debugging"),
     )

@@ -3,7 +3,6 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
 
-use crate::asset_bundle::Asset;
 use crate::texture_atlas::TextureAtlasBuilder;
 
 #[derive(Debug)]
@@ -43,8 +42,6 @@ impl From<image::ImageError> for LoadTextureError {
         LoadTextureError::DecodeError(e)
     }
 }
-
-impl Asset for SpriteAsset {}
 
 impl SpriteAsset {
     pub fn decode(
