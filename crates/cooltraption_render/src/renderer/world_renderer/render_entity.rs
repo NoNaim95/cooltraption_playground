@@ -12,11 +12,15 @@ pub struct RenderEntity {
 
 impl RenderEntity {
     pub(crate) fn to_raw(&self) -> RenderEntityRaw {
+        let transform: [[f32; 4]; 4] = (Matrix4::from_translation(self.position)
+            * Matrix4::from_nonuniform_scale(self.scale.x, self.scale.y, self.scale.z)
+            * Matrix4::from(self.rotation))
+        .into();
+
+        let transform: [[f32; 3]; 4] = transform.map(|row| [row[0], row[1], row[2]]); // Cut last row that is always [0, 0, 0, 1]
+
         RenderEntityRaw {
-            transform: (Matrix4::from_translation(self.position)
-                * Matrix4::from_nonuniform_scale(self.scale.x, self.scale.y, self.scale.z)
-                * Matrix4::from(self.rotation))
-            .into(),
+            transform,
             region_offset: self.atlas_region.min.to_array(),
             region_size: self.atlas_region.size().to_array(),
         }
@@ -26,7 +30,7 @@ impl RenderEntity {
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct RenderEntityRaw {
-    transform: [[f32; 4]; 4],
+    transform: [[f32; 3]; 4],
     region_offset: [i32; 2],
     region_size: [i32; 2],
 }
@@ -38,36 +42,37 @@ impl RenderEntityRaw {
             array_stride: mem::size_of::<Self>() as BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
-                // pos_rot matrix
+                // transformation matrix
                 wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x4,
+                    format: wgpu::VertexFormat::Float32x3,
                     offset: 0,
                     shader_location: 2,
                 },
                 wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x4,
-                    offset: mem::size_of::<[f32; 4]>() as BufferAddress,
+                    format: wgpu::VertexFormat::Float32x3,
+                    offset: mem::size_of::<[f32; 3]>() as BufferAddress,
                     shader_location: 3,
                 },
                 wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x4,
-                    offset: mem::size_of::<[f32; 8]>() as BufferAddress,
+                    format: wgpu::VertexFormat::Float32x3,
+                    offset: 2 * mem::size_of::<[f32; 3]>() as BufferAddress,
                     shader_location: 4,
                 },
                 wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x4,
-                    offset: mem::size_of::<[f32; 12]>() as BufferAddress,
+                    format: wgpu::VertexFormat::Float32x3,
+                    offset: 3 * mem::size_of::<[f32; 3]>() as BufferAddress,
                     shader_location: 5,
                 },
-                // region matrix
+                // region offset
                 wgpu::VertexAttribute {
                     format: wgpu::VertexFormat::Sint32x2,
-                    offset: mem::size_of::<[f32; 16]>() as BufferAddress,
+                    offset: mem::size_of::<[[f32; 3]; 4]>() as BufferAddress,
                     shader_location: 6,
                 },
+                // region size
                 wgpu::VertexAttribute {
                     format: wgpu::VertexFormat::Sint32x2,
-                    offset: mem::size_of::<[f32; 16]>() as BufferAddress
+                    offset: mem::size_of::<[[f32; 3]; 4]>() as BufferAddress
                         + mem::size_of::<[i32; 2]>() as BufferAddress,
                     shader_location: 7,
                 },
