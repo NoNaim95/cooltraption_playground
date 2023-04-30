@@ -1,5 +1,5 @@
 use cgmath::{Quaternion, Vector2, Vector3};
-use cooltraption_assets::asset_bundle::{AssetBundle, TextureAsset};
+use cooltraption_assets::asset_bundle::{Asset, AssetBundle};
 use cooltraption_assets::texture_atlas::TextureAtlas;
 use num_traits::Zero;
 
@@ -60,20 +60,18 @@ impl WorldState {
         new.drawables
             .iter()
             .filter_map(|d| {
-                let asset = assets
-                    .get_asset::<TextureAsset>(&d.asset_name)
-                    .or_else(|| {
-                        // if asset does not exist display missing texture
-                        assets.get_asset::<TextureAsset>("missing")
-                    })?;
-                let atlas_region = *texture_atlas.get_texture_region(asset.texture_hash)?;
+                if let Some(Asset::Sprite(asset)) = assets.get_asset(&d.asset_name) {
+                    let atlas_region = *texture_atlas.get_texture_region(asset.texture_hash)?;
 
-                Some(RenderEntity {
-                    position: Vector3::new(d.position.0.x, d.position.0.y, 0.0),
-                    scale: Vector3::new(d.scale.0.x, d.scale.0.y, 1.0),
-                    rotation: Quaternion::zero(),
-                    atlas_region,
-                })
+                    Some(RenderEntity {
+                        position: Vector3::new(d.position.0.x, d.position.0.y, 0.0),
+                        scale: Vector3::new(d.scale.0.x, d.scale.0.y, 1.0),
+                        rotation: Quaternion::zero(),
+                        atlas_region,
+                    })
+                } else {
+                    None
+                }
             })
             .collect()
     }

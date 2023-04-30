@@ -3,8 +3,6 @@ use crate::renderer::wgpu_state::WgpuState;
 use crate::window::{WindowContext, WindowEvent, WinitEvent};
 use log::error;
 use render_frame::RenderFrame;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::time::{Duration, Instant};
 use wgpu::{CommandEncoderDescriptor, SurfaceError, TextureViewDescriptor};
 use winit::event::Event;
@@ -60,7 +58,7 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for WgpuInitializer {
                 prev_frame_time: Instant::now(),
             };
 
-            context.register_event_handler(Rc::new(RefCell::new(window_renderer)));
+            context.register_event_handler(Box::new(window_renderer));
         }
     }
 }

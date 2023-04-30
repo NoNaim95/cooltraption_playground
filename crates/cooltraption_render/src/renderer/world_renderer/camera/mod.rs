@@ -1,11 +1,11 @@
-use cgmath::Vector3;
+use cgmath::Point3;
 use wgpu::util::DeviceExt;
 use wgpu::*;
 use winit::dpi::PhysicalSize;
 
 use crate::renderer::wgpu_state::WgpuState;
 use crate::world_renderer::camera::camera_state::{CameraState, CameraUniform};
-use crate::world_renderer::camera::controls::{CameraController, CameraControls};
+use crate::world_renderer::camera::controls::{CameraController, CameraView};
 
 pub mod camera_state;
 pub mod controls;
@@ -70,8 +70,8 @@ impl<C: CameraController> Camera<C> {
     }
 
     pub fn update_camera_buffer(&mut self, queue: &Queue) {
-        if let Some(controls) = self.controller.get_controls() {
-            self.apply_controls(&controls)
+        if let Some(view) = self.controller.get_view() {
+            self.apply_view(&view)
         }
 
         self.camera_uniform.update_view_proj(&self.camera_state);
@@ -83,9 +83,9 @@ impl<C: CameraController> Camera<C> {
         );
     }
 
-    fn apply_controls(&mut self, controls: &CameraControls) {
-        self.camera_state.target += Vector3::new(controls.move_vec.x, controls.move_vec.y, 0.0);
-        self.camera_state.zoom *= controls.zoom;
+    fn apply_view(&mut self, view: &CameraView) {
+        self.camera_state.target = Point3::new(view.position.x, view.position.y, 0.0);
+        self.camera_state.zoom = view.zoom;
     }
 
     pub fn set_view_size(&mut self, size: PhysicalSize<u32>) {

@@ -1,10 +1,10 @@
 // Vertex shader
 
 struct InstanceInput {
-    @location(2) model_matrix_0: vec4<f32>,
-    @location(3) model_matrix_1: vec4<f32>,
-    @location(4) model_matrix_2: vec4<f32>,
-    @location(5) model_matrix_3: vec4<f32>,
+    @location(2) model_matrix_0: vec3<f32>, // We cannot use mat4x3 here sadly
+    @location(3) model_matrix_1: vec3<f32>,
+    @location(4) model_matrix_2: vec3<f32>,
+    @location(5) model_matrix_3: vec3<f32>,
     @location(6) region_offset: vec2<i32>,
     @location(7) region_size: vec2<i32>,
 };
@@ -33,10 +33,10 @@ fn vs_main(
     instance: InstanceInput,
 ) -> VertexOutput {
     let model_matrix = mat4x4<f32>(
-        instance.model_matrix_0,
-        instance.model_matrix_1,
-        instance.model_matrix_2,
-        instance.model_matrix_3,
+        vec4(instance.model_matrix_0, 0.0),
+        vec4(instance.model_matrix_1, 0.0),
+        vec4(instance.model_matrix_2, 0.0),
+        vec4(instance.model_matrix_3, 1.0),
     );
 
     var out: VertexOutput;

@@ -1,31 +1,36 @@
+use crate::controls::{ButtonMap, KeyboardState, MouseState};
 use cgmath::num_traits::*;
 use cgmath::*;
 use cooltraption_render::events::EventHandler;
 use cooltraption_render::gui::debug_window::DebugWindow;
-use cooltraption_render::window::winit::event::{ElementState, MouseScrollDelta};
+use cooltraption_render::window::winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode};
 use cooltraption_render::window::{winit, WindowContext, WindowEvent, WinitEvent};
 use cooltraption_render::world_renderer::camera::controls::*;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 
 pub struct Controller {
-    recv: Receiver<CameraControls>,
+    recv: Receiver<CameraView>,
 }
 
-pub struct ControllerEventHandler {
+pub struct InputStateEventHandler {
     keyboard_state: KeyboardState,
     mouse_state: MouseState,
-    send: Sender<CameraControls>,
+    target_zoom: f32,
+    view: CameraView,
+    send: Sender<CameraView>,
 }
 
 impl Controller {
-    pub fn new() -> (Self, ControllerEventHandler) {
+    pub fn new() -> (Self, InputStateEventHandler) {
         let (send, recv) = std::sync::mpsc::channel();
 
         let controller = Controller { recv };
-        let event_handler = ControllerEventHandler {
+        let event_handler = InputStateEventHandler {
             keyboard_state: Default::default(),
             mouse_state: Default::default(),
+            target_zoom: 1.0,
+            view: Default::default(),
             send,
         };
 
@@ -34,42 +39,48 @@ impl Controller {
 }
 
 impl CameraController for Controller {
-    fn get_controls(&self) -> Option<CameraControls> {
+    fn get_view(&self) -> Option<CameraView> {
         self.recv.try_recv().ok()
     }
 }
 
-impl ControllerEventHandler {
-    fn send_controls(&self, delta_time: &Duration) {
-        let mut controls = CameraControls::default();
+impl InputStateEventHandler {
+    fn send_controls(&mut self, delta_time: &Duration) {
+        let mut move_vec = Vector2::zero();
 
-        let zoom_speed = 60.0 * delta_time.as_secs_f32();
         let move_speed = 2.0 * delta_time.as_secs_f32();
+        let zoom_speed = 0.1;
+        let zoom_hardness = 35.0 * delta_time.as_secs_f32();
 
-        controls.zoom *= (1.0 + zoom_speed).pow(self.mouse_state.scroll(&delta_time));
+        self.target_zoom *= 2.0_f32.pow(self.mouse_state.scroll() * zoom_speed);
 
         if self.keyboard_state.is_down(&VirtualKeyCode::W) {
-            controls.move_vec.y += 1.0;
+            move_vec.y += 1.0;
         }
         if self.keyboard_state.is_down(&VirtualKeyCode::A) {
-            controls.move_vec.x -= 1.0;
+            move_vec.x -= 1.0;
         }
         if self.keyboard_state.is_down(&VirtualKeyCode::S) {
-            controls.move_vec.y -= 1.0;
+            move_vec.y -= 1.0;
         }
         if self.keyboard_state.is_down(&VirtualKeyCode::D) {
-            controls.move_vec.x += 1.0;
+            move_vec.x += 1.0;
         }
 
-        if controls.move_vec.magnitude() > 0.0 {
-            controls.move_vec = controls.move_vec.normalize_to(move_speed);
+        if move_vec.magnitude() > 0.0 {
+            move_vec = move_vec.normalize_to(move_speed);
         }
 
-        self.send.send(controls).expect("Send controls");
+        self.view.position += move_vec;
+        self.view.zoom = (self.view.zoom.ln()
+            + (self.target_zoom.ln() - self.view.zoom.ln()) * zoom_hardness)
+            .exp();
+
+        self.send.send(self.view).expect("Send controls");
     }
 }
 
-impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for ControllerEventHandler {
+impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputStateEventHandler {
     fn handle_event(&mut self, event: &mut WinitEvent, context: &mut WindowContext) {
         match event.0 {
             winit::event::Event::WindowEvent { event, window_id } => {
@@ -110,7 +121,7 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for ControllerEventHand
             }
             winit::event::Event::UserEvent(WindowEvent::Render(delta_time)) => {
                 self.send_controls(delta_time);
-                self.mouse_state.reset(delta_time);
+                self.mouse_state.reset();
             }
             _ => {}
         }
