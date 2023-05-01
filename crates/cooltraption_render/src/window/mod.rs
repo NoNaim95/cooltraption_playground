@@ -65,7 +65,7 @@ impl WinitEventLoopHandler {
         self.handlers.push(handler);
     }
 
-    pub fn run_event_loop(mut self) {
+    pub fn run_event_loop(mut self) -> ! {
         self.event_loop_proxy
             .send_event(WindowEvent::Init)
             .expect("Send init event");

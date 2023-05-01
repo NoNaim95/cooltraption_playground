@@ -26,8 +26,9 @@ async fn main() {
     env_logger::init();
 
     let (state_send, state_recv) = mpsc::sync_channel(0);
+    let state_iterator = std::iter::from_fn(move || state_recv.try_recv().ok());
 
-    tokio::spawn(async move { run_mock_simulation(state_send) });
+    std::thread::spawn(move || run_mock_simulation(state_send));
 
     let (controller, controller_event_handler) = Controller::new();
 
@@ -45,7 +46,7 @@ async fn main() {
             controller,
             texture_atlas_builder,
             assets,
-            state_recv,
+            state_recv: state_iterator,
         })
     };
     let (gui, gui_event_handler) = GuiInitializer::new();
@@ -65,9 +66,6 @@ async fn main() {
 }
 
 fn run_mock_simulation(state_send: SyncSender<WorldState>) {
-
-
-
     let start = Instant::now();
     loop {
         let (pos1, _pos2, _pos3) = {
@@ -81,14 +79,12 @@ fn run_mock_simulation(state_send: SyncSender<WorldState>) {
         };
 
         let world_state = WorldState {
-            drawables: vec![
-                Drawable {
-                    id: Id(3),
-                    position: Position(pos1.neg()),
-                    scale: Scale(Vector2::new(0.2, 0.2)),
-                    asset_name: "dude".to_string(),
-                },
-            ],
+            drawables: vec![Drawable {
+                id: Id(3),
+                position: Position(pos1.neg()),
+                scale: Scale(Vector2::new(0.2, 0.2)),
+                asset_name: "dude".to_string(),
+            }],
         };
 
         if let Err(e) = state_send.send(world_state) {

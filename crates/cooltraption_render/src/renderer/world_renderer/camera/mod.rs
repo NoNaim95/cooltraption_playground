@@ -5,7 +5,7 @@ use winit::dpi::PhysicalSize;
 
 use crate::renderer::wgpu_state::WgpuState;
 use crate::world_renderer::camera::camera_state::{CameraState, CameraUniform};
-use crate::world_renderer::camera::controls::{CameraController, CameraView};
+use controls::{CameraController, CameraView};
 
 pub mod camera_state;
 pub mod controls;

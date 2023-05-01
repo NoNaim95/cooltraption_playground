@@ -7,12 +7,12 @@ use std::time::{Duration, Instant};
 pub use bevy_ecs::entity::*;
 pub use bevy_ecs::prelude::*;
 pub use bevy_ecs::query::QueryIter;
+pub use bevy_ecs::query::WorldQuery;
 pub use bevy_ecs::schedule::Schedule;
 pub use bevy_ecs::system::Resource;
 pub use bevy_ecs::world::*;
 
 
-use crate::simulation_state::ComponentIter;
 use crate::system_sets::physics_set::Vec2f;
 use action::{Action, ActionPacket};
 pub use components::{Acceleration, PhysicsBundle, Position, Velocity};
@@ -59,7 +59,7 @@ pub trait Simulation {
         I: Iterator<Item = Action>,
         IP: Iterator<Item = ActionPacket>;
 
-    fn add_component_handler<C: Component>(&mut self, f: impl FnMut(ComponentIter<C>) + 'static);
+    fn add_query_iter_handler<WQ: WorldQuery< ReadOnly = WQ>>(&mut self, f: impl FnMut(QueryIter<WQ, ()>) + 'static);
     fn add_local_action_handler(&mut self, f: impl FnMut(&ActionPacket) + 'static);
 }
 
@@ -102,7 +102,7 @@ impl<'a> SimulationImpl<'a> {
         }
     }
 
-    pub fn run<I, IP>(&mut self, mut action_generator: I, mut action_packet_generator: IP)
+    pub fn run<I, IP>(&mut self, mut action_generator: I, mut action_packet_generator: IP) -> !
     where
         I: Iterator<Item = Action>,
         IP: Iterator<Item = ActionPacket>,
@@ -159,9 +159,9 @@ impl<'a> Simulation for SimulationImpl<'a> {
         self.simulation_state.advance_tick();
     }
 
-    fn add_component_handler<C: Component>(
+    fn add_query_iter_handler<WQ: WorldQuery<ReadOnly = WQ>>(
         &mut self,
-        mut f: impl FnMut(ComponentIter<C>) + 'static,
+        mut f: impl FnMut(QueryIter<WQ, ()>) + 'static,
     ) {
         self.state_complete_event
             .add_event_handler(move |s: &mut SimulationState| s.query(|i| f(i)));
