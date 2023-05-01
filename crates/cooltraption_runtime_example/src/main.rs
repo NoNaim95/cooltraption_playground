@@ -1,38 +1,48 @@
-use crate::render_component::Renderer;
+use cgmath::Vector2;
 use cooltraption_common::events::MutEventPublisher;
+use cooltraption_network as networking;
 use cooltraption_network::client;
 use cooltraption_network::network_state::NetworkStateEventHandler;
 use cooltraption_network::network_state_handler::NetworkStateHandler;
 use cooltraption_network::server::ServerNetworkingEngine;
+use cooltraption_render::world_renderer::world_state::{Id, Scale, Drawable};
+use cooltraption_render::world_renderer::{WorldState};
 use cooltraption_simulation::action::{Action, ActionPacket, SpawnBallAction};
-use cooltraption_simulation::simulation_state::ComponentIter;
 use cooltraption_simulation::system_sets::physics_set::{Float, FromNum2, Vec2f};
 use cooltraption_simulation::*;
 
 use std::iter;
 
-use std::sync::mpsc::channel;
+use std::sync::mpsc::{self, SyncSender};
 use std::time::Duration;
+
+pub mod sfml_component;
 
 pub mod render_component;
 
 use rand::random;
 
 fn main() {
+    let (state_send, state_recv) = mpsc::sync_channel(5);
+
+
     let server_handle = std::thread::spawn(|| {
         println!("Launching server...");
         server_example();
     });
+
     std::thread::sleep(Duration::from_secs(1));
+    let headless_sim_handle = std::thread::spawn(|| {
+        println!("Launching 1 headless_simulation...");
+        headless_simulation();
+    });
     let sim_handle = std::thread::spawn(|| {
         println!("Launching 1 client...");
-        query_example();
+        run_simulation(state_send);
     });
-    println!("Launching 1 headless_simulation...");
-    headless_simulation();
 
-    server_handle.join().unwrap();
-    sim_handle.join().unwrap();
+    let it = iter::from_fn(move||{state_recv.try_recv().ok()});
+    render_component::run_renderer(it);
 }
 
 pub fn server_example() {
@@ -47,13 +57,7 @@ pub fn server_example() {
     ServerNetworkingEngine {}.run(5000, event_publisher);
 }
 
-pub fn query_example() {
-    let (s, r) = channel::<Vec<Position>>();
-    std::thread::spawn(move || {
-        let renderer = Renderer::new(iter::from_fn(move || r.try_recv().ok()));
-        renderer.render();
-    });
-
+pub fn run_simulation(world_state_sender: SyncSender<WorldState>) {
     let action_generator = move || None;
 
     let (node_handler, mut event_receiver, _node_task, server) =
@@ -63,10 +67,10 @@ pub fn query_example() {
     let action_packet_iter =
         std::iter::from_fn(move || event_receiver.try_receive()).map(|stored_event| {
             match stored_event.network() {
-                cooltraption_network::server::node::StoredNetEvent::Message(_, message) => {
+                networking::StoredNetEvent::Message(_, message) => {
                     serde_yaml::from_slice::<ActionPacket>(&message).unwrap()
                 }
-                cooltraption_network::server::node::StoredNetEvent::Disconnected(_) => {
+                networking::StoredNetEvent::Disconnected(_) => {
                     panic!("We got disconnected")
                 }
                 _ => unreachable!(),
@@ -76,8 +80,22 @@ pub fn query_example() {
     let sim_options = SimulationOptions::new();
     let mut sim = SimulationImpl::new(sim_options);
 
-    sim.add_component_handler(move |pos: ComponentIter<Position>| {
-        s.send(pos.cloned().collect()).unwrap();
+    sim.add_query_iter_handler(move |comp_iter: QueryIter<(Entity, &Position), ()>| {
+        let mut drawables = vec![];
+        for (entity, pos) in comp_iter {
+            let rpos = pos.0;
+            let mut pos: Vector2<f32> = Vector2::new(rpos.x.0.to_num(), rpos.y.0.to_num());
+            pos /= 100.0;
+            let drawable = Drawable {
+                id: Id(entity.index() as u64),
+                position: cooltraption_render::world_renderer::world_state::Position(pos),
+                scale: Scale(Vector2::new(1.0, 1.0)),
+                asset_name: String::from("dude"),
+            };
+            drawables.push(drawable);
+        }
+        let world_state = WorldState { drawables };
+        world_state_sender.send(world_state).unwrap();
     });
 
     sim.add_local_action_handler(move |action_packet| {

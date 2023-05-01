@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::{World, Component};
-use bevy_ecs::query::{QueryIter};
+use bevy_ecs::query::{QueryIter, WorldQuery};
 
 use crate::{system_sets::physics_set::DeltaTime, Actions, Tick};
 
@@ -45,9 +45,9 @@ impl SimulationState {
         self.world_mut().insert_resource(dt);
     }
 
-    pub fn query<C: Component>(&mut self, mut f: impl FnMut(ComponentIter<C>)) {
-        let mut query = self.world.query::<&C>();
-        f(ComponentIter(query.iter(&self.world)));
+    pub fn query<WQ: WorldQuery<ReadOnly = WQ>>(&mut self, mut f: impl FnMut(QueryIter<WQ, ()>)) {
+        let mut query = self.world.query::<WQ>();
+        f(query.iter(&self.world));
     }
 
     pub fn load_actions(&mut self, actions: Actions) {
