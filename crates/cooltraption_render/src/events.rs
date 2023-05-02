@@ -9,3 +9,5 @@ pub trait EventProxy<'s, E: Event, C: Context, H> {
 pub trait EventHandler<E: Event, C: Context> {
     fn handle_event(&mut self, event: &mut E, context: &mut C);
 }
+
+impl Context for () {}
