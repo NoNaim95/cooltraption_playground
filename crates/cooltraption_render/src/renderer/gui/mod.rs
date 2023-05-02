@@ -13,18 +13,18 @@ use crate::renderer::wgpu_state::WgpuState;
 use crate::renderer::{BoxedRenderer, RenderFrame, Renderer, RendererInitializer};
 use cooltraption_window::window::{WindowContext, WinitEvent};
 pub use egui;
-pub use gui_window::GuiWindow;
+pub use widget::Widget;
 
-mod gui_window;
+mod widget;
 
-type PlatformRef = Rc<RefCell<Option<Platform>>>;
-type WindowsMapRef = Rc<RefCell<HashMap<WindowId, Box<dyn GuiWindow>>>>;
+type SharedPlatform = Rc<RefCell<Option<Platform>>>;
+type SharedWidgetsMap = Rc<RefCell<HashMap<WidgetId, Box<dyn Widget>>>>;
 
-pub type WindowId = &'static str;
+pub type WidgetId = &'static str;
 
 pub enum GuiCommand {
-    Open(Box<dyn GuiWindow>),
-    Close(WindowId),
+    Open(Box<dyn Widget>),
+    Close(WidgetId),
 }
 
 pub struct GuiActionDispatcher {
@@ -32,19 +32,19 @@ pub struct GuiActionDispatcher {
 }
 
 pub fn new() -> (GuiRendererInitializer, GuiEventHandler, GuiActionDispatcher) {
-    let platform = PlatformRef::default();
-    let windows = WindowsMapRef::default();
+    let platform = SharedPlatform::default();
+    let widgets = SharedWidgetsMap::default();
 
     let (command_send, command_recv) = std::sync::mpsc::channel();
 
     (
         GuiRendererInitializer {
             platform: platform.clone(),
-            windows: windows.clone(),
+            widgets: widgets.clone(),
         },
         GuiEventHandler {
             platform,
-            windows,
+            widgets,
             command_recv,
         },
         GuiActionDispatcher { command_send },
@@ -52,15 +52,15 @@ pub fn new() -> (GuiRendererInitializer, GuiEventHandler, GuiActionDispatcher) {
 }
 
 impl GuiActionDispatcher {
-    pub fn open(&self, window: Box<dyn GuiWindow>) -> WindowId {
-        let id = window.id();
+    pub fn open(&self, widget: Box<dyn Widget>) -> WidgetId {
+        let id = widget.id();
         self.command_send
-            .send(GuiCommand::Open(window))
+            .send(GuiCommand::Open(widget))
             .expect("send open command");
         id
     }
 
-    pub fn close(&self, id: WindowId) {
+    pub fn close(&self, id: WidgetId) {
         self.command_send
             .send(GuiCommand::Close(id))
             .expect("send close command");
@@ -70,19 +70,19 @@ impl GuiActionDispatcher {
 struct GuiRenderer {
     start_time: Instant,
     render_pass: RenderPass,
-    platform: PlatformRef,
-    windows: WindowsMapRef,
+    platform: SharedPlatform,
+    widgets: SharedWidgetsMap,
 }
 
 pub struct GuiEventHandler {
-    platform: PlatformRef,
-    windows: WindowsMapRef,
+    platform: SharedPlatform,
+    widgets: SharedWidgetsMap,
     command_recv: Receiver<GuiCommand>,
 }
 
 pub struct GuiRendererInitializer {
-    platform: PlatformRef,
-    windows: WindowsMapRef,
+    platform: SharedPlatform,
+    widgets: SharedWidgetsMap,
 }
 
 impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for GuiEventHandler {
@@ -92,17 +92,17 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for GuiEventHandler {
 
             while let Ok(command) = self.command_recv.try_recv() {
                 match command {
-                    GuiCommand::Open(window) => {
-                        self.windows.borrow_mut().insert(window.id(), window);
+                    GuiCommand::Open(widget) => {
+                        self.widgets.borrow_mut().insert(widget.id(), widget);
                     }
                     GuiCommand::Close(id) => {
-                        self.windows.borrow_mut().remove(id);
+                        self.widgets.borrow_mut().remove(id);
                     }
                 }
             }
 
-            for window in self.windows.borrow_mut().values_mut() {
-                window.handle_event(event, context);
+            for widget in self.widgets.borrow_mut().values_mut() {
+                widget.handle_event(event, context);
             }
         }
     }
@@ -115,10 +115,10 @@ impl Renderer for GuiRenderer {
             platform.update_time(self.start_time.elapsed().as_secs_f64());
             platform.begin_frame();
 
-            // Draw all windows
-            self.windows
+            // Draw all widgets
+            self.widgets
                 .borrow_mut()
-                .retain(|_, window| window.show(&platform.context()));
+                .retain(|_, widget| widget.show(&platform.context()));
 
             // End the UI frame. We could now handle the output and draw the UI with the backend.
             let full_output = platform.end_frame(Some(render_frame.window));
@@ -173,7 +173,7 @@ impl RendererInitializer for GuiRendererInitializer {
             start_time: Instant::now(),
             platform: self.platform,
             render_pass: RenderPass::new(&wgpu_state.device, wgpu_state.config.format, 1),
-            windows: self.windows,
+            widgets: self.widgets,
         })
     }
 }

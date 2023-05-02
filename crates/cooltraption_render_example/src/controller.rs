@@ -1,8 +1,8 @@
 use crate::controls::{ButtonMap, KeyboardState, MouseState};
-use crate::debug_window::DebugWindow;
+use crate::debug_widget::DebugWidget;
 use cgmath::num_traits::*;
 use cgmath::*;
-use cooltraption_render::gui::{GuiActionDispatcher, WindowId};
+use cooltraption_render::gui::{GuiActionDispatcher, WidgetId};
 use cooltraption_render::world_renderer::camera::controls::*;
 use cooltraption_window::events::EventHandler;
 use cooltraption_window::window::winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode};
@@ -17,23 +17,23 @@ pub struct Controller {
 pub struct InputStateEventHandler {
     keyboard_state: KeyboardState,
     mouse_state: MouseState,
-    dispatcher: GuiActionDispatcher,
-    debug_window: Option<WindowId>,
+    gui: GuiActionDispatcher,
+    debug_widget: Option<WidgetId>,
     target_zoom: f32,
     view: CameraView,
     send: Sender<CameraView>,
 }
 
 impl Controller {
-    pub fn new(dispatcher: GuiActionDispatcher) -> (Self, InputStateEventHandler) {
+    pub fn new(gui: GuiActionDispatcher) -> (Self, InputStateEventHandler) {
         let (send, recv) = std::sync::mpsc::channel();
 
         let controller = Controller { recv };
         let event_handler = InputStateEventHandler {
             keyboard_state: Default::default(),
             mouse_state: Default::default(),
-            dispatcher,
-            debug_window: None,
+            gui,
+            debug_widget: None,
             target_zoom: 1.0,
             view: Default::default(),
             send,
@@ -102,12 +102,12 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputStateEventHand
                             if vk_code == VirtualKeyCode::F3 && input.state == ElementState::Pressed
                             {
                                 // Toggle debug_window
-                                if let Some(debug_window) = self.debug_window {
-                                    self.dispatcher.close(debug_window);
-                                    self.debug_window = None;
+                                if let Some(debug_widget) = self.debug_widget {
+                                    self.gui.close(debug_widget);
+                                    self.debug_widget = None;
                                 } else {
-                                    self.debug_window =
-                                        Some(self.dispatcher.open(Box::<DebugWindow>::default()));
+                                    self.debug_widget =
+                                        Some(self.gui.open(Box::<DebugWidget>::default()));
                                 }
                             }
                         }

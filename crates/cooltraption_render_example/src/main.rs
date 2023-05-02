@@ -1,6 +1,6 @@
 mod controller;
 mod controls;
-mod debug_window;
+mod debug_widget;
 
 use crate::controller::Controller;
 use cgmath::num_traits::Float;

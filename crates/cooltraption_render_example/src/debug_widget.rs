@@ -1,4 +1,4 @@
-use cooltraption_render::gui::{egui, GuiWindow, WindowId};
+use cooltraption_render::gui::{egui, Widget, WidgetId};
 use cooltraption_window::events::EventHandler;
 use cooltraption_window::window::winit::dpi::PhysicalSize;
 use cooltraption_window::window::{WindowContext, WinitEvent};
@@ -42,14 +42,14 @@ impl FpsCounter {
     }
 }
 
-pub struct DebugWindow {
+pub struct DebugWidget {
     window_size: PhysicalSize<u32>,
     tps: FpsCounter,
     fps: FpsCounter,
     is_open: bool,
 }
 
-impl Default for DebugWindow {
+impl Default for DebugWidget {
     fn default() -> Self {
         Self {
             is_open: true,
@@ -60,7 +60,7 @@ impl Default for DebugWindow {
     }
 }
 
-impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for DebugWindow {
+impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for DebugWidget {
     fn handle_event(&mut self, _event: &mut WinitEvent, context: &mut WindowContext) {
         self.window_size = context.window.inner_size();
 
@@ -69,7 +69,7 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for DebugWindow {
     }
 }
 
-impl GuiWindow for DebugWindow {
+impl Widget for DebugWidget {
     fn show(&mut self, context: &egui::Context) -> bool {
         // Update fps
         self.fps.tick();
@@ -86,7 +86,7 @@ impl GuiWindow for DebugWindow {
         self.is_open
     }
 
-    fn id(&self) -> WindowId {
+    fn id(&self) -> WidgetId {
         "debug"
     }
 }
