@@ -1,23 +1,70 @@
 use std::collections::HashMap;
+use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use crate::events::EventHandler;
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
-use winit::event::Event;
 use winit::window::Window;
 
 pub use crate::renderer::gui::gui_window::GuiWindow;
 use crate::renderer::wgpu_state::WgpuState;
 use crate::renderer::{BoxedRenderer, RenderFrame, Renderer, RendererInitializer};
-use crate::window::{WindowContext, WindowEvent, WinitEvent};
+use crate::window::{WindowContext, WinitEvent};
+pub use egui;
 
-pub mod debug_window;
 mod gui_window;
 
 type PlatformRef = Arc<Mutex<Option<Platform>>>;
-type WindowsMapRef = Arc<Mutex<HashMap<&'static str, Box<dyn GuiWindow>>>>;
+type WindowsMapRef = Arc<Mutex<HashMap<WindowId, Box<dyn GuiWindow>>>>;
+
+pub type WindowId = &'static str;
+
+pub enum GuiCommand {
+    Open(Box<dyn GuiWindow>),
+    Close(WindowId),
+}
+
+pub struct GuiActionDispatcher {
+    command_send: Sender<GuiCommand>,
+}
+
+pub fn new() -> (GuiRendererInitializer, GuiEventHandler, GuiActionDispatcher) {
+    let platform = PlatformRef::default();
+    let windows = WindowsMapRef::default();
+
+    let (command_send, command_recv) = std::sync::mpsc::channel();
+
+    (
+        GuiRendererInitializer {
+            platform: platform.clone(),
+            windows: windows.clone(),
+        },
+        GuiEventHandler {
+            platform,
+            windows,
+            command_recv,
+        },
+        GuiActionDispatcher { command_send },
+    )
+}
+
+impl GuiActionDispatcher {
+    pub fn open(&self, window: Box<dyn GuiWindow>) -> WindowId {
+        let id = window.id();
+        self.command_send
+            .send(GuiCommand::Open(window))
+            .expect("send open command");
+        id
+    }
+
+    pub fn close(&self, id: WindowId) {
+        self.command_send
+            .send(GuiCommand::Close(id))
+            .expect("send close command");
+    }
+}
 
 struct GuiRenderer {
     start_time: Instant,
@@ -29,48 +76,30 @@ struct GuiRenderer {
 pub struct GuiEventHandler {
     platform: PlatformRef,
     windows: WindowsMapRef,
+    command_recv: Receiver<GuiCommand>,
 }
 
-pub struct GuiInitializer {
+pub struct GuiRendererInitializer {
     platform: PlatformRef,
     windows: WindowsMapRef,
-}
-
-impl GuiInitializer {
-    pub fn new() -> (Self, GuiEventHandler) {
-        let platform = PlatformRef::default();
-        let windows = WindowsMapRef::default();
-
-        (
-            Self {
-                platform: platform.clone(),
-                windows: windows.clone(),
-            },
-            GuiEventHandler { platform, windows },
-        )
-    }
 }
 
 impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for GuiEventHandler {
     fn handle_event(&mut self, event: &mut WinitEvent<'_, '_>, context: &mut WindowContext<'_>) {
         if let Some(platform) = &mut *self.platform.lock().expect("lock platform") {
             platform.handle_event(event.0);
+        }
 
-            if let Event::UserEvent(event) = event.0 {
-                match event {
-                    WindowEvent::OpenGUI(window) => match window.take() {
-                        None => {}
-                        Some(window) => {
-                            self.windows
-                                .lock()
-                                .expect("lock windows")
-                                .insert(window.id(), window);
-                        }
-                    },
-                    WindowEvent::CloseGUI(id) => {
-                        self.windows.lock().expect("lock windows").remove(id);
-                    }
-                    _ => {}
+        while let Ok(command) = self.command_recv.try_recv() {
+            match command {
+                GuiCommand::Open(window) => {
+                    self.windows
+                        .lock()
+                        .expect("lock windows")
+                        .insert(window.id(), window);
+                }
+                GuiCommand::Close(id) => {
+                    self.windows.lock().expect("lock windows").remove(id);
                 }
             }
         }
@@ -88,10 +117,11 @@ impl Renderer for GuiRenderer {
             platform.update_time(self.start_time.elapsed().as_secs_f64());
             platform.begin_frame();
 
-            // Draw all ui elements
-            for window in self.windows.lock().expect("lock windows").values_mut() {
-                window.show(&platform.context());
-            }
+            // Draw all windows
+            self.windows
+                .lock()
+                .expect("lock windows to show")
+                .retain(|_, window| window.show(&platform.context()));
 
             // End the UI frame. We could now handle the output and draw the UI with the backend.
             let full_output = platform.end_frame(Some(render_frame.window));
@@ -132,7 +162,7 @@ impl Renderer for GuiRenderer {
     }
 }
 
-impl RendererInitializer for GuiInitializer {
+impl RendererInitializer for GuiRendererInitializer {
     fn init(self: Box<Self>, wgpu_state: &mut WgpuState, window: &Window) -> BoxedRenderer {
         *self.platform.lock().expect("lock platform") = Some(Platform::new(PlatformDescriptor {
             physical_width: wgpu_state.size.width,

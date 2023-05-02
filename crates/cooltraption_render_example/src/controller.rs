@@ -1,8 +1,9 @@
 use crate::controls::{ButtonMap, KeyboardState, MouseState};
+use crate::debug_window::DebugWindow;
 use cgmath::num_traits::*;
 use cgmath::*;
 use cooltraption_render::events::EventHandler;
-use cooltraption_render::gui::debug_window::DebugWindow;
+use cooltraption_render::gui::GuiActionDispatcher;
 use cooltraption_render::window::winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode};
 use cooltraption_render::window::{winit, WindowContext, WindowEvent, WinitEvent};
 use cooltraption_render::world_renderer::camera::controls::*;
@@ -16,19 +17,21 @@ pub struct Controller {
 pub struct InputStateEventHandler {
     keyboard_state: KeyboardState,
     mouse_state: MouseState,
+    dispatcher: GuiActionDispatcher,
     target_zoom: f32,
     view: CameraView,
     send: Sender<CameraView>,
 }
 
 impl Controller {
-    pub fn new() -> (Self, InputStateEventHandler) {
+    pub fn new(dispatcher: GuiActionDispatcher) -> (Self, InputStateEventHandler) {
         let (send, recv) = std::sync::mpsc::channel();
 
         let controller = Controller { recv };
         let event_handler = InputStateEventHandler {
             keyboard_state: Default::default(),
             mouse_state: Default::default(),
+            dispatcher,
             target_zoom: 1.0,
             view: Default::default(),
             send,
@@ -96,9 +99,7 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputStateEventHand
 
                             if vk_code == VirtualKeyCode::F3 && input.state == ElementState::Pressed
                             {
-                                context.send_event(WindowEvent::OpenGUI(Some(
-                                    Box::<DebugWindow>::default(),
-                                )));
+                                self.dispatcher.open(Box::<DebugWindow>::default());
                             }
                         }
                     }

@@ -1,9 +1,9 @@
-use crate::events::EventHandler;
+use cooltraption_render::events::EventHandler;
 use std::time::Instant;
-use winit::dpi::PhysicalSize;
 
-use crate::renderer::gui::GuiWindow;
-use crate::window::{WindowContext, WindowEvent, WinitEvent};
+use cooltraption_render::gui::{egui, GuiWindow, WindowId};
+use cooltraption_render::window::winit::dpi::PhysicalSize;
+use cooltraption_render::window::{WindowContext, WinitEvent};
 
 struct FpsCounter {
     min_fps: f32,
@@ -67,15 +67,11 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for DebugWindow {
 
         // Update tps
         self.tps.tick();
-
-        if !self.is_open {
-            context.send_event(WindowEvent::CloseGUI(self.id()));
-        }
     }
 }
 
 impl GuiWindow for DebugWindow {
-    fn show(&mut self, context: &egui::Context) {
+    fn show(&mut self, context: &egui::Context) -> bool {
         // Update fps
         self.fps.tick();
 
@@ -87,9 +83,11 @@ impl GuiWindow for DebugWindow {
                 ui.label(format!("FPS: {:.2}", self.fps.avg_fps));
                 ui.label(format!("TPS {:.2}", self.tps.avg_fps));
             });
+
+        self.is_open
     }
 
-    fn id(&self) -> &'static str {
+    fn id(&self) -> WindowId {
         "debug"
     }
 }
