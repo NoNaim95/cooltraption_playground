@@ -1,13 +1,14 @@
 use cooltraption_common::events::EventPublisher;
 use cooltraption_render::events::EventHandler;
 use cooltraption_render::window::winit::event::{
-    ElementState, KeyboardInput, MouseButton, VirtualKeyCode,
+    ElementState, KeyboardInput, ModifiersState, MouseButton, VirtualKeyCode,
 };
 use cooltraption_render::window::{winit, WindowContext, WinitEvent};
 
 #[derive(Default)]
 struct InputEventHandler<'a> {
     event_publisher: EventPublisher<'a, InputEvent>,
+    modifier_state: ModifiersState,
 }
 
 pub enum InputEvent {
@@ -16,43 +17,47 @@ pub enum InputEvent {
 }
 
 pub enum KeyboardInputEvent {
-    KeyPressed(VirtualKeyCode),
-    KeyReleased(VirtualKeyCode),
+    KeyPressed(VirtualKeyCode, ModifiersState),
+    KeyReleased(VirtualKeyCode, ModifiersState),
 }
 
 pub enum MouseButtonEvent {
-    KeyPressed(MouseButton),
-    KeyReleased(MouseButton),
+    KeyPressed(MouseButton, ModifiersState),
+    KeyReleased(MouseButton, ModifiersState),
 }
 
 impl<'a> InputEventHandler<'a> {
     pub fn new(event_publisher: EventPublisher<'a, InputEvent>) -> Self {
-        Self { event_publisher }
+        Self {
+            event_publisher,
+            modifier_state: Default::default(),
+        }
     }
 
     fn keyboard_input(&mut self, input: &mut KeyboardInput) {
         if let Some(key_code) = input.virtual_keycode {
             let event = match input.state {
-                ElementState::Pressed => {
-                    InputEvent::KeyboardInputEvent(KeyboardInputEvent::KeyPressed(key_code))
-                }
-                ElementState::Released => {
-                    InputEvent::KeyboardInputEvent(KeyboardInputEvent::KeyReleased(key_code))
-                }
+                ElementState::Pressed => InputEvent::KeyboardInputEvent(
+                    KeyboardInputEvent::KeyPressed(key_code, self.modifier_state),
+                ),
+                ElementState::Released => InputEvent::KeyboardInputEvent(
+                    KeyboardInputEvent::KeyReleased(key_code, self.modifier_state),
+                ),
             };
             self.event_publisher.publish(&event);
         }
     }
 
     fn mouse_input(&mut self, button: MouseButton, state: &mut ElementState) {
-        let event = match state {
-            ElementState::Pressed => {
-                InputEvent::MouseButtonEvent(MouseButtonEvent::KeyPressed(button))
-            }
-            ElementState::Released => {
-                InputEvent::MouseButtonEvent(MouseButtonEvent::KeyReleased(button))
-            }
-        };
+        let event =
+            match state {
+                ElementState::Pressed => InputEvent::MouseButtonEvent(
+                    MouseButtonEvent::KeyPressed(button, self.modifier_state),
+                ),
+                ElementState::Released => InputEvent::MouseButtonEvent(
+                    MouseButtonEvent::KeyReleased(button, self.modifier_state),
+                ),
+            };
         self.event_publisher.publish(&event);
     }
 }
@@ -67,6 +72,10 @@ impl<'a> EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputEventHandl
                 winit::event::WindowEvent::MouseInput { button, state, .. } => {
                     self.mouse_input(*button, state)
                 }
+                winit::event::WindowEvent::ModifiersChanged(modifiers_state) => {
+                    self.modifier_state = *modifiers_state;
+                }
+
                 _ => {}
             }
         }
