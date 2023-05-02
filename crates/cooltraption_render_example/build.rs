@@ -7,7 +7,7 @@ fn main() {
 
     let target_dir = Path::new(&env::var("OUT_DIR").unwrap()).join("../../../assets");
 
-    let _ = fs::remove_dir_all(&target_dir);
+    let _we_dont_care_if_it_didnt_exist = fs::remove_dir_all(&target_dir);
 
     // Copy the assets directory to the target directory.
     fs::create_dir_all(&target_dir).unwrap();
