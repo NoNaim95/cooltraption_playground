@@ -3,16 +3,16 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
-use crate::events::EventHandler;
+use cooltraption_window::events::EventHandler;
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use winit::window::Window;
 
-pub use crate::renderer::gui::gui_window::GuiWindow;
 use crate::renderer::wgpu_state::WgpuState;
 use crate::renderer::{BoxedRenderer, RenderFrame, Renderer, RendererInitializer};
-use crate::window::{WindowContext, WinitEvent};
+use cooltraption_window::window::{WindowContext, WinitEvent};
 pub use egui;
+pub use gui_window::GuiWindow;
 
 mod gui_window;
 

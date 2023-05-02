@@ -1,9 +1,8 @@
-use cooltraption_render::events::EventHandler;
-use std::time::Instant;
-
 use cooltraption_render::gui::{egui, GuiWindow, WindowId};
-use cooltraption_render::window::winit::dpi::PhysicalSize;
-use cooltraption_render::window::{WindowContext, WinitEvent};
+use cooltraption_window::events::EventHandler;
+use cooltraption_window::window::winit::dpi::PhysicalSize;
+use cooltraption_window::window::{WindowContext, WinitEvent};
+use std::time::Instant;
 
 struct FpsCounter {
     min_fps: f32,

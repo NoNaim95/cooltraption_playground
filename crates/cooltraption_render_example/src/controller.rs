@@ -2,11 +2,11 @@ use crate::controls::{ButtonMap, KeyboardState, MouseState};
 use crate::debug_window::DebugWindow;
 use cgmath::num_traits::*;
 use cgmath::*;
-use cooltraption_render::events::EventHandler;
 use cooltraption_render::gui::{GuiActionDispatcher, WindowId};
-use cooltraption_render::window::winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode};
-use cooltraption_render::window::{winit, WindowContext, WindowEvent, WinitEvent};
 use cooltraption_render::world_renderer::camera::controls::*;
+use cooltraption_window::events::EventHandler;
+use cooltraption_window::window::winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode};
+use cooltraption_window::window::{winit, WindowContext, WindowEvent, WinitEvent};
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 

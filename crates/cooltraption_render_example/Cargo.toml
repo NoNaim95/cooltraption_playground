@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 cooltraption_render = { path = "../cooltraption_render", features = ["debug", "missing"] }
+cooltraption_window = { path = "../cooltraption_window" }
 cooltraption_common = { path = "../cooltraption_common" }
 log = "0.4"
 env_logger = "0.10"

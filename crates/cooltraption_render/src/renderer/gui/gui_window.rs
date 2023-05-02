@@ -1,6 +1,6 @@
-use crate::events::EventHandler;
 use crate::gui::WindowId;
-use crate::window::{WindowContext, WinitEvent};
+use cooltraption_window::events::EventHandler;
+use cooltraption_window::window::{WindowContext, WinitEvent};
 use egui::Context;
 
 pub trait GuiWindow: for<'a, 'b, 'c> EventHandler<WinitEvent<'a, 'b>, WindowContext<'c>> {

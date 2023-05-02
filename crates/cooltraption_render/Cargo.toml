@@ -11,6 +11,7 @@ missing = ["cooltraption_assets/missing"]
 
 [dependencies]
 cooltraption_assets = { path = "../cooltraption_assets" }
+cooltraption_window = { path = "../cooltraption_window" }
 cooltraption_common = { path = "../cooltraption_common" }
 
 log = "0.4"

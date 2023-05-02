@@ -1,17 +1,17 @@
 mod controller;
 mod controls;
-pub mod debug_window;
+mod debug_window;
 
 use crate::controller::Controller;
 use cgmath::num_traits::Float;
 use cgmath::*;
 use cooltraption_render::gui;
 use cooltraption_render::renderer::WgpuInitializer;
-use cooltraption_render::window::{WindowEventHandler, WinitEventLoopHandler};
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
 use cooltraption_render::world_renderer::texture_atlas::TextureAtlasBuilder;
 use cooltraption_render::world_renderer::world_state::{Drawable, Id, Position, Rotation, Scale};
 use cooltraption_render::world_renderer::{WorldRendererInitializer, WorldState};
+use cooltraption_window::window::{WindowEventHandler, WinitEventLoopHandler};
 use log::info;
 use std::env;
 use std::ops::{Neg, Range};

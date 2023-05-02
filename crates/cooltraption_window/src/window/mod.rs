@@ -8,7 +8,6 @@ use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy
 use winit::window::{Window, WindowBuilder};
 
 pub use self::window_event_handler::WindowEventHandler;
-
 mod window_event_handler;
 
 pub struct WinitEventLoopHandler {
