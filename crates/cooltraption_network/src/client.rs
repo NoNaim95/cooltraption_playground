@@ -4,6 +4,7 @@ use message_io::{node::{self, NodeHandler, StoredNodeEvent, NodeTask}, events::E
 
 use crate::server::Signal;
 
+#[derive(Default)]
 pub struct Client {}
 impl Client {
     pub fn connect(server: SocketAddrV4, timeout: Duration) -> Option<(NodeHandler<Signal>, EventReceiver<StoredNodeEvent<Signal>>, NodeTask, Endpoint)> {
@@ -20,6 +21,6 @@ impl Client {
             }
         }
         handler.stop();
-        return None;
+        None
     }
 }

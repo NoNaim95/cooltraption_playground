@@ -1,7 +1,6 @@
 use crate::events::EventHandler;
-use winit::event_loop::ControlFlow;
-
 use crate::window::{WindowContext, WinitEvent};
+use winit::event_loop::ControlFlow;
 
 pub struct WindowEventHandler {}
 

@@ -1,5 +1,5 @@
-use message_io::node::{NodeHandler, NodeListener, self, NodeEvent};
-use cooltraption_common::events::EventPublisher;
+use message_io::node::{NodeHandler, NodeListener, self};
+
 
 pub struct NetworkingEngine {
     pub handler: NodeHandler<()>,

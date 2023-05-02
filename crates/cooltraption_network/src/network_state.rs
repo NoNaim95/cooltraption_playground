@@ -38,22 +38,21 @@ impl<'a> NetworkStateEventHandler<'a> {
 impl<'a> MutEventHandler<(StoredNodeEvent<Signal>, Context)> for NetworkStateEventHandler<'a> {
     fn handle_event(&mut self, event: &mut (StoredNodeEvent<Signal>, Context)) {
         let (stored_node_event, context) = event;
-        match stored_node_event {
-            StoredNodeEvent::Network(network_event) => match network_event {
+        if let StoredNodeEvent::Network(network_event) = stored_node_event {
+            match network_event {
                 StoredNetEvent::Accepted(endpoint, _) => {
                     self.network_state.connected_clients.insert(*endpoint);
                 }
                 StoredNetEvent::Disconnected(endpoint) => {
                     println!("Client Disconnected");
-                    self.network_state.connected_clients.remove(&endpoint);
+                    self.network_state.connected_clients.remove(endpoint);
                 }
                 StoredNetEvent::Message(endpoint, msg) => self
                     .network_state
                     .sent_messages
                     .push((*endpoint, (*msg).clone())),
                 _ => {}
-            },
-            _ => {}
+            }
         }
         self.event_publisher.publish(&mut (
             self.network_state.clone(),

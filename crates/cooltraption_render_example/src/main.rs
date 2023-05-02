@@ -1,16 +1,17 @@
 mod controller;
 mod controls;
+mod debug_widget;
 
 use crate::controller::Controller;
 use cgmath::num_traits::Float;
 use cgmath::*;
-use cooltraption_render::gui::GuiInitializer;
+use cooltraption_render::gui;
 use cooltraption_render::renderer::WgpuInitializer;
-use cooltraption_render::window::{WindowEventHandler, WinitEventLoopHandler};
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
 use cooltraption_render::world_renderer::texture_atlas::TextureAtlasBuilder;
 use cooltraption_render::world_renderer::world_state::{Drawable, Id, Position, Rotation, Scale};
 use cooltraption_render::world_renderer::{WorldRendererInitializer, WorldState};
+use cooltraption_window::window::{WindowEventHandler, WinitEventLoopHandler};
 use log::info;
 use std::env;
 use std::ops::{Neg, Range};
@@ -25,10 +26,12 @@ async fn main() {
     env_logger::init();
 
     let (state_send, state_recv) = mpsc::sync_channel(0);
+    let state_iterator = std::iter::from_fn(move || state_recv.try_recv().ok());
 
-    tokio::spawn(async move { run_mock_simulation(state_send) });
+    std::thread::spawn(move || run_mock_simulation(state_send));
 
-    let (controller, controller_event_handler) = Controller::new();
+    let (gui_renderer, gui_event_handler, dispatcher) = gui::new();
+    let (controller, controller_event_handler) = Controller::new(dispatcher);
 
     let world_renderer = {
         let mut texture_atlas_builder = TextureAtlasBuilder::default();
@@ -43,14 +46,13 @@ async fn main() {
             controller,
             texture_atlas_builder,
             assets,
-            state_recv,
+            state_recv: state_iterator,
         })
     };
-    let (gui, gui_event_handler) = GuiInitializer::new();
 
     let mut wgpu_initializer = WgpuInitializer::default();
     wgpu_initializer.add_initializer(world_renderer);
-    wgpu_initializer.add_initializer(Box::new(gui));
+    wgpu_initializer.add_initializer(Box::new(gui_renderer));
 
     let mut event_loop_handler = WinitEventLoopHandler::default();
 

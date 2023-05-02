@@ -1,5 +1,3 @@
-use std::sync::mpsc::Receiver;
-
 use cooltraption_assets::asset_bundle::AssetBundle;
 use cooltraption_assets::texture_atlas::{TextureAtlas, TextureAtlasBuilder};
 pub use cooltraption_assets::*;
@@ -20,7 +18,11 @@ pub mod camera;
 mod render_entity;
 pub mod world_state;
 
-struct WorldRenderer<C: CameraController> {
+struct WorldRenderer<C, I>
+where
+    C: CameraController,
+    I: Iterator<Item = WorldState>,
+{
     render_pipeline: RenderPipeline,
     vertex_buffer: Buffer,
     index_buffer: Buffer,
@@ -30,20 +32,28 @@ struct WorldRenderer<C: CameraController> {
     texture_atlas: TextureAtlas,
     camera: Camera<C>,
     assets: AssetBundle,
-    state_recv: Receiver<WorldState>,
+    state_recv: I,
     world_state: [WorldState; 2],
 }
 
-pub struct WorldRendererInitializer<C: CameraController> {
+pub struct WorldRendererInitializer<C, I>
+where
+    C: CameraController,
+    I: Iterator<Item = WorldState>,
+{
     pub texture_atlas_builder: TextureAtlasBuilder,
     pub assets: AssetBundle,
     pub controller: C,
-    pub state_recv: Receiver<WorldState>,
+    pub state_recv: I,
 }
 
-impl<C: CameraController> Renderer for WorldRenderer<C> {
+impl<C, I> Renderer for WorldRenderer<C, I>
+where
+    C: CameraController,
+    I: Iterator<Item = WorldState>,
+{
     fn render(&mut self, render_frame: &mut RenderFrame) {
-        while let Ok(state) = self.state_recv.try_recv() {
+        while let Some(state) = self.state_recv.next() {
             self.update_state(state);
         }
 
@@ -101,7 +111,11 @@ impl<C: CameraController> Renderer for WorldRenderer<C> {
     }
 }
 
-impl<C: CameraController> WorldRenderer<C> {
+impl<C, I> WorldRenderer<C, I>
+where
+    C: CameraController,
+    I: Iterator<Item = WorldState>,
+{
     fn update_state(&mut self, new_state: WorldState) {
         self.world_state.swap(0, 1);
         self.world_state[0] = new_state;
@@ -116,7 +130,11 @@ fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
     })
 }
 
-impl<C: CameraController + 'static> RendererInitializer for WorldRendererInitializer<C> {
+impl<C, I> RendererInitializer for WorldRendererInitializer<C, I>
+where
+    C: CameraController + 'static,
+    I: Iterator<Item = WorldState> + 'static,
+{
     fn init(self: Box<Self>, wgpu_state: &mut WgpuState, _window: &Window) -> BoxedRenderer {
         let texture_atlas = self.texture_atlas_builder.build();
 
@@ -248,7 +266,7 @@ impl<C: CameraController + 'static> RendererInitializer for WorldRendererInitial
             texture_atlas,
             camera,
             assets: self.assets,
-            state_recv: self.state_recv,
+            state_recv: Box::new(self.state_recv),
             world_state: [Default::default(), Default::default()],
         })
     }

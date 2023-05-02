@@ -1,6 +1,6 @@
-use crate::events::EventHandler;
 use crate::renderer::wgpu_state::WgpuState;
-use crate::window::{WindowContext, WindowEvent, WinitEvent};
+use cooltraption_window::events::EventHandler;
+use cooltraption_window::window::{WindowContext, WindowEvent, WinitEvent};
 use log::error;
 use render_frame::RenderFrame;
 use std::time::{Duration, Instant};
