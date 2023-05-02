@@ -46,15 +46,13 @@ impl InputEventHandler {
 }
 
 impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputEventHandler {
-    fn handle_event(&mut self, event: &mut WinitEvent, context: &mut WindowContext) {
-        match event.0 {
-            winit::event::Event::WindowEvent { event, .. } => match event {
-                winit::event::WindowEvent::KeyboardInput { input, .. } => {
-                    self.keyboard_input(input)
-                }
-                _ => {}
-            },
-            _ => {}
+    fn handle_event(&mut self, event: &mut WinitEvent, _context: &mut WindowContext) {
+        if let winit::event::Event::WindowEvent {
+            event: winit::event::WindowEvent::KeyboardInput { input, .. },
+            ..
+        } = event.0
+        {
+            self.keyboard_input(input)
         }
     }
 }
