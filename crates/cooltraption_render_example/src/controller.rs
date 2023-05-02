@@ -74,7 +74,7 @@ impl InputStateEventHandler {
         }
 
         if move_vec.magnitude() > 0.0 {
-            move_vec = move_vec.normalize_to(move_speed);
+            move_vec = move_vec.normalize_to(move_speed / self.view.zoom);
         }
 
         self.target_pos += move_vec;
