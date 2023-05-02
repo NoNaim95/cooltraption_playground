@@ -1,7 +1,7 @@
 use bevy_ecs::system::Resource;
 
 use crate::components::Position;
-use crate::stages::physics_stage::Float;
+use crate::system_sets::physics_set::Float;
 use crate::Tick;
 
 use serde::{Serialize, Deserialize};
@@ -28,11 +28,18 @@ impl ActionPacket {
 pub enum Action {
     SpawnBall(SpawnBallAction),
     OutwardForce(OutwardForceAction),
+    CircularForce(CircularForceAction),
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SpawnBallAction {
     pub position: Position,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct CircularForceAction {
+    pub position: Position,
+    pub strength: Float,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

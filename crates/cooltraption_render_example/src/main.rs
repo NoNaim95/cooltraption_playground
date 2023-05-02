@@ -26,8 +26,9 @@ async fn main() {
     env_logger::init();
 
     let (state_send, state_recv) = mpsc::sync_channel(0);
+    let state_iterator = std::iter::from_fn(move || state_recv.try_recv().ok());
 
-    tokio::spawn(async move { run_mock_simulation(state_send) });
+    std::thread::spawn(move || run_mock_simulation(state_send));
 
     let (gui_renderer, gui_event_handler, dispatcher) = gui::new();
     let (controller, controller_event_handler) = Controller::new(dispatcher);
@@ -45,7 +46,7 @@ async fn main() {
             controller,
             texture_atlas_builder,
             assets,
-            state_recv,
+            state_recv: state_iterator,
         })
     };
 
