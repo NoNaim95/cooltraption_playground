@@ -1,5 +1,5 @@
-use crate::controls::ButtonMap;
-use cooltraption_window::window::winit::event::VirtualKeyCode;
+use super::ButtonMap;
+use cooltraption_render::window::winit::event::VirtualKeyCode;
 
 const KEY_COUNT: usize = 163;
 

@@ -11,6 +11,7 @@ cooltraption_simulation = { path = "../cooltraption_simulation" }
 cooltraption_network = { path = "../cooltraption_network" }
 cooltraption_common = { path = "../cooltraption_common" }
 cooltraption_render = { path = "../cooltraption_render" }
+cooltraption_window = { path = "../cooltraption_window" }
 cooltraption_assets = { path = "../cooltraption_assets" }
 
 pipeline_rs = { git = "https://github.com/NoNaim95/pipeline_rs", branch = "master" }

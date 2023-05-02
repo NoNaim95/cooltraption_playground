@@ -1,5 +1,5 @@
-use crate::controls::{ButtonMap, KeyboardState, MouseState};
-use crate::debug_widget::DebugWidget;
+use super::controls::{ButtonMap, KeyboardState, MouseState};
+use super::debug_widget::DebugWidget;
 use cgmath::num_traits::*;
 use cgmath::*;
 use cooltraption_render::gui::{GuiActionDispatcher, WidgetId};

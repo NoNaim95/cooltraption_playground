@@ -1,6 +1,6 @@
-use crate::controls::ButtonMap;
+use super::ButtonMap;
 use cgmath::{Vector2, Zero};
-use cooltraption_window::window::winit::event::MouseButton;
+use cooltraption_render::window::winit::event::MouseButton;
 
 const BUTTON_COUNT: usize = 163;
 

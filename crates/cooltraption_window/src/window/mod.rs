@@ -8,7 +8,6 @@ use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy
 use winit::window::{Window, WindowBuilder};
 
 pub use self::window_event_handler::WindowEventHandler;
-
 mod window_event_handler;
 
 pub struct WinitEventLoopHandler {
@@ -25,8 +24,6 @@ impl Event for WinitEvent<'_, '_> {}
 pub enum WindowEvent {
     Init,
     Render(Duration),
-    OpenGUI(Option<Box<dyn crate::gui::GuiWindow>>),
-    CloseGUI(&'static str),
 }
 
 impl Debug for WindowEvent {
@@ -34,8 +31,6 @@ impl Debug for WindowEvent {
         match self {
             WindowEvent::Init => write!(f, "Init"),
             WindowEvent::Render(duration) => write!(f, "Render({:?})", duration),
-            WindowEvent::OpenGUI(_) => write!(f, "OpenGUI"),
-            WindowEvent::CloseGUI(id) => write!(f, "CloseGUI({})", id),
         }
     }
 }

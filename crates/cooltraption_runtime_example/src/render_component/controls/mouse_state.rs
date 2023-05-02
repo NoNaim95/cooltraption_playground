@@ -1,4 +1,4 @@
-use crate::controls::ButtonMap;
+use super::super::controls::ButtonMap;
 use cgmath::{Vector2, Zero};
 use cooltraption_window::window::winit::event::MouseButton;
 

@@ -1,6 +1,3 @@
-use std::cell::RefCell;
-use std::sync::mpsc::Receiver;
-
 use cooltraption_assets::asset_bundle::AssetBundle;
 use cooltraption_assets::texture_atlas::{TextureAtlas, TextureAtlasBuilder};
 pub use cooltraption_assets::*;
