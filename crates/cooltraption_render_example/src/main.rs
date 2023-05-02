@@ -9,11 +9,10 @@ use cooltraption_render::renderer::WgpuInitializer;
 use cooltraption_render::window::{WindowEventHandler, WinitEventLoopHandler};
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
 use cooltraption_render::world_renderer::texture_atlas::TextureAtlasBuilder;
-use cooltraption_render::world_renderer::world_state::{Drawable, Id, Position, Scale};
+use cooltraption_render::world_renderer::world_state::{Drawable, Id, Position, Rotation, Scale};
 use cooltraption_render::world_renderer::{WorldRendererInitializer, WorldState};
 use log::info;
 use std::env;
-use std::env::current_dir;
 use std::ops::{Neg, Range};
 use std::sync::mpsc;
 use std::sync::mpsc::SyncSender;
@@ -33,13 +32,12 @@ async fn main() {
 
     let world_renderer = {
         let mut texture_atlas_builder = TextureAtlasBuilder::default();
-        let assets = FileAssetLoader::new(
-            current_dir()
-                .unwrap()
-                .join("cooltraption_render_example/assets"),
-        )
-        .load(&mut texture_atlas_builder)
-        .expect("load assets");
+
+        let assets_dir = env::current_exe().unwrap().parent().unwrap().join("assets");
+
+        let assets = FileAssetLoader::new(assets_dir)
+            .load(&mut texture_atlas_builder)
+            .expect("load assets");
 
         Box::new(WorldRendererInitializer {
             controller,
@@ -84,6 +82,7 @@ fn run_mock_simulation(state_send: SyncSender<WorldState>) {
                     id: Id(0),
                     position: Position(pos3.neg()),
                     scale: Scale(Vector2::new(0.8, 0.8)),
+                    rot: Rotation(0.0),
                     asset_name: "cloud".to_string(),
                 },
                 Drawable {
@@ -96,12 +95,14 @@ fn run_mock_simulation(state_send: SyncSender<WorldState>) {
                     id: Id(2),
                     position: Position(pos1),
                     scale: Scale(Vector2::new(0.4, 0.4)),
+                    rot: Rotation(0.0),
                     asset_name: "house".to_string(),
                 },
                 Drawable {
                     id: Id(3),
                     position: Position(pos1.neg()),
                     scale: Scale(Vector2::new(0.2, 0.2)),
+                    rot: Rotation(0.0),
                     asset_name: "dude".to_string(),
                 },
                 Drawable {
