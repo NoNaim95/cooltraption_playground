@@ -6,8 +6,11 @@ use cooltraption_render::window::winit::event_loop::{ControlFlow, EventLoopProxy
 use cooltraption_render::window::winit::window::Window;
 use cooltraption_render::window::{winit, BoxedEventHandler, WindowContext, WinitEvent};
 
-struct InputEventHandler {
-    handlers: Vec<BoxedInputEventHandler>,
+use cooltraption_common::events::EventPublisher;
+
+#[derive(Default)]
+struct InputEventHandler<'a> {
+    event_publisher: EventPublisher<'a, InputEvent>,
 }
 
 pub enum InputEvent {
@@ -15,17 +18,9 @@ pub enum InputEvent {
     KeyReleased(VirtualKeyCode),
 }
 
-impl Event for InputEvent {}
-
-impl Default for InputEventHandler {
-    fn default() -> Self {
-        Self { handlers: vec![] }
-    }
-}
-
-impl InputEventHandler {
-    pub fn new() -> Self {
-        Self::default()
+impl<'a> InputEventHandler<'a> {
+    pub fn new(event_publisher: EventPublisher<'a ,InputEvent>) -> Self {
+        Self { event_publisher }
     }
 
     fn keyboard_input(&mut self, input: &mut KeyboardInput) {
@@ -34,18 +29,12 @@ impl InputEventHandler {
                 ElementState::Pressed => InputEvent::KeyPressed(key_code),
                 ElementState::Released => InputEvent::KeyReleased(key_code),
             };
-            for handler in &mut self.handlers {
-                handler.handle_event(&mut event, &mut ());
-            }
+            self.event_publisher.publish(&event);
         }
-    }
-
-    pub fn register_event_handler(&mut self, handler: BoxedInputEventHandler) {
-        self.handlers.push(handler);
     }
 }
 
-impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputEventHandler {
+impl<'a> EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputEventHandler<'a> {
     fn handle_event(&mut self, event: &mut WinitEvent, _context: &mut WindowContext) {
         if let winit::event::Event::WindowEvent {
             event: winit::event::WindowEvent::KeyboardInput { input, .. },
@@ -56,5 +45,3 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputEventHandler {
         }
     }
 }
-
-pub type BoxedInputEventHandler = Box<dyn EventHandler<InputEvent, ()>>;
