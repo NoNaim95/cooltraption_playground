@@ -1,10 +1,11 @@
-use cooltraption_render::events::{Event, EventHandler};
-
-use crate::input;
-use cooltraption_render::window::winit::event::{ElementState, KeyboardInput, VirtualKeyCode};
-use cooltraption_render::window::winit::event_loop::{ControlFlow, EventLoopProxy};
-use cooltraption_render::window::winit::window::Window;
-use cooltraption_render::window::{winit, BoxedEventHandler, WindowContext, WinitEvent};
+use cooltraption_window::events::EventHandler;
+use cooltraption_window::window::{
+    winit::{
+        self,
+        event::{ElementState, KeyboardInput, VirtualKeyCode},
+    },
+    WindowContext, WinitEvent,
+};
 
 use cooltraption_common::events::EventPublisher;
 
@@ -19,13 +20,13 @@ pub enum InputEvent {
 }
 
 impl<'a> InputEventHandler<'a> {
-    pub fn new(event_publisher: EventPublisher<'a ,InputEvent>) -> Self {
+    pub fn new(event_publisher: EventPublisher<'a, InputEvent>) -> Self {
         Self { event_publisher }
     }
 
     fn keyboard_input(&mut self, input: &mut KeyboardInput) {
         if let Some(key_code) = input.virtual_keycode {
-            let mut event = match input.state {
+            let event = match input.state {
                 ElementState::Pressed => InputEvent::KeyPressed(key_code),
                 ElementState::Released => InputEvent::KeyReleased(key_code),
             };

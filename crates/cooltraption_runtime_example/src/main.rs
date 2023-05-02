@@ -5,8 +5,8 @@ use cooltraption_network::client;
 use cooltraption_network::network_state::NetworkStateEventHandler;
 use cooltraption_network::network_state_handler::NetworkStateHandler;
 use cooltraption_network::server::ServerNetworkingEngine;
-use cooltraption_render::world_renderer::world_state::{Id, Scale, Drawable};
-use cooltraption_render::world_renderer::{WorldState};
+use cooltraption_render::world_renderer::world_state::{Id, Scale, Drawable, Rotation};
+use cooltraption_render::world_renderer::WorldState;
 use cooltraption_simulation::action::{Action, ActionPacket, SpawnBallAction};
 use cooltraption_simulation::system_sets::physics_set::{Float, FromNum2, Vec2f};
 use cooltraption_simulation::*;
@@ -26,17 +26,17 @@ fn main() {
     let (state_send, state_recv) = mpsc::sync_channel(5);
 
 
-    let server_handle = std::thread::spawn(|| {
+    let _server_handle = std::thread::spawn(|| {
         println!("Launching server...");
         server_example();
     });
 
     std::thread::sleep(Duration::from_secs(1));
-    let headless_sim_handle = std::thread::spawn(|| {
+    let _headless_sim_handle = std::thread::spawn(|| {
         println!("Launching 1 headless_simulation...");
         headless_simulation();
     });
-    let sim_handle = std::thread::spawn(|| {
+    let _sim_handle = std::thread::spawn(|| {
         println!("Launching 1 client...");
         run_simulation(state_send);
     });
@@ -91,6 +91,7 @@ pub fn run_simulation(world_state_sender: SyncSender<WorldState>) {
                 position: cooltraption_render::world_renderer::world_state::Position(pos),
                 scale: Scale(Vector2::new(1.0, 1.0)),
                 asset_name: String::from("dude"),
+                rot: Rotation::default(),
             };
             drawables.push(drawable);
         }
