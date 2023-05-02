@@ -1,6 +1,7 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use cooltraption_window::events::EventHandler;
@@ -16,8 +17,8 @@ pub use gui_window::GuiWindow;
 
 mod gui_window;
 
-type PlatformRef = Arc<Mutex<Option<Platform>>>;
-type WindowsMapRef = Arc<Mutex<HashMap<WindowId, Box<dyn GuiWindow>>>>;
+type PlatformRef = Rc<RefCell<Option<Platform>>>;
+type WindowsMapRef = Rc<RefCell<HashMap<WindowId, Box<dyn GuiWindow>>>>;
 
 pub type WindowId = &'static str;
 
@@ -86,41 +87,37 @@ pub struct GuiRendererInitializer {
 
 impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for GuiEventHandler {
     fn handle_event(&mut self, event: &mut WinitEvent<'_, '_>, context: &mut WindowContext<'_>) {
-        if let Some(platform) = &mut *self.platform.lock().expect("lock platform") {
+        if let Some(platform) = self.platform.borrow_mut().as_mut() {
             platform.handle_event(event.0);
-        }
 
-        while let Ok(command) = self.command_recv.try_recv() {
-            match command {
-                GuiCommand::Open(window) => {
-                    self.windows
-                        .lock()
-                        .expect("lock windows")
-                        .insert(window.id(), window);
-                }
-                GuiCommand::Close(id) => {
-                    self.windows.lock().expect("lock windows").remove(id);
+            while let Ok(command) = self.command_recv.try_recv() {
+                match command {
+                    GuiCommand::Open(window) => {
+                        self.windows.borrow_mut().insert(window.id(), window);
+                    }
+                    GuiCommand::Close(id) => {
+                        self.windows.borrow_mut().remove(id);
+                    }
                 }
             }
-        }
 
-        for window in self.windows.lock().expect("lock windows").values_mut() {
-            window.handle_event(event, context);
+            for window in self.windows.borrow_mut().values_mut() {
+                window.handle_event(event, context);
+            }
         }
     }
 }
 
 impl Renderer for GuiRenderer {
     fn render(&mut self, render_frame: &mut RenderFrame) {
-        if let Some(platform) = &mut *self.platform.lock().expect("lock platform") {
+        if let Some(platform) = self.platform.borrow_mut().as_mut() {
             // Begin to draw the UI frame.
             platform.update_time(self.start_time.elapsed().as_secs_f64());
             platform.begin_frame();
 
             // Draw all windows
             self.windows
-                .lock()
-                .expect("lock windows to show")
+                .borrow_mut()
                 .retain(|_, window| window.show(&platform.context()));
 
             // End the UI frame. We could now handle the output and draw the UI with the backend.
@@ -164,7 +161,7 @@ impl Renderer for GuiRenderer {
 
 impl RendererInitializer for GuiRendererInitializer {
     fn init(self: Box<Self>, wgpu_state: &mut WgpuState, window: &Window) -> BoxedRenderer {
-        *self.platform.lock().expect("lock platform") = Some(Platform::new(PlatformDescriptor {
+        *self.platform.borrow_mut() = Some(Platform::new(PlatformDescriptor {
             physical_width: wgpu_state.size.width,
             physical_height: wgpu_state.size.height,
             scale_factor: window.scale_factor(),
