@@ -19,6 +19,7 @@ pub struct InputStateEventHandler {
     mouse_state: MouseState,
     gui: GuiActionDispatcher,
     debug_widget: Option<WidgetId>,
+    target_pos: Point2<f32>,
     target_zoom: f32,
     view: CameraView,
     send: Sender<CameraView>,
@@ -34,6 +35,7 @@ impl Controller {
             mouse_state: Default::default(),
             gui,
             debug_widget: None,
+            target_pos: Point2::origin(),
             target_zoom: 1.0,
             view: Default::default(),
             send,
@@ -54,10 +56,9 @@ impl InputStateEventHandler {
         let mut move_vec = Vector2::zero();
 
         let move_speed = 2.0 * delta_time.as_secs_f32();
+        let move_hardness = 25.0 * delta_time.as_secs_f32();
         let zoom_speed = 0.1;
         let zoom_hardness = 35.0 * delta_time.as_secs_f32();
-
-        self.target_zoom *= 2.0_f32.pow(self.mouse_state.scroll() * zoom_speed);
 
         if self.keyboard_state.is_down(&VirtualKeyCode::W) {
             move_vec.y += 1.0;
@@ -76,7 +77,11 @@ impl InputStateEventHandler {
             move_vec = move_vec.normalize_to(move_speed);
         }
 
-        self.view.position += move_vec;
+        self.target_pos += move_vec;
+        self.view.position =
+            self.view.position + (self.target_pos - self.view.position) * move_hardness;
+
+        self.target_zoom *= 2.0_f32.pow(self.mouse_state.scroll() * zoom_speed);
         self.view.zoom = (self.view.zoom.ln()
             + (self.target_zoom.ln() - self.view.zoom.ln()) * zoom_hardness)
             .exp();
