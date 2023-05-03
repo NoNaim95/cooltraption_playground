@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-
 pub struct EventPublisher<'a, T> {
     event_handlers: Vec<Box<dyn EventHandler<T> + 'a>>,
 }

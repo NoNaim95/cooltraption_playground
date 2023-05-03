@@ -6,21 +6,24 @@ use cooltraption_window::window::winit::event::{
 use cooltraption_window::window::{winit, WindowContext, WinitEvent};
 
 #[derive(Default)]
-struct InputEventHandler<'a> {
+pub struct InputEventHandler<'a> {
     event_publisher: EventPublisher<'a, InputEvent>,
     modifier_state: ModifiersState,
 }
 
+#[derive(Debug)]
 pub enum InputEvent {
     KeyboardInputEvent(KeyboardInputEvent),
     MouseButtonEvent(MouseButtonEvent),
 }
 
+#[derive(Debug)]
 pub enum KeyboardInputEvent {
     KeyPressed(VirtualKeyCode, ModifiersState),
     KeyReleased(VirtualKeyCode, ModifiersState),
 }
 
+#[derive(Debug)]
 pub enum MouseButtonEvent {
     KeyPressed(MouseButton, ModifiersState),
     KeyReleased(MouseButton, ModifiersState),
