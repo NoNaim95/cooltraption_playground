@@ -1,5 +1,5 @@
 use crate::controls::ButtonMap;
-use cgmath::{EuclideanSpace, Point2, Vector2, Zero};
+use cgmath::{EuclideanSpace, Point2};
 use cooltraption_window::window::winit::event::MouseButton;
 
 const BUTTON_COUNT: usize = 163;
