@@ -72,9 +72,9 @@ where
                     resolve_target: None,
                     ops: Operations {
                         load: LoadOp::Clear(Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
+                            r: 0.02,
+                            g: 0.02,
+                            b: 0.02,
                             a: 1.0,
                         }),
                         store: true,
