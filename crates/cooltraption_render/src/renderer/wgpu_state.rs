@@ -32,7 +32,7 @@ impl WgpuState {
                     force_fallback_adapter: false,
                 })
                 .await
-                .unwrap();
+                .expect("Request adapter");
 
             let (device, queue) = adapter
                 .request_device(
@@ -50,7 +50,7 @@ impl WgpuState {
                     None, // Trace path
                 )
                 .await
-                .unwrap();
+                .expect("Request device");
 
             (surface, adapter, device, queue)
         })
