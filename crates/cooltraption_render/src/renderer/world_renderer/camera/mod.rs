@@ -1,4 +1,4 @@
-use cgmath::Point3;
+use cgmath::{InnerSpace, Vector2};
 use wgpu::util::DeviceExt;
 use wgpu::*;
 use winit::dpi::PhysicalSize;
@@ -84,12 +84,13 @@ impl<C: CameraController> Camera<C> {
     }
 
     fn apply_view(&mut self, view: &CameraView) {
-        self.camera_state.target = Point3::new(view.position.x, view.position.y, 0.0);
-        self.camera_state.zoom = view.zoom;
+        self.camera_state.pos = view.position;
+        self.camera_state.size = self.camera_state.size.normalize_to(1.0 / view.zoom);
     }
 
-    pub fn set_view_size(&mut self, size: PhysicalSize<u32>) {
-        self.camera_state.aspect = size.width as f32 / size.height as f32;
+    pub fn set_view_size(&mut self, new_size: PhysicalSize<u32>) {
+        let new_size = Vector2::new(new_size.width as f32, new_size.height as f32);
+        self.camera_state.size = self.camera_state.size.project_on(new_size);
     }
 
     pub fn camera_bind_group(&self) -> &BindGroup {

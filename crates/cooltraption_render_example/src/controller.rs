@@ -36,7 +36,7 @@ impl Controller {
             gui,
             debug_widget: None,
             target_pos: Point2::origin(),
-            target_zoom: 1.0,
+            target_zoom: 0.25,
             view: Default::default(),
             send,
         };
@@ -55,9 +55,9 @@ impl InputStateEventHandler {
     fn send_controls(&mut self, delta_time: &Duration) {
         let mut move_vec = Vector2::zero();
 
-        let move_speed = 2.0 * delta_time.as_secs_f32();
+        let move_speed = 0.5 * delta_time.as_secs_f32();
         let move_hardness = 25.0 * delta_time.as_secs_f32();
-        let zoom_speed = 0.1;
+        let zoom_speed = 0.2;
         let zoom_hardness = 35.0 * delta_time.as_secs_f32();
 
         if self.keyboard_state.is_down(&VirtualKeyCode::W) {
