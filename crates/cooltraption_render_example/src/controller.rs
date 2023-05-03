@@ -5,7 +5,9 @@ use cgmath::*;
 use cooltraption_render::gui::{GuiActionDispatcher, WidgetId};
 use cooltraption_render::world_renderer::camera::controls::*;
 use cooltraption_window::events::EventHandler;
-use cooltraption_window::window::winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode};
+use cooltraption_window::window::winit::event::{
+    ElementState, MouseButton, MouseScrollDelta, VirtualKeyCode,
+};
 use cooltraption_window::window::{winit, WindowContext, WindowEvent, WinitEvent};
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
@@ -118,12 +120,21 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputStateEventHand
                         }
                     }
                     winit::event::WindowEvent::CursorMoved { position, .. } => {
-                        self.mouse_state
-                            .set_pos(Vector2::new(position.x, position.y));
+                        let window_pos = Point2::new(position.x as f32, position.y as f32);
+                        let window_size = Vector2::new(
+                            context.window.inner_size().width as f32,
+                            context.window.inner_size().height as f32,
+                        );
+                        let world_pos = self.view.world_pos(window_pos, window_size);
+                        self.mouse_state.set_pos(world_pos);
                     }
                     winit::event::WindowEvent::MouseInput { state, button, .. } => {
                         self.mouse_state
-                            .set_btn(button, *state == ElementState::Pressed);
+                            .set_btn(button, state == &ElementState::Pressed);
+
+                        if button == &MouseButton::Left && state == &ElementState::Pressed {
+                            self.target_pos = self.mouse_state.pos();
+                        }
                     }
                     winit::event::WindowEvent::MouseWheel {
                         delta: MouseScrollDelta::LineDelta(_x, y),
