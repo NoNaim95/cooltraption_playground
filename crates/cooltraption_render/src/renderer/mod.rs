@@ -10,7 +10,6 @@ use winit::window::Window;
 
 pub mod gui;
 pub mod render_frame;
-pub mod vertex;
 pub mod wgpu_state;
 pub mod world_renderer;
 

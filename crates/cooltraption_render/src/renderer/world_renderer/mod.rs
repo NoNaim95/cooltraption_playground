@@ -6,15 +6,16 @@ use wgpu::*;
 use winit::window::Window;
 
 use crate::renderer::render_frame::RenderFrame;
-use crate::renderer::vertex::{Vertex, INDICES, VERTICES};
 use crate::renderer::wgpu_state::WgpuState;
 pub use crate::renderer::world_renderer::render_entity::{RenderEntity, RenderEntityRaw};
 pub use crate::renderer::world_renderer::world_state::WorldState;
 use crate::renderer::{BoxedRenderer, RenderError, Renderer, RendererInitializer};
 use crate::world_renderer::camera::controls::CameraController;
 use crate::world_renderer::camera::Camera;
+use crate::world_renderer::mesh::{Mesh, Vertex};
 
 pub mod camera;
+pub mod mesh;
 mod render_entity;
 pub mod world_state;
 
@@ -24,9 +25,7 @@ where
     I: Iterator<Item = WorldState>,
 {
     render_pipeline: RenderPipeline,
-    vertex_buffer: Buffer,
-    index_buffer: Buffer,
-    num_indices: u32,
+    mesh: Mesh,
     atlas_bind_group: BindGroup,
     instance_buffer: Buffer,
     texture_atlas: TextureAtlas,
@@ -103,11 +102,11 @@ where
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.atlas_bind_group, &[]);
         render_pass.set_bind_group(1, self.camera.camera_bind_group(), &[]);
-        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.set_vertex_buffer(0, self.mesh.vertices().slice(..));
         render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-        render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint16);
+        render_pass.set_index_buffer(self.mesh.indices().slice(..), IndexFormat::Uint16);
 
-        render_pass.draw_indexed(0..self.num_indices, 0, 0..instances.len() as _);
+        render_pass.draw_indexed(0..self.mesh.num_indices(), 0, 0..instances.len() as _);
 
         Ok(())
     }
@@ -228,6 +227,8 @@ where
             label: Some("atlas_bind_group"),
         });
 
+        let mesh = Mesh::quad(&wgpu_state.device);
+
         let shader = wgpu_state
             .device
             .create_shader_module(include_wgsl!("shader.wgsl"));
@@ -241,29 +242,10 @@ where
             &shader,
         );
 
-        let vertex_buffer = wgpu_state
-            .device
-            .create_buffer_init(&util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(VERTICES),
-                usage: BufferUsages::VERTEX,
-            });
-
-        let index_buffer = wgpu_state
-            .device
-            .create_buffer_init(&util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(INDICES),
-                usage: BufferUsages::INDEX,
-            });
-        let num_indices = INDICES.len() as u32;
-
         Box::new(WorldRenderer {
             render_pipeline,
-            vertex_buffer,
-            index_buffer,
-            num_indices,
             atlas_bind_group,
+            mesh,
             instance_buffer,
             texture_atlas,
             camera,
