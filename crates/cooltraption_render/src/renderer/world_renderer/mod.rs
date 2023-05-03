@@ -1,6 +1,7 @@
 use cooltraption_assets::asset_bundle::AssetBundle;
 use cooltraption_assets::texture_atlas::{TextureAtlas, TextureAtlasBuilder};
 pub use cooltraption_assets::*;
+use std::time::Duration;
 use wgpu::util::DeviceExt;
 use wgpu::*;
 use winit::window::Window;
@@ -8,39 +9,43 @@ use winit::window::Window;
 use crate::renderer::render_frame::RenderFrame;
 use crate::renderer::wgpu_state::WgpuState;
 pub use crate::renderer::world_renderer::render_entity::{RenderEntity, RenderEntityRaw};
-pub use crate::renderer::world_renderer::world_state::WorldState;
 use crate::renderer::{BoxedRenderer, RenderError, Renderer, RendererInitializer};
 use crate::world_renderer::camera::controls::CameraController;
 use crate::world_renderer::camera::Camera;
 use crate::world_renderer::mesh::{Mesh, Vertex};
+use crate::world_renderer::time::Time;
+use crate::world_renderer::world_state::{Drawable, WorldState};
 
 pub mod camera;
 pub mod mesh;
 mod render_entity;
+mod time;
 pub mod world_state;
 
 struct WorldRenderer<C, I>
 where
     C: CameraController,
-    I: Iterator<Item = WorldState>,
+    I: Iterator<Item = Vec<Drawable>>,
 {
     render_pipeline: RenderPipeline,
     mesh: Mesh,
+    time: Time,
     atlas_bind_group: BindGroup,
     instance_buffer: Buffer,
     texture_atlas: TextureAtlas,
-    camera: Camera<C>,
     assets: AssetBundle,
+    camera: Camera<C>,
     state_recv: I,
-    world_state: [WorldState; 2],
+    world_state: WorldState,
 }
 
 pub struct WorldRendererInitializer<C, I>
 where
     C: CameraController,
-    I: Iterator<Item = WorldState>,
+    I: Iterator<Item = Vec<Drawable>>,
 {
     pub texture_atlas_builder: TextureAtlasBuilder,
+    pub fixed_delta_time: Duration,
     pub assets: AssetBundle,
     pub controller: C,
     pub state_recv: I,
@@ -49,17 +54,18 @@ where
 impl<C, I> Renderer for WorldRenderer<C, I>
 where
     C: CameraController,
-    I: Iterator<Item = WorldState>,
+    I: Iterator<Item = Vec<Drawable>>,
 {
     fn render(&mut self, render_frame: &mut RenderFrame) -> Result<(), Box<dyn RenderError>> {
-        while let Some(state) = self.state_recv.next() {
-            self.update_state(state);
+        for drawables in self.state_recv.by_ref() {
+            self.time.tick();
+            self.world_state.update(drawables);
         }
 
-        let instances = self.world_state[1].interpolate(
-            &self.world_state[0],
-            &self.assets,
+        let instances = self.world_state.get_render_entities(
+            self.time.alpha(),
             &self.texture_atlas,
+            &self.assets,
         );
 
         let mut render_pass = render_frame
@@ -112,17 +118,6 @@ where
     }
 }
 
-impl<C, I> WorldRenderer<C, I>
-where
-    C: CameraController,
-    I: Iterator<Item = WorldState>,
-{
-    fn update_state(&mut self, new_state: WorldState) {
-        self.world_state.swap(0, 1);
-        self.world_state[0] = new_state;
-    }
-}
-
 fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
     device.create_buffer_init(&util::BufferInitDescriptor {
         label: Some("Instance Buffer"),
@@ -134,7 +129,7 @@ fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
 impl<C, I> RendererInitializer for WorldRendererInitializer<C, I>
 where
     C: CameraController + 'static,
-    I: Iterator<Item = WorldState> + 'static,
+    I: Iterator<Item = Vec<Drawable>> + 'static,
 {
     fn init(self: Box<Self>, wgpu_state: &mut WgpuState, _window: &Window) -> BoxedRenderer {
         let texture_atlas = self.texture_atlas_builder.build();
@@ -246,12 +241,13 @@ where
             render_pipeline,
             atlas_bind_group,
             mesh,
+            time: Time::new(self.fixed_delta_time),
             instance_buffer,
             texture_atlas,
             camera,
             assets: self.assets,
             state_recv: Box::new(self.state_recv),
-            world_state: [Default::default(), Default::default()],
+            world_state: WorldState::default(),
         })
     }
 }

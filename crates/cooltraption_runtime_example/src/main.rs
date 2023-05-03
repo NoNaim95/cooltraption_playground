@@ -6,7 +6,7 @@ use cooltraption_network::network_state::NetworkStateEventHandler;
 use cooltraption_network::network_state_handler::NetworkStateHandler;
 use cooltraption_network::server::ServerNetworkingEngine;
 use cooltraption_render::world_renderer::world_state::{Id, Scale, Drawable};
-use cooltraption_render::world_renderer::{WorldState};
+use cooltraption_render::world_renderer::{Drawables};
 use cooltraption_simulation::action::{Action, ActionPacket, SpawnBallAction};
 use cooltraption_simulation::system_sets::physics_set::{Float, FromNum2, Vec2f};
 use cooltraption_simulation::*;
@@ -57,7 +57,7 @@ pub fn server_example() {
     ServerNetworkingEngine {}.run(5000, event_publisher);
 }
 
-pub fn run_simulation(world_state_sender: SyncSender<WorldState>) {
+pub fn run_simulation(world_state_sender: SyncSender<Drawables>) {
     let action_generator = move || None;
 
     let (node_handler, mut event_receiver, _node_task, server) =
@@ -94,7 +94,7 @@ pub fn run_simulation(world_state_sender: SyncSender<WorldState>) {
             };
             drawables.push(drawable);
         }
-        let world_state = WorldState { drawables };
+        let world_state = Drawables { drawables };
         world_state_sender.send(world_state).unwrap();
     });
 

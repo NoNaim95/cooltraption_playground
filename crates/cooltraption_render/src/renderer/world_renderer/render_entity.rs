@@ -1,5 +1,7 @@
+use crate::world_renderer::world_state::Transform;
 use cgmath::{Matrix4, Quaternion, Vector3};
-use cooltraption_assets::texture_atlas::Rectangle;
+use cooltraption_assets::asset_bundle::{Asset, AssetBundle};
+use cooltraption_assets::texture_atlas::{Rectangle, TextureAtlas};
 use wgpu::BufferAddress;
 
 #[derive(Debug)]
@@ -23,6 +25,33 @@ impl RenderEntity {
             transform,
             region_offset: self.atlas_region.min.to_array(),
             region_size: self.atlas_region.size().to_array(),
+        }
+    }
+
+    pub fn try_from(
+        transform: &Transform,
+        asset_name: &str,
+        texture_atlas: &TextureAtlas,
+        assets: &AssetBundle,
+    ) -> Option<Self> {
+        if let Some(Asset::Sprite(asset)) = assets.get_asset(asset_name) {
+            let atlas_region = *texture_atlas.get_texture_region(asset.texture_hash)?;
+            let pos = &transform.position;
+            let scale = &transform.scale;
+            let rot = &transform.rot;
+
+            Some(RenderEntity {
+                position: Vector3::new(pos.0.x, pos.0.y, 0.0),
+                scale: Vector3::new(scale.0.x, scale.0.y, 1.0),
+                rotation: Quaternion::from_arc(
+                    Vector3::new(rot.0.x, rot.0.y, 0.0),
+                    Vector3::new(1.0, 0.0, 0.0),
+                    None,
+                ),
+                atlas_region,
+            })
+        } else {
+            None
         }
     }
 }

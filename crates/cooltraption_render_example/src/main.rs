@@ -4,13 +4,15 @@ mod debug_widget;
 
 use crate::controller::Controller;
 use cgmath::num_traits::Float;
-use cgmath::*;
+use cgmath::Vector2;
 use cooltraption_render::gui;
 use cooltraption_render::renderer::WgpuInitializer;
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
 use cooltraption_render::world_renderer::texture_atlas::TextureAtlasBuilder;
-use cooltraption_render::world_renderer::world_state::{Drawable, Id, Position, Rotation, Scale};
-use cooltraption_render::world_renderer::{WorldRendererInitializer, WorldState};
+use cooltraption_render::world_renderer::world_state::{
+    Drawable, Id, Position, Rotation, Scale, Transform,
+};
+use cooltraption_render::world_renderer::WorldRendererInitializer;
 use cooltraption_window::window::{WindowEventHandler, WinitEventLoopHandler};
 use log::info;
 use std::env;
@@ -25,10 +27,12 @@ async fn main() {
     env::set_var("RUST_LOG", "info");
     env_logger::init();
 
+    let fixed_delta_time = Duration::from_millis(20);
+
     let (state_send, state_recv) = mpsc::sync_channel(0);
     let state_iterator = std::iter::from_fn(move || state_recv.try_recv().ok());
 
-    std::thread::spawn(move || run_mock_simulation(state_send));
+    std::thread::spawn(move || run_mock_simulation(state_send, fixed_delta_time));
 
     let (gui_renderer, gui_event_handler, dispatcher) = gui::new();
     let (controller, controller_event_handler) = Controller::new(dispatcher);
@@ -46,6 +50,7 @@ async fn main() {
             controller,
             texture_atlas_builder,
             assets,
+            fixed_delta_time,
             state_recv: state_iterator,
         })
     };
@@ -64,13 +69,12 @@ async fn main() {
     event_loop_handler.run_event_loop();
 }
 
-fn run_mock_simulation(state_send: SyncSender<WorldState>) {
+fn run_mock_simulation(state_send: SyncSender<Vec<Drawable>>, fixed_delta_time: Duration) {
     let start = Instant::now();
 
     loop {
-        let (pos1, pos2, pos3) = {
-            let time = start.elapsed().as_secs_f32() / 10.0;
-
+        let time = start.elapsed().as_secs_f32() / 10.0;
+        let (circling, flying, floating) = {
             (
                 Vector2::new(time.sin(), time.cos()),
                 Vector2::new(wrap(time * 4.0, -4.0..4.0), wrap(time * 4.0, -4.0..4.0)),
@@ -78,50 +82,58 @@ fn run_mock_simulation(state_send: SyncSender<WorldState>) {
             )
         };
 
-        let world_state = WorldState {
-            drawables: vec![
-                Drawable {
-                    id: Id(0),
-                    position: Position(pos3.neg()),
+        let drawables = vec![
+            Drawable {
+                id: Id(0),
+                transform: Transform {
+                    position: Position(floating.neg()),
                     scale: Scale(Vector2::new(0.8, 0.8)),
-                    rot: Rotation(0.0),
-                    asset_name: "cloud".to_string(),
+                    rot: Default::default(),
                 },
-                Drawable {
-                    id: Id(1),
-                    position: Position(pos2),
-                    asset_name: "plane".to_string(),
+                asset_name: "cloud".to_string(),
+            },
+            Drawable {
+                id: Id(1),
+                transform: Transform {
+                    position: Position(flying),
                     ..Default::default()
                 },
-                Drawable {
-                    id: Id(2),
-                    position: Position(pos1),
+                asset_name: "plane".to_string(),
+            },
+            Drawable {
+                id: Id(2),
+                transform: Transform {
+                    position: Position(circling),
                     scale: Scale(Vector2::new(0.4, 0.4)),
-                    rot: Rotation(0.0),
-                    asset_name: "house".to_string(),
+                    rot: Default::default(),
                 },
-                Drawable {
-                    id: Id(3),
-                    position: Position(pos1.neg()),
+                asset_name: "house".to_string(),
+            },
+            Drawable {
+                id: Id(3),
+                transform: Transform {
+                    position: Position(circling.neg()),
                     scale: Scale(Vector2::new(0.2, 0.2)),
-                    rot: Rotation(0.0),
-                    asset_name: "dude".to_string(),
+                    rot: Rotation(Vector2::new((time * 10.0).cos(), (time * 10.0).sin())),
                 },
-                Drawable {
-                    id: Id(4),
-                    position: Position(pos3),
-                    asset_name: "cloud".to_string(),
+                asset_name: "dude".to_string(),
+            },
+            Drawable {
+                id: Id(4),
+                transform: Transform {
+                    position: Position(floating),
                     ..Default::default()
                 },
-            ],
-        };
+                asset_name: "cloud".to_string(),
+            },
+        ];
 
-        if let Err(e) = state_send.send(world_state) {
+        if let Err(e) = state_send.send(drawables) {
             info!("Exiting simulation loop: {}", e);
             return;
         }
 
-        sleep(Duration::from_millis(10));
+        sleep(fixed_delta_time);
     }
 }
 
