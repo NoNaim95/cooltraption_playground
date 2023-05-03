@@ -17,8 +17,10 @@ pub mod world_renderer;
 pub type BoxedRenderer = Box<dyn Renderer>;
 pub type BoxedRendererInitializer = Box<dyn RendererInitializer>;
 
+pub trait RenderError: std::error::Error {}
+
 pub trait Renderer {
-    fn render(&mut self, render_frame: &mut RenderFrame);
+    fn render(&mut self, render_frame: &mut RenderFrame) -> Result<(), Box<dyn RenderError>>;
 }
 
 pub trait RendererInitializer {
@@ -76,9 +78,12 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for WgpuWindowRenderer 
 
                 match create_render_frame(context.window, &self.wgpu_state, &delta_time) {
                     Ok(mut render_frame) => {
-                        for renderer in &mut self.renderers {
-                            renderer.render(&mut render_frame);
-                        }
+                        self.renderers.retain_mut(|renderer| {
+                            renderer
+                                .render(&mut render_frame)
+                                .map_err(|e| error!("{}", e)) // Remove renderer if error
+                                .is_ok()
+                        });
                         render_frame.present();
                     }
                     Err(SurfaceError::Lost | SurfaceError::Outdated) => {

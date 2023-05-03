@@ -10,7 +10,7 @@ use crate::renderer::vertex::{Vertex, INDICES, VERTICES};
 use crate::renderer::wgpu_state::WgpuState;
 pub use crate::renderer::world_renderer::render_entity::{RenderEntity, RenderEntityRaw};
 pub use crate::renderer::world_renderer::world_state::WorldState;
-use crate::renderer::{BoxedRenderer, Renderer, RendererInitializer};
+use crate::renderer::{BoxedRenderer, RenderError, Renderer, RendererInitializer};
 use crate::world_renderer::camera::controls::CameraController;
 use crate::world_renderer::camera::Camera;
 
@@ -52,7 +52,7 @@ where
     C: CameraController,
     I: Iterator<Item = WorldState>,
 {
-    fn render(&mut self, render_frame: &mut RenderFrame) {
+    fn render(&mut self, render_frame: &mut RenderFrame) -> Result<(), Box<dyn RenderError>> {
         while let Some(state) = self.state_recv.next() {
             self.update_state(state);
         }
@@ -108,6 +108,8 @@ where
         render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint16);
 
         render_pass.draw_indexed(0..self.num_indices, 0, 0..instances.len() as _);
+
+        Ok(())
     }
 }
 
