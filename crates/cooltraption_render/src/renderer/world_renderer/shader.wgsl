@@ -12,6 +12,7 @@ struct InstanceInput {
 struct CameraUniform {
     view_proj: mat4x4<f32>,
 };
+
 @group(1) @binding(0)
 var<uniform> camera: CameraUniform;
 
@@ -51,14 +52,16 @@ fn vs_main(
 // Fragment shader
 
 @group(0) @binding(0)
-var t_diffuse: texture_2d<f32>;
+var atlas_texture: texture_2d<f32>;
 @group(0) @binding(1)
-var s_diffuse: sampler;
+var atlas_sampler: sampler;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var texture_size = textureDimensions(t_diffuse, 0);
-    var region_offset = vec2<f32>(in.region_offset) / vec2<f32>(texture_size);
-    var region_size = vec2<f32>(in.region_size) / vec2<f32>(texture_size);
-    return textureSample(t_diffuse, s_diffuse, in.tex_coords * region_size + region_offset);
+    var atlas_size = textureDimensions(atlas_texture, 0);
+    var region_offset = vec2<f32>(in.region_offset) / vec2<f32>(atlas_size);
+    var region_size = vec2<f32>(in.region_size) / vec2<f32>(atlas_size);
+    var tex_coords = in.tex_coords * region_size + region_offset;
+
+    return textureSample(atlas_texture, atlas_sampler, tex_coords);
 }
