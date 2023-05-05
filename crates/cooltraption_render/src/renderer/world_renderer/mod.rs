@@ -1,3 +1,4 @@
+use cooltraption_assets::asset_bundle::Asset::Strings;
 use cooltraption_assets::asset_bundle::AssetBundle;
 use cooltraption_assets::texture_atlas::TextureAtlasBuilder;
 pub use cooltraption_assets::*;
@@ -50,6 +51,8 @@ where
             .world_state
             .get_render_entities(&self.gpu_texture_atlas, &self.assets);
 
+        let clear_color = try_get_background(&self.assets).unwrap_or(Color::RED);
+
         let mut render_pass = render_frame
             .encoder
             .begin_render_pass(&RenderPassDescriptor {
@@ -58,12 +61,7 @@ where
                     view: &render_frame.view,
                     resolve_target: None,
                     ops: Operations {
-                        load: LoadOp::Clear(Color {
-                            r: 0.00212,
-                            g: 0.00243,
-                            b: 0.02519,
-                            a: 1.0,
-                        }),
+                        load: LoadOp::Clear(clear_color),
                         store: true,
                     },
                 })],
@@ -156,6 +154,19 @@ where
             state_recv: Box::new(self.state_recv),
             world_state: WorldState::new(self.fixed_delta_time),
         })
+    }
+}
+
+fn try_get_background(assets: &AssetBundle) -> Option<Color> {
+    if let Some(Strings(background)) = assets.get_asset("background") {
+        let r = background.map.get("red")?.parse::<f64>().ok()?;
+        let g = background.map.get("green")?.parse::<f64>().ok()?;
+        let b = background.map.get("blue")?.parse::<f64>().ok()?;
+        let a = background.map.get("alpha")?.parse::<f64>().ok()?;
+
+        Some(Color { r, g, b, a })
+    } else {
+        None
     }
 }
 

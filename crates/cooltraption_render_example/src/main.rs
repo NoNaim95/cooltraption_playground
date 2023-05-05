@@ -40,7 +40,11 @@ async fn main() {
     let world_renderer = {
         let mut texture_atlas_builder = TextureAtlasBuilder::default();
 
-        let assets_dir = env::current_exe().unwrap().parent().unwrap().join("assets");
+        let assets_dir = env::current_exe()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("assets/dark");
 
         let assets = FileAssetLoader::new(assets_dir)
             .load(&mut texture_atlas_builder)
