@@ -1,12 +1,10 @@
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
-use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 
-use guillotiere::{dump_svg, size2, AllocId, Allocation, AtlasAllocator, Size};
+use guillotiere::{size2, AllocId, Allocation, AtlasAllocator, Size};
 use image::{DynamicImage, GenericImage, RgbaImage};
-use log::info;
 
 use super::TextureAtlas;
 
