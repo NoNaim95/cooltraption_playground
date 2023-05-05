@@ -15,12 +15,11 @@ pub struct Camera<C: CameraController> {
     camera_uniform: CameraUniform,
     camera_buffer: Buffer,
     camera_bind_group: BindGroup,
-    camera_bind_group_layout: BindGroupLayout,
     controller: C,
 }
 
 impl<C: CameraController> Camera<C> {
-    pub fn init(controller: C, wgpu_state: &WgpuState) -> Self {
+    pub fn init(controller: C, wgpu_state: &WgpuState) -> (Self, BindGroupLayout) {
         let camera_state =
             CameraState::new((wgpu_state.size.width as f32, wgpu_state.size.height as f32).into());
         let camera_uniform = CameraUniform::new();
@@ -59,14 +58,16 @@ impl<C: CameraController> Camera<C> {
             label: Some("camera_bind_group"),
         });
 
-        Self {
-            camera_state,
-            camera_uniform,
-            camera_buffer,
-            camera_bind_group,
+        (
+            Self {
+                camera_state,
+                camera_uniform,
+                camera_buffer,
+                camera_bind_group,
+                controller,
+            },
             camera_bind_group_layout,
-            controller,
-        }
+        )
     }
 
     pub fn update_camera_buffer(&mut self, queue: &Queue) {
@@ -95,9 +96,5 @@ impl<C: CameraController> Camera<C> {
 
     pub fn camera_bind_group(&self) -> &BindGroup {
         &self.camera_bind_group
-    }
-
-    pub fn camera_bind_group_layout(&self) -> &BindGroupLayout {
-        &self.camera_bind_group_layout
     }
 }

@@ -70,6 +70,9 @@ impl TextureAtlasBuilder {
             texture_map.insert(texture_hash, self.atlas_allocator[*alloc]);
         }
 
-        TextureAtlas { rgba, texture_map }
+        TextureAtlas {
+            rgba,
+            region_map: texture_map,
+        }
     }
 }

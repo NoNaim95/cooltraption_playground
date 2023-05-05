@@ -4,6 +4,7 @@ use cooltraption_assets::texture_atlas::TextureAtlas;
 use std::collections::BTreeMap;
 use std::time::Duration;
 
+use crate::world_renderer::texture_atlas_resource::TextureAtlasResource;
 pub use drawable::*;
 
 use super::RenderEntity;
@@ -27,7 +28,7 @@ impl WorldState {
 
     pub fn get_render_entities(
         &self,
-        texture_atlas: &TextureAtlas,
+        texture_atlas_resource: &TextureAtlasResource,
         assets: &AssetBundle,
     ) -> Vec<RenderEntity> {
         let amount = self.time.alpha();
@@ -39,7 +40,12 @@ impl WorldState {
             .filter_map(|current| {
                 if let Some(previous) = self.drawables.previous().get(&current.id) {
                     let transform = previous.transform.lerp(&current.transform, amount);
-                    RenderEntity::try_from(&transform, &current.asset_name, texture_atlas, assets)
+                    RenderEntity::try_from(
+                        &transform,
+                        &current.asset_name,
+                        texture_atlas_resource,
+                        assets,
+                    )
                 } else {
                     None // Don't render entities that haven't been present before
                 }
