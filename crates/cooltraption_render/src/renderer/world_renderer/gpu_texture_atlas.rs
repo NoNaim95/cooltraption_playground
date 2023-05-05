@@ -3,18 +3,18 @@ use std::collections::HashMap;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::*;
 
-pub struct TextureAtlasResource {
-    index_map: HashMap<u64, usize>, // Maps a texture hash to an index in the regions vector
-    region_bind_group: BindGroup,
-    texture_bind_group: BindGroup,
+// The gpu equivalent of the TextureAtlas struct
+pub struct GpuTextureAtlas {
+    index_map: HashMap<u64, usize>, // Maps a texture hash to an index in the regions vector in the shader
+    bind_groups: BindGroups,
 }
 
-impl TextureAtlasResource {
+impl GpuTextureAtlas {
     pub fn allocate(
         texture_atlas_builder: TextureAtlasBuilder,
         device: &Device,
         queue: &Queue,
-    ) -> (Self, BindGroupLayout, BindGroupLayout) {
+    ) -> (Self, BindGroupLayouts) {
         let texture_atlas = texture_atlas_builder.build();
 
         let texture_size = Extent3d {
@@ -70,7 +70,7 @@ impl TextureAtlasResource {
                         ty: BindingType::Texture {
                             multisampled: false,
                             view_dimension: TextureViewDimension::D2,
-                            sample_type: TextureSampleType::Float { filterable: true },
+                            sample_type: TextureSampleType::Float { filterable: false },
                         },
                         count: None,
                     },
@@ -79,7 +79,7 @@ impl TextureAtlasResource {
                         visibility: ShaderStages::FRAGMENT,
                         // This should match the filterable field of the
                         // corresponding Texture entry above.
-                        ty: BindingType::Sampler(SamplerBindingType::Filtering),
+                        ty: BindingType::Sampler(SamplerBindingType::NonFiltering),
                         count: None,
                     },
                 ],
@@ -107,11 +107,15 @@ impl TextureAtlasResource {
         (
             Self {
                 index_map,
-                region_bind_group,
-                texture_bind_group,
+                bind_groups: BindGroups {
+                    texture: texture_bind_group,
+                    region: region_bind_group,
+                },
             },
-            texture_bind_group_layout,
-            region_bind_group_layout,
+            BindGroupLayouts {
+                texture: texture_bind_group_layout,
+                region: region_bind_group_layout,
+            },
         )
     }
 
@@ -120,12 +124,22 @@ impl TextureAtlasResource {
     }
 
     pub fn region_bind_group(&self) -> &BindGroup {
-        &self.region_bind_group
+        &self.bind_groups.region
     }
 
     pub fn texture_bind_group(&self) -> &BindGroup {
-        &self.texture_bind_group
+        &self.bind_groups.texture
     }
+}
+
+pub struct BindGroupLayouts {
+    pub texture: BindGroupLayout,
+    pub region: BindGroupLayout,
+}
+
+struct BindGroups {
+    texture: BindGroup,
+    region: BindGroup,
 }
 
 fn texture_atlas_to_buffer(

@@ -1,10 +1,9 @@
 use crate::world_renderer::world_state::time::Time;
 use cooltraption_assets::asset_bundle::AssetBundle;
-use cooltraption_assets::texture_atlas::TextureAtlas;
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use crate::world_renderer::texture_atlas_resource::TextureAtlasResource;
+use crate::world_renderer::gpu_texture_atlas::GpuTextureAtlas;
 pub use drawable::*;
 
 use super::RenderEntity;
@@ -28,7 +27,7 @@ impl WorldState {
 
     pub fn get_render_entities(
         &self,
-        texture_atlas_resource: &TextureAtlasResource,
+        texture_atlas_resource: &GpuTextureAtlas,
         assets: &AssetBundle,
     ) -> Vec<RenderEntity> {
         let amount = self.time.alpha();

@@ -1,8 +1,7 @@
-use crate::world_renderer::texture_atlas_resource::TextureAtlasResource;
+use crate::world_renderer::gpu_texture_atlas::GpuTextureAtlas;
 use crate::world_renderer::world_state::Transform;
 use cgmath::{Matrix4, Quaternion, Rad, Rotation3, Vector3};
 use cooltraption_assets::asset_bundle::{Asset, AssetBundle};
-use cooltraption_assets::texture_atlas::TextureAtlas;
 use wgpu::BufferAddress;
 
 #[derive(Debug)]
@@ -31,7 +30,7 @@ impl RenderEntity {
     pub fn try_from(
         transform: &Transform,
         asset_name: &str,
-        texture_atlas_resource: &TextureAtlasResource,
+        texture_atlas_resource: &GpuTextureAtlas,
         assets: &AssetBundle,
     ) -> Option<Self> {
         if let Some(Asset::Sprite(asset)) = assets.get_asset(asset_name) {

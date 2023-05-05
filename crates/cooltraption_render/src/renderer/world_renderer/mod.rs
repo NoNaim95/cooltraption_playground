@@ -1,5 +1,5 @@
 use cooltraption_assets::asset_bundle::AssetBundle;
-use cooltraption_assets::texture_atlas::{TextureAtlas, TextureAtlasBuilder};
+use cooltraption_assets::texture_atlas::TextureAtlasBuilder;
 pub use cooltraption_assets::*;
 use std::time::Duration;
 use wgpu::util::DeviceExt;
@@ -11,14 +11,14 @@ use crate::renderer::wgpu_state::WgpuState;
 use crate::renderer::{BoxedRenderer, RenderError, Renderer, RendererInitializer};
 use crate::world_renderer::camera::controls::CameraController;
 use crate::world_renderer::camera::Camera;
+use crate::world_renderer::gpu_texture_atlas::GpuTextureAtlas;
 use crate::world_renderer::mesh::{Mesh, Vertex};
-use crate::world_renderer::texture_atlas_resource::TextureAtlasResource;
 use crate::world_renderer::world_state::{Drawable, WorldState};
 pub use world_state::render_entity::{RenderEntity, RenderEntityRaw};
 
 pub mod camera;
+mod gpu_texture_atlas;
 mod mesh;
-mod texture_atlas_resource;
 pub mod world_state;
 
 struct WorldRenderer<C, I>
@@ -29,7 +29,7 @@ where
     render_pipeline: RenderPipeline,
     mesh: Mesh,
     instance_buffer: Buffer,
-    texture_atlas_resource: TextureAtlasResource,
+    gpu_texture_atlas: GpuTextureAtlas,
     assets: AssetBundle,
     camera: Camera<C>,
     state_recv: I,
@@ -48,7 +48,7 @@ where
 
         let instances = self
             .world_state
-            .get_render_entities(&self.texture_atlas_resource, &self.assets);
+            .get_render_entities(&self.gpu_texture_atlas, &self.assets);
 
         let mut render_pass = render_frame
             .encoder
@@ -88,9 +88,9 @@ where
         self.camera.set_view_size(render_frame.window.inner_size());
 
         render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_bind_group(0, self.texture_atlas_resource.texture_bind_group(), &[]);
-        render_pass.set_bind_group(1, self.camera.camera_bind_group(), &[]);
-        render_pass.set_bind_group(2, self.texture_atlas_resource.region_bind_group(), &[]);
+        render_pass.set_bind_group(0, self.gpu_texture_atlas.texture_bind_group(), &[]);
+        render_pass.set_bind_group(1, self.camera.bind_group(), &[]);
+        render_pass.set_bind_group(2, self.gpu_texture_atlas.region_bind_group(), &[]);
         render_pass.set_vertex_buffer(0, self.mesh.vertices().slice(..));
         render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
         render_pass.set_index_buffer(self.mesh.indices().slice(..), IndexFormat::Uint16);
@@ -119,14 +119,13 @@ where
     I: Iterator<Item = Vec<Drawable>> + 'static,
 {
     fn init(self: Box<Self>, wgpu_state: &mut WgpuState, _window: &Window) -> BoxedRenderer {
-        let (camera, camera_bind_group_layout) = Camera::init(self.controller, wgpu_state);
+        let (camera, camera_bgl) = Camera::init(self.controller, &wgpu_state.device);
 
-        let (texture_atlas_resource, atlas_texture_bind_group_layout, regions_bind_group_layout) =
-            TextureAtlasResource::allocate(
-                self.texture_atlas_builder,
-                &wgpu_state.device,
-                &wgpu_state.queue,
-            );
+        let (gpu_texture_atlas, bind_group_layouts) = GpuTextureAtlas::allocate(
+            self.texture_atlas_builder,
+            &wgpu_state.device,
+            &wgpu_state.queue,
+        );
 
         let mesh = Mesh::quad(&wgpu_state.device);
 
@@ -140,9 +139,9 @@ where
             &wgpu_state.device,
             &wgpu_state.config.format,
             &[
-                &atlas_texture_bind_group_layout,
-                &camera_bind_group_layout,
-                &regions_bind_group_layout,
+                &bind_group_layouts.texture,
+                &camera_bgl,
+                &bind_group_layouts.region,
             ],
             &shader,
         );
@@ -151,7 +150,7 @@ where
             render_pipeline,
             mesh,
             instance_buffer,
-            texture_atlas_resource,
+            gpu_texture_atlas,
             camera,
             assets: self.assets,
             state_recv: Box::new(self.state_recv),
@@ -184,7 +183,6 @@ fn create_pipeline(
         label: Some("Render Pipeline"),
         layout: Some(&render_pipeline_layout),
         vertex: VertexState {
-            // TODO: Load shaders from assets
             module: shader,
             entry_point: "vs_main",
             buffers: &[Vertex::desc(), RenderEntityRaw::desc()],
