@@ -8,18 +8,15 @@ use winit::window::Window;
 
 use crate::renderer::render_frame::RenderFrame;
 use crate::renderer::wgpu_state::WgpuState;
-pub use crate::renderer::world_renderer::render_entity::{RenderEntity, RenderEntityRaw};
 use crate::renderer::{BoxedRenderer, RenderError, Renderer, RendererInitializer};
 use crate::world_renderer::camera::controls::CameraController;
 use crate::world_renderer::camera::Camera;
 use crate::world_renderer::mesh::{Mesh, Vertex};
-use crate::world_renderer::time::Time;
 use crate::world_renderer::world_state::{Drawable, WorldState};
+pub use world_state::render_entity::{RenderEntity, RenderEntityRaw};
 
 pub mod camera;
 pub mod mesh;
-mod render_entity;
-mod time;
 pub mod world_state;
 
 struct WorldRenderer<C, I>
@@ -29,7 +26,6 @@ where
 {
     render_pipeline: RenderPipeline,
     mesh: Mesh,
-    time: Time,
     atlas_bind_group: BindGroup,
     instance_buffer: Buffer,
     texture_atlas: TextureAtlas,
@@ -58,15 +54,12 @@ where
 {
     fn render(&mut self, render_frame: &mut RenderFrame) -> Result<(), Box<dyn RenderError>> {
         for drawables in self.state_recv.by_ref() {
-            self.time.tick();
             self.world_state.update(drawables);
         }
 
-        let instances = self.world_state.get_render_entities(
-            self.time.alpha(),
-            &self.texture_atlas,
-            &self.assets,
-        );
+        let instances = self
+            .world_state
+            .get_render_entities(&self.texture_atlas, &self.assets);
 
         let mut render_pass = render_frame
             .encoder
@@ -241,13 +234,12 @@ where
             render_pipeline,
             atlas_bind_group,
             mesh,
-            time: Time::new(self.fixed_delta_time),
             instance_buffer,
             texture_atlas,
             camera,
             assets: self.assets,
             state_recv: Box::new(self.state_recv),
-            world_state: WorldState::default(),
+            world_state: WorldState::new(self.fixed_delta_time),
         })
     }
 }
