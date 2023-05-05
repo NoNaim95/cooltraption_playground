@@ -114,7 +114,7 @@ fn run_mock_simulation(state_send: SyncSender<Vec<Drawable>>, fixed_delta_time: 
                 transform: Transform {
                     position: Position(circling.neg()),
                     scale: Scale(Vector2::new(0.2, 0.2)),
-                    rot: Rotation(Vector2::new((time * 10.0).cos(), (time * 10.0).sin())),
+                    rot: Rotation(time * 10.0),
                 },
                 asset_name: "dude".to_string(),
             },

@@ -1,5 +1,5 @@
 use crate::world_renderer::world_state::Transform;
-use cgmath::{Matrix4, Quaternion, Vector3};
+use cgmath::{Matrix4, Quaternion, Rad, Rotation3, Vector3};
 use cooltraption_assets::asset_bundle::{Asset, AssetBundle};
 use cooltraption_assets::texture_atlas::{Rectangle, TextureAtlas};
 use wgpu::BufferAddress;
@@ -43,11 +43,7 @@ impl RenderEntity {
             Some(RenderEntity {
                 position: Vector3::new(pos.0.x, pos.0.y, 0.0),
                 scale: Vector3::new(scale.0.x, scale.0.y, 1.0),
-                rotation: Quaternion::from_arc(
-                    Vector3::new(rot.0.x, rot.0.y, 0.0),
-                    Vector3::new(1.0, 0.0, 0.0),
-                    None,
-                ),
+                rotation: Quaternion::from_angle_z(Rad(rot.0)),
                 atlas_region,
             })
         } else {
