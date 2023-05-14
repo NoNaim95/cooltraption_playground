@@ -1,6 +1,5 @@
 mod keyboard_state;
 mod mouse_state;
-mod events;
 
 use crate::input::keyboard_state::KeyboardState;
 use crate::input::mouse_state::MouseState;
@@ -12,7 +11,7 @@ use cooltraption_window::window::winit::event::{
 };
 use cooltraption_window::window::{winit, WindowContext, WinitEvent};
 
-use events::Event;
+use crate::events::Event;
 
 pub struct InputEventHandler<'a> {
     event_publisher: EventPublisher<'a, Event<'a, InputEvent, InputState>>,

@@ -11,5 +11,20 @@ crate-type = ["lib"]
 [dependencies]
 cooltraption_simulation = { path = "../cooltraption_simulation" }
 cooltraption_render = { path = "../cooltraption_render" }
+cooltraption_window = { path = "../cooltraption_window" }
+cooltraption_input = { path = "../cooltraption_input" }
+cooltraption_common = { path = "../cooltraption_common" }
+#cooltraption_network = { path = "../cooltraption_network" }
 
 pipeline_rs = { git = "https://github.com/NoNaim95/pipeline_rs", branch = "master" }
+smart-default = "0.7.1"
+
+tokio = "1.28.0"
+
+cgmath = "0.18.0"
+
+
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+
+rand = "0.8.5"

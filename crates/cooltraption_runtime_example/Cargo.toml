@@ -13,7 +13,7 @@ cooltraption_common = { path = "../cooltraption_common" }
 cooltraption_render = { path = "../cooltraption_render" }
 cooltraption_window = { path = "../cooltraption_window" }
 cooltraption_assets = { path = "../cooltraption_assets" }
-#cooltraption_input = { path = "../cooltraption_input" }
+cooltraption_input = { path = "../cooltraption_input" }
 
 pipeline_rs = { git = "https://github.com/NoNaim95/pipeline_rs", branch = "master" }
 sfml = "0.20.0"

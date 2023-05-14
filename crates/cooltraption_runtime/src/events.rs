@@ -1,7 +1,5 @@
 use cooltraption_common::events::EventFamily;
 
-use super::{InputEvent, InputState};
-
 pub struct Event<'a, P, C = ()> {
     payload: &'a P,
     context: &'a C,
@@ -35,8 +33,4 @@ impl<'a, P, C> MutEvent<'a, P, C> {
     pub fn mut_context(&mut self) -> &mut C {
         &mut self.context
     }
-}
-
-impl<'a> EventFamily for Event<'a, InputEvent, InputState> {
-    type Event<'e> = Event<'e, InputEvent, InputState>;
 }

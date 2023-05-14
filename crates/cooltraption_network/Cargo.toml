@@ -17,6 +17,7 @@ fixed = "1.21"
 fixed-macro = "1.1"
 num-traits = "0.2"
 message-io = "0.15.0"
+higher-order-closure = "0.0.5"
 [build-dependencies]
 copy_to_output = "2.0"
 glob = "0.3"

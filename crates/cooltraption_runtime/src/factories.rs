@@ -1,6 +1,6 @@
 use cgmath::Vector2;
 use cooltraption_common::events::EventHandler;
-use cooltraption_input::input::{InputEvent, KeyboardInputEvent, InputState};
+use cooltraption_input::input::{InputEvent, KeyboardInputEvent};
 //use cooltraption_network as networking;
 //use cooltraption_network::client;
 use cooltraption_render::world_renderer::{
@@ -19,8 +19,6 @@ use std::{
     sync::mpsc::{Sender, SyncSender},
     time::Duration,
 };
-
-use cooltraption_input::events::Event as CtnInputEvent;
 
 fn randomspawn_action(max_x: i32, max_y: i32) -> Action {
     let (x, y) = (random::<i32>() % max_x, random::<i32>() % max_y);
@@ -53,9 +51,9 @@ pub fn sometimes_spawn_action(
     })
 }
 
-pub fn create_input_handler(input_action_sender: Sender<Action>) -> impl for<'e> EventHandler<CtnInputEvent<'e, InputEvent, InputState>> {
-    return move |input_event: &CtnInputEvent<InputEvent, InputState> | {
-        if let InputEvent::KeyboardInputEvent(keyboard_input_event) = input_event.payload() {
+pub fn create_input_handler(input_action_sender: Sender<Action>) -> impl EventHandler<InputEvent> {
+    return move |input_event: &InputEvent| {
+        if let InputEvent::KeyboardInputEvent(keyboard_input_event) = input_event {
             if let KeyboardInputEvent::KeyPressed(key_code, ..) = keyboard_input_event {
                 match key_code {
                     VirtualKeyCode::Space => {

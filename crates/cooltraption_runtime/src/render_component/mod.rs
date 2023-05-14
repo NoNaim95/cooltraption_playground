@@ -11,10 +11,9 @@ use cooltraption_render::world_renderer::{WorldRendererInitializer, WorldState};
 use cooltraption_window::window::{WindowEventHandler, WinitEventLoopHandler};
 use std::env;
 
-use cooltraption_input::input::InputEventHandler;
 
 #[tokio::main]
-pub async fn run_renderer<I>(state_iterator: I, input_event_handler: InputEventHandler<'static>)
+pub async fn run_renderer<I>(state_iterator: I)
 where
     I: Iterator<Item = WorldState> + 'static,
 {
@@ -47,7 +46,6 @@ where
 
     let mut event_loop_handler = WinitEventLoopHandler::default();
 
-    event_loop_handler.register_event_handler(Box::new(input_event_handler));
     event_loop_handler.register_event_handler(Box::new(WindowEventHandler {}));
     event_loop_handler.register_event_handler(Box::new(gui_event_handler));
     event_loop_handler.register_event_handler(Box::new(wgpu_initializer));

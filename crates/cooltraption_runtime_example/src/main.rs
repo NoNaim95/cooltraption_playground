@@ -6,7 +6,7 @@ use directors::SimulationImplDirector;
 
 use std::iter;
 
-//use cooltraption_input::input::{InputEvent, InputEventHandler};
+use cooltraption_input::input::{InputEvent, InputEventHandler, InputState};
 
 use std::sync::mpsc::{self, SyncSender};
 use std::time::Duration;
@@ -16,32 +16,34 @@ pub mod factories;
 pub mod render_component;
 pub mod sfml_component;
 
+use cooltraption_input::events::Event as CtnInputEvent;
+
 fn main() {
     let (input_action_sender, input_action_receiver) = mpsc::channel::<Action>();
     //let local_action_iterator = iter::from_fn(move || input_action_receiver.try_recv().ok());
     let mut sometimes_it = factories::sometimes_spawn_action(3000, 3000, 10);
-    let local_action_iterator = iter::from_fn(move||{
-        if let Some(spawn_action) = sometimes_it.next() {
-            return Some(spawn_action);
-        }
-        let outward_force_action = factories::random_outward_force(3000, 3000, 10);
-        if rand::random::<i32>() % 50 == 0{
-            return Some(outward_force_action);
-        }
-        None
-    });
+    //let local_action_iterator = iter::from_fn(move||{
+    //    if let Some(spawn_action) = sometimes_it.next() {
+    //        return Some(spawn_action);
+    //    }
+    //    let outward_force_action = factories::random_outward_force(3000, 3000, 10);
+    //    if rand::random::<i32>() % 50 == 0{
+    //        return Some(outward_force_action);
+    //    }
+    //    None
+    //});
 
     let (state_send, state_recv) = mpsc::sync_channel(5);
 
     let _sim_handle = std::thread::spawn(move || {
-        run_simulation(local_action_iterator, iter::from_fn(|| None), state_send);
+        run_simulation(iter::from_fn(||input_action_receiver.try_recv().ok()), iter::from_fn(|| None), state_send);
     });
 
     let it = iter::from_fn(move || state_recv.try_recv().ok());
 
-    //let mut event_publisher = EventPublisher::<InputEvent>::default();
-    //event_publisher.add_event_handler(factories::create_input_handler(input_action_sender));
-    render_component::run_renderer(it/*, InputEventHandler::new(event_publisher)*/);
+    let mut event_publisher = EventPublisher::<CtnInputEvent<InputEvent, InputState>>::default();
+    event_publisher.add_event_handler(factories::create_input_handler(input_action_sender));
+    render_component::run_renderer(it, InputEventHandler::new(event_publisher));
 }
 
 pub fn run_simulation<I, IP>(
