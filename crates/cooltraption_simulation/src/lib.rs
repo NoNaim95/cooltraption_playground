@@ -16,7 +16,8 @@ pub use bevy_ecs::world::*;
 
 use action::{Action, ActionPacket};
 pub use components::{Acceleration, PhysicsBundle, Position, Velocity};
-use cooltraption_common::events::{EventPublisher, MutEventPublisher};
+use cooltraption_common::events::{EventPublisher, MutEventPublisher, EventHandler};
+use events::MutEvent;
 use simulation_state::SimulationState;
 use system_sets::physics_set;
 
@@ -28,6 +29,8 @@ pub mod action;
 pub mod components;
 pub mod simulation_state;
 pub mod system_sets;
+pub mod events;
+pub use events::Event;
 
 #[derive( Debug, Resource, Clone, Default, Eq, Hash, PartialEq, Copy, Serialize, Deserialize, Deref, Add, Mul, Sub, Div, From, Into, AddAssign,)]
 pub struct Tick(pub u64);
@@ -62,7 +65,7 @@ pub trait Simulation {
         &mut self,
         f: impl FnMut(QueryIter<WQ, ()>) + 'static,
     );
-    fn add_local_action_handler(&mut self, f: impl FnMut(&ActionPacket) + 'static);
+    fn add_local_action_handler(&mut self, f: impl for<'e> EventHandler<Event<'e, ActionPacket, ()>> + 'static);
 }
 
 #[derive(Default, Builder)]
@@ -72,8 +75,8 @@ pub struct SimulationImpl<'a> {
     simulation_state: SimulationState,
     schedule: Schedule,
     action_table: HashMap<Tick, Vec<Action>>,
-    state_complete_publisher: MutEventPublisher<'a, SimulationState>,
-    local_action_packet_publisher: EventPublisher<'a, ActionPacket>,
+    state_complete_publisher: MutEventPublisher<'a, MutEvent<'a, SimulationState>>,
+    local_action_packet_publisher: EventPublisher<'a, Event<'a, ActionPacket>>,
 }
 
 impl<'a> SimulationImpl<'a> {
@@ -81,8 +84,8 @@ impl<'a> SimulationImpl<'a> {
         simulation_state: SimulationState,
         schedule: Schedule,
         action_table: HashMap<Tick, Vec<Action>>,
-        state_complete_event: MutEventPublisher<'a, SimulationState>,
-        local_action_packet_event: EventPublisher<'a, ActionPacket>,
+        state_complete_event: MutEventPublisher<'a, MutEvent<'a, SimulationState>>,
+        local_action_packet_event: EventPublisher<'a, Event<'a, ActionPacket>>,
     ) -> Self {
 
         Self {
@@ -125,12 +128,12 @@ impl<'a> Simulation for SimulationImpl<'a> {
         I: Iterator<Item = Action>,
         IP: Iterator<Item = ActionPacket>,
     {
-        for action_packet in
+        for local_action_packet in
             actions.map(|action| ActionPacket::new(self.simulation_state.current_tick(), action))
         {
-            self.local_action_packet_publisher.publish(&action_packet);
-            let actions_for_tick = self.action_table.entry(action_packet.tick).or_default();
-            actions_for_tick.push(action_packet.action);
+            self.local_action_packet_publisher.publish(&Event::new(&local_action_packet, &()));
+            let actions_for_tick = self.action_table.entry(local_action_packet.tick).or_default();
+            actions_for_tick.push(local_action_packet.action);
         }
         for action_packet in action_packets {
             let actions_for_tick = self.action_table.entry(action_packet.tick).or_default();
@@ -147,7 +150,7 @@ impl<'a> Simulation for SimulationImpl<'a> {
 
         self.schedule.run(self.simulation_state.world_mut());
         self.state_complete_publisher
-            .publish(&mut self.simulation_state);
+            .publish(&mut MutEvent::new(&mut self.simulation_state, &mut ()) );
         self.simulation_state.advance_tick();
     }
 
@@ -156,10 +159,10 @@ impl<'a> Simulation for SimulationImpl<'a> {
         mut f: impl FnMut(QueryIter<WQ, ()>) + 'static,
     ) {
         self.state_complete_publisher
-            .add_event_handler(move |s: &mut SimulationState| s.query(|i| f(i)));
+            .add_event_handler(move |e: &mut MutEvent<SimulationState>| e.mut_payload().query(|i| f(i)));
     }
 
-    fn add_local_action_handler(&mut self, f: impl FnMut(&ActionPacket) + 'static) {
+    fn add_local_action_handler(&mut self, f: impl for<'e> EventHandler<Event<'e, ActionPacket, ()>> + 'static) {
         self.local_action_packet_publisher.add_event_handler(f);
     }
 }

@@ -1,12 +1,7 @@
-use std::sync::mpsc::Sender;
-
-use cooltraption_common::events::EventPublisher;
 use cooltraption_simulation::{
     system_sets::{action_set, physics_set},
-    IntoSystemConfig, IntoSystemConfigs, Schedule, Event, action::ActionPacket,
+    IntoSystemConfig, IntoSystemConfigs, Schedule,
 };
-
-use super::SimulationImplBuilder;
 
 pub struct SimulationImplDirector {}
 

@@ -1,17 +1,24 @@
 use cgmath::Vector2;
-use cooltraption_network as networking;
 use cooltraption_common::events::EventHandler;
-use cooltraption_input::input::{InputEvent, KeyboardInputEvent};
-use cooltraption_network::client;
-use cooltraption_render::world_renderer::{WorldState, world_state::{Drawable, Id, Scale, Rotation}};
+//use cooltraption_input::input::{InputEvent, KeyboardInputEvent};
+//use cooltraption_network as networking;
+//use cooltraption_network::client;
+use cooltraption_render::world_renderer::{
+    world_state::{Drawable, Id, Rotation, Scale},
+    WorldState,
+};
 use cooltraption_simulation::{
-    action::{Action, SpawnBallAction, CircularForceAction, ActionPacket},
-    system_sets::physics_set::{FromNum2, Vec2f, Float},
-    Position, QueryIter, Entity,
+    action::{Action, ActionPacket, CircularForceAction, SpawnBallAction},
+    system_sets::physics_set::{Float, FromNum2, Vec2f},
+    Entity, Position, QueryIter,
 };
 use cooltraption_window::window::winit::event::VirtualKeyCode;
 use rand::random;
-use std::{iter, sync::mpsc::{Sender, SyncSender}, time::Duration};
+use std::{
+    iter,
+    sync::mpsc::{Sender, SyncSender},
+    time::Duration,
+};
 
 fn randomspawn_action(max_x: i32, max_y: i32) -> Action {
     let (x, y) = (random::<i32>() % max_x, random::<i32>() % max_y);
@@ -20,62 +27,75 @@ fn randomspawn_action(max_x: i32, max_y: i32) -> Action {
     })
 }
 
-pub fn sometimes_spawn_action(max_x: i32, max_y: i32, n: i32) -> impl Iterator<Item = Action> {
+pub fn random_outward_force(max_x: i32, max_y: i32, max_strength: i32) -> Action {
+    let (x, y, strength) = (random::<i32>() % max_x, random::<i32>() % max_y, random::<i32>() % max_strength);
+    let position = Position(Vec2f::from_num(x, y));
+    Action::OutwardForce(cooltraption_simulation::action::OutwardForceAction {
+        position,
+        strength: Float::from_num(strength),
+    })
+}
+
+pub fn sometimes_spawn_action(
+    max_x: i32,
+    max_y: i32,
+    every_nth_tick: i32,
+) -> impl Iterator<Item = Action> {
     let mut i = 0;
-    iter::from_fn(move||{
+    iter::from_fn(move || {
         i += 1;
-        if i % n == 0 {
-            return Some(randomspawn_action(max_x, max_y))
+        if i % every_nth_tick == 0 {
+            return Some(randomspawn_action(max_x, max_y));
         }
         None
     })
 }
 
-pub fn create_input_handler(input_action_sender: Sender<Action>) -> impl EventHandler<InputEvent> {
-    return move |input_event: &InputEvent| {
-        if let InputEvent::KeyboardInputEvent(keyboard_input_event) = input_event {
-            if let KeyboardInputEvent::KeyPressed(key_code, ..) = keyboard_input_event {
-                match key_code {
-                    VirtualKeyCode::Space => {
-                        let circular_force_action = CircularForceAction {
-                            position: Position(Vec2f::from_num(0, 0)),
-                            strength: Float::from_num(30),
-                        };
-                        input_action_sender
-                            .send(Action::CircularForce(circular_force_action))
-                            .unwrap();
-                    }
-                    VirtualKeyCode::E => {
-                        let spawn_ball_action = SpawnBallAction {
-                            position: Position(Vec2f::from_num(10, 10)),
-                        };
-                        input_action_sender
-                            .send(Action::SpawnBall(spawn_ball_action))
-                            .unwrap();
-                    }
-                    _ => (),
-                }
-            }
-        }
-    };
-}
+//pub fn create_input_handler(input_action_sender: Sender<Action>) -> impl EventHandler<InputEvent> {
+//    return move |input_event: &InputEvent| {
+//        if let InputEvent::KeyboardInputEvent(keyboard_input_event) = input_event {
+//            if let KeyboardInputEvent::KeyPressed(key_code, ..) = keyboard_input_event {
+//                match key_code {
+//                    VirtualKeyCode::Space => {
+//                        let circular_force_action = CircularForceAction {
+//                            position: Position(Vec2f::from_num(0, 0)),
+//                            strength: Float::from_num(30),
+//                        };
+//                        input_action_sender
+//                            .send(Action::CircularForce(circular_force_action))
+//                            .unwrap();
+//                    }
+//                    VirtualKeyCode::E => {
+//                        let spawn_ball_action = SpawnBallAction {
+//                            position: Position(Vec2f::from_num(10, 10)),
+//                        };
+//                        input_action_sender
+//                            .send(Action::SpawnBall(spawn_ball_action))
+//                            .unwrap();
+//                    }
+//                    _ => (),
+//                }
+//            }
+//        }
+//    };
+//}
 
-pub fn action_packet_from_server_iter() -> impl Iterator<Item = ActionPacket> {
-    let (_node_handler, mut event_receiver, _node_task, _server) =
-        client::Client::connect("127.0.0.1:5000".parse().unwrap(), Duration::from_secs(3))
-            .expect("could not connect from main");
-    std::iter::from_fn(move || event_receiver.try_receive()).map(|stored_event| match stored_event
-        .network()
-    {
-        networking::StoredNetEvent::Message(_, message) => {
-            serde_yaml::from_slice::<ActionPacket>(&message).unwrap()
-        }
-        networking::StoredNetEvent::Disconnected(_) => {
-            panic!("We got disconnected")
-        }
-        _ => unreachable!(),
-    })
-}
+//pub fn action_packet_from_server_iter() -> impl Iterator<Item = ActionPacket> {
+//    let (_node_handler, mut event_receiver, _node_task, _server) =
+//        client::Client::connect("127.0.0.1:5000".parse().unwrap(), Duration::from_secs(3))
+//            .expect("could not connect from main");
+//    std::iter::from_fn(move || event_receiver.try_receive()).map(|stored_event| match stored_event
+//        .network()
+//    {
+//        networking::StoredNetEvent::Message(_, message) => {
+//            serde_yaml::from_slice::<ActionPacket>(&message).unwrap()
+//        }
+//        networking::StoredNetEvent::Disconnected(_) => {
+//            panic!("We got disconnected")
+//        }
+//        _ => unreachable!(),
+//    })
+//}
 
 pub fn sim_state_sender(
     world_state_sender: SyncSender<WorldState>,

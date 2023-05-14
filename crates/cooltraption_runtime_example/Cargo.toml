@@ -6,14 +6,14 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cooltraption_runtime = { path = "../cooltraption_runtime" }
+#cooltraption_runtime = { path = "../cooltraption_runtime" }
 cooltraption_simulation = { path = "../cooltraption_simulation" }
-cooltraption_network = { path = "../cooltraption_network" }
+#cooltraption_network = { path = "../cooltraption_network" }
 cooltraption_common = { path = "../cooltraption_common" }
 cooltraption_render = { path = "../cooltraption_render" }
 cooltraption_window = { path = "../cooltraption_window" }
 cooltraption_assets = { path = "../cooltraption_assets" }
-cooltraption_input = { path = "../cooltraption_input" }
+#cooltraption_input = { path = "../cooltraption_input" }
 
 pipeline_rs = { git = "https://github.com/NoNaim95/pipeline_rs", branch = "master" }
 sfml = "0.20.0"
