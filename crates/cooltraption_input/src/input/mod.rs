@@ -20,9 +20,9 @@ pub struct InputEventHandler<'a> {
 
 #[derive(Debug, Default, Clone)]
 pub struct InputState {
-    keyboard_state: KeyboardState,
-    mouse_state: MouseState,
-    modifier_state: ModifiersState,
+    pub keyboard_state: KeyboardState,
+    pub mouse_state: MouseState,
+    pub modifier_state: ModifiersState,
 }
 
 #[derive(Debug)]

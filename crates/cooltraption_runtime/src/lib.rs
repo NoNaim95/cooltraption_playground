@@ -1,3 +1,4 @@
+#![allow(dead_code, unused)]
 use cooltraption_render::world_renderer::WorldState;
 use cooltraption_simulation::simulation_state::SimulationState;
 use smart_default::SmartDefault;

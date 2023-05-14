@@ -13,7 +13,7 @@ impl MouseState {
         self.mouse_position = pos;
     }
 
-    pub fn mouse_position(&mut self) -> PhysicalPosition<f64> {
+    pub fn mouse_position(&self) -> PhysicalPosition<f64> {
         self.mouse_position
     }
 
