@@ -18,40 +18,13 @@ pub mod sfml_component;
 use cooltraption_input::events::Event as CtnInputEvent;
 
 fn main() {
-    let (input_action_sender, input_action_receiver) = mpsc::channel::<Action>();
+    //let (input_action_sender, input_action_receiver) = mpsc::channel::<Action>();
 
-    let (state_send, state_recv) = mpsc::sync_channel(5);
+    //let (state_send, state_recv) = mpsc::sync_channel(5);
 
-    std::thread::spawn(move || {
-        run_simulation(
-            iter::from_fn(|| input_action_receiver.try_recv().ok()),
-            iter::from_fn(|| None),
-            state_send,
-        );
-    });
+    //let it = iter::from_fn(move || state_recv.try_recv().ok());
 
-    let it = iter::from_fn(move || state_recv.try_recv().ok());
-
-    let mut event_publisher = EventPublisher::<CtnInputEvent<InputEvent, InputState>>::default();
-    event_publisher.add_event_handler(factories::create_input_handler(input_action_sender));
-    render_component::run_renderer(it, InputEventHandler::new(event_publisher));
-}
-
-pub fn run_simulation<I, IP>(
-    local_action_iterator: I,
-    action_packet_iterator: IP,
-    world_state_sender: SyncSender<WorldState>,
-) where
-    I: Iterator<Item = Action>,
-    IP: Iterator<Item = ActionPacket>,
-{
-    let schedule = SimulationImplDirector::create_schedule();
-    let mut sim = SimulationImplBuilder::default()
-        .schedule(schedule)
-        .build()
-        .unwrap();
-
-    sim.add_query_iter_handler(factories::sim_state_sender(world_state_sender));
-
-    sim.run(local_action_iterator, action_packet_iterator);
+    //let mut event_publisher = EventPublisher::<CtnInputEvent<InputEvent, InputState>>::default();
+    //event_publisher.add_event_handler(factories::create_input_handler(input_action_sender));
+    //render_component::run_renderer(it, InputEventHandler::new(event_publisher));
 }

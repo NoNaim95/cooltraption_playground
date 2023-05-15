@@ -9,23 +9,32 @@ use crate::RuntimeConfiguration;
 use crate::factories;
 use crate::render_component;
 
-pub fn add_renderer<'a, F: FnMut()>(mut runtime_config: RuntimeConfiguration) -> RuntimeConfiguration {
-    let (world_state_sender, world_state_receiver) = mpsc::sync_channel::<WorldState>(5);
-    let mut sim_state_sender = factories::sim_state_sender(world_state_sender);
+pub mod renderer_configurator;
 
-    //let mut state_complete_publisher = MutEventPublisher::default();
-    //state_complete_publisher
-    //    .add_event_handler(move |s: &mut SimulationState| s.query(|i| sim_state_sender(i)));
-    //runtime_config.sim_builder = runtime_config
-    //    .sim_builder
-    //    .state_complete_publisher(state_complete_publisher);
-
-
-
-    let world_state_iterator = iter::from_fn(move || world_state_receiver.try_recv().ok());
-
-    runtime_config.last_task = Some(Box::new(move || {
-        render_component::run_renderer(world_state_iterator)
-    }));
-    runtime_config
+pub trait Configurator {
+    fn configure(&self, runtime_config: RuntimeConfiguration) -> RuntimeConfiguration;
 }
+
+struct ConfiguratorPipeline {
+    configurators: Vec<Box<dyn Configurator>>
+}
+
+impl Configurator for ConfiguratorPipeline {
+    fn configure(&self, mut runtime_config: RuntimeConfiguration) -> RuntimeConfiguration {
+        for configurator in &self.configurators {
+            runtime_config = configurator.configure(runtime_config);
+        }
+        runtime_config
+    }
+}
+
+impl<F> Configurator for F
+where
+    F: Fn(RuntimeConfiguration) -> RuntimeConfiguration
+{
+    fn configure<'a>(&self, runtime_config: RuntimeConfiguration) -> RuntimeConfiguration {
+        self(runtime_config)
+    }
+}
+
+

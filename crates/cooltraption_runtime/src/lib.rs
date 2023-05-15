@@ -19,8 +19,8 @@ mod factories;
 pub mod events;
 
 #[derive(SmartDefault)]
-pub struct RuntimeConfiguration<'a> {
-    sim_builder: SimulationImplBuilder<'a>,
+pub struct RuntimeConfiguration {
+    sim_builder: SimulationImplBuilder,
     tasks: VecDeque<Task>,
     last_task: Option<Task>,
 }
@@ -29,7 +29,7 @@ pub type Task = Box<dyn FnOnce() + Send + 'static>;
 struct Runtime {}
 
 impl<'a> Runtime {
-    pub fn run(config: RuntimeConfiguration<'a>) -> ! {
+    pub fn run(config: RuntimeConfiguration) -> ! {
         let simulation = config.sim_builder.build().expect("Correctly built SimBuilder");
 
         //simulation.run(action_generator, action_packet_generator);
@@ -38,7 +38,7 @@ impl<'a> Runtime {
         }
         loop {}
     }
-    pub fn config() -> RuntimeConfiguration<'a> {
+    pub fn config() -> RuntimeConfiguration {
         RuntimeConfiguration::default()
     }
 }
