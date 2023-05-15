@@ -12,24 +12,30 @@ mod drawable;
 pub mod render_entity;
 mod time;
 
-pub struct WorldState {
+pub struct WorldState<I: Iterator<Item = Vec<Drawable>>> {
+    state_recv: I,
     time: Time,
     drawables: [BTreeMap<Id, Drawable>; 2],
 }
 
-impl WorldState {
-    pub fn new(fixed_delta_time: Duration) -> Self {
+impl<I: Iterator<Item = Vec<Drawable>>> WorldState<I> {
+    pub fn new(state_recv: I, fixed_delta_time: Duration) -> Self {
         Self {
+            state_recv,
             time: Time::new(fixed_delta_time),
             drawables: Default::default(),
         }
     }
 
-    pub fn get_render_entities(
-        &self,
+    pub fn create_entities(
+        &mut self,
         texture_atlas_resource: &GpuTextureAtlas,
         assets: &AssetBundle,
     ) -> Vec<RenderEntity> {
+        while let Some(drawables) = self.state_recv.next() {
+            self.update(drawables);
+        }
+
         let amount = self.time.alpha();
 
         let render_entities = self
@@ -54,7 +60,7 @@ impl WorldState {
         render_entities
     }
 
-    pub fn update(&mut self, drawables: Vec<Drawable>) {
+    fn update(&mut self, drawables: Vec<Drawable>) {
         self.time.tick();
         self.drawables.push_new(BTreeMap::from_iter(
             drawables.into_iter().map(|d| (d.id, d)),

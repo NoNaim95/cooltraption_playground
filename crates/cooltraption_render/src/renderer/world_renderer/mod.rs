@@ -33,8 +33,7 @@ where
     gpu_texture_atlas: GpuTextureAtlas,
     assets: AssetBundle,
     camera: Camera<C>,
-    state_recv: I,
-    world_state: WorldState,
+    world_state: WorldState<I>,
 }
 
 impl<C, I> Renderer for WorldRenderer<C, I>
@@ -43,13 +42,9 @@ where
     I: Iterator<Item = Vec<Drawable>>,
 {
     fn render(&mut self, render_frame: &mut RenderFrame) -> Result<(), Box<dyn RenderError>> {
-        for drawables in self.state_recv.by_ref() {
-            self.world_state.update(drawables);
-        }
-
-        let instances = self
+        let entities = self
             .world_state
-            .get_render_entities(&self.gpu_texture_atlas, &self.assets);
+            .create_entities(&self.gpu_texture_atlas, &self.assets);
 
         let clear_color = try_get_background(&self.assets).unwrap_or(Color::RED);
 
@@ -68,18 +63,18 @@ where
                 depth_stencil_attachment: None,
             });
 
-        let instances_raw = instances
+        let entities_raw = entities
             .iter()
             .map(RenderEntity::to_raw)
             .collect::<Vec<_>>();
-        let instance_data = bytemuck::cast_slice::<_, u8>(&instances_raw);
+        let entities_data = bytemuck::cast_slice::<_, u8>(&entities_raw);
 
-        if self.instance_buffer.size() < instance_data.len() as u64 {
-            self.instance_buffer = create_instance_buffer(instance_data, render_frame.device);
+        if self.instance_buffer.size() < entities_data.len() as u64 {
+            self.instance_buffer = create_instance_buffer(entities_data, render_frame.device);
         } else {
             render_frame
                 .queue
-                .write_buffer(&self.instance_buffer, 0, instance_data);
+                .write_buffer(&self.instance_buffer, 0, entities_data);
         }
 
         self.camera.update_camera_buffer(render_frame.queue);
@@ -93,7 +88,7 @@ where
         render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
         render_pass.set_index_buffer(self.mesh.indices().slice(..), IndexFormat::Uint16);
 
-        render_pass.draw_indexed(0..self.mesh.num_indices(), 0, 0..instances.len() as _);
+        render_pass.draw_indexed(0..self.mesh.num_indices(), 0, 0..entities.len() as _);
 
         Ok(())
     }
@@ -151,8 +146,7 @@ where
             gpu_texture_atlas,
             camera,
             assets: self.assets,
-            state_recv: Box::new(self.state_recv),
-            world_state: WorldState::new(self.fixed_delta_time),
+            world_state: WorldState::new(self.state_recv, self.fixed_delta_time),
         })
     }
 }
