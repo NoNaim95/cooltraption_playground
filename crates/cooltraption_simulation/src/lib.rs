@@ -1,6 +1,9 @@
 extern crate derive_more;
+#[macro_use]
+extern crate derive_builder;
 
 use std::collections::HashMap;
+use std::iter;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
@@ -12,23 +15,23 @@ pub use bevy_ecs::schedule::Schedule;
 pub use bevy_ecs::system::Resource;
 pub use bevy_ecs::world::*;
 
-
-use crate::system_sets::physics_set::Vec2f;
 use action::{Action, ActionPacket};
 pub use components::{Acceleration, PhysicsBundle, Position, Velocity};
 use cooltraption_common::events::{EventPublisher, MutEventPublisher};
+use events::MutEvent;
 use simulation_state::SimulationState;
-use system_sets::physics_set::{self, FromNum2};
-use system_sets::action_set;
+use system_sets::physics_set;
 
 use derive_more::{Add, AddAssign, Deref, Div, From, Into, Mul, Sub};
 use serde::{Deserialize, Serialize};
 
 pub mod action;
+//pub mod builder;
 pub mod components;
+pub mod events;
 pub mod simulation_state;
 pub mod system_sets;
-
+pub use events::Event;
 
 #[derive( Debug, Resource, Clone, Default, Eq, Hash, PartialEq, Copy, Serialize, Deserialize, Deref, Add, Mul, Sub, Div, From, Into, AddAssign,)]
 pub struct Tick(pub u64);
@@ -36,88 +39,73 @@ pub struct Tick(pub u64);
 #[derive(Resource, Clone, Default)]
 pub struct Actions(Vec<Action>);
 
-#[derive(Default)]
-pub struct SimulationOptions {
-    pub state: SimulationState,
+type BoxedIt<T> = Box<dyn Iterator<Item = T>>;
+
+#[derive(Builder)]
+#[builder(pattern = "owned")]
+#[builder(default)]
+pub struct SimulationRunOptions<'a>
+{
+    actions: BoxedIt<Action>,
+    action_packets: BoxedIt<ActionPacket>,
+    state_complete_publisher: MutEventPublisher<'a, MutEvent<'a, SimulationState>>,
+    local_action_packet_publisher: EventPublisher<'a, Event<'a, ActionPacket>>,
 }
 
-impl SimulationOptions {
-    pub fn new() -> Self {
+impl<'a> Default for SimulationRunOptions<'a>
+{
+    fn default() -> Self {
         Self {
-            state: Default::default(),
+            actions: Box::new(iter::from_fn(||None)),
+            action_packets: Box::new(iter::from_fn(||None)),
+            state_complete_publisher: Default::default(),
+            local_action_packet_publisher: Default::default()
         }
     }
 }
 
 pub trait Simulation {
-    fn step_simulation<I, IP>(
-        &mut self,
-        dt: Duration,
-        action_generator: &mut I,
-        action_packet_generator: &mut IP,
-    ) where
-        I: Iterator<Item = Action>,
-        IP: Iterator<Item = ActionPacket>;
-
-    fn add_query_iter_handler<WQ: WorldQuery< ReadOnly = WQ>>(&mut self, f: impl FnMut(QueryIter<WQ, ()>) + 'static);
-    fn add_local_action_handler(&mut self, f: impl FnMut(&ActionPacket) + 'static);
+    fn step_simulation(&mut self, dt: Duration);
 }
 
-#[derive(Default)]
-pub struct SimulationImpl<'a> {
+#[derive(Default, Builder)]
+#[builder(pattern = "owned")]
+#[builder(default)]
+pub struct SimulationImpl {
     simulation_state: SimulationState,
     schedule: Schedule,
     action_table: HashMap<Tick, Vec<Action>>,
-    state_complete_event: MutEventPublisher<'a, SimulationState>,
-    local_action_packet_event: EventPublisher<'a, ActionPacket>,
 }
 
-impl<'a> SimulationImpl<'a> {
-    pub fn new(mut options: SimulationOptions) -> Self {
-        let mut schedule = Schedule::default();
-        schedule.add_system(physics_set::solve_movement.in_set(physics_set::PhysicsSet::Movement));
-        schedule.add_systems(
-            (
-                action_set::apply_spawn_ball_action,
-                action_set::apply_outward_force_action,
-                action_set::apply_circular_force_action,
-            )
-                .chain().before(physics_set::PhysicsSet::Movement)
-        );
-
-        for i in 0..10 {
-            options.state.world_mut().spawn(PhysicsBundle {
-                pos: Position::default(),
-                vel: Velocity(Vec2f::from_num(i * 10, i * 30)),
-                acc: Acceleration::default(),
-            });
-        }
-
+impl SimulationImpl {
+    pub fn new(
+        simulation_state: SimulationState,
+        schedule: Schedule,
+        action_table: HashMap<Tick, Vec<Action>>,
+    ) -> Self {
         Self {
-            simulation_state: options.state,
+            simulation_state,
             schedule,
-            action_table: HashMap::default(),
-            state_complete_event: Default::default(),
-            local_action_packet_event: Default::default(),
+            action_table,
         }
     }
 
-    pub fn run<I, IP>(&mut self, mut action_generator: I, mut action_packet_generator: IP) -> !
-    where
-        I: Iterator<Item = Action>,
-        IP: Iterator<Item = ActionPacket>,
+    pub fn run<I, IP>(&mut self, mut run_options: SimulationRunOptions) -> !
     {
         let mut start_time = Instant::now();
-        const FPS: u64 = 60;
         loop {
             let frame_time = Instant::now() - start_time;
-            self.step_simulation(
-                frame_time,
-                &mut action_generator,
-                &mut action_packet_generator,
+
+            self.handle_actions(
+                &mut run_options.actions,
+                &mut run_options.action_packets,
+                &mut run_options.local_action_packet_publisher,
             );
+            self.step_simulation(frame_time);
+            run_options.state_complete_publisher
+                .publish(&mut MutEvent::new(&mut self.simulation_state, &mut ()));
+
             start_time = Instant::now();
-            //let max = std::cmp::max(0, (1000 / FPS) - frame_time.as_millis() as u64);
             sleep(Duration::from_millis(10));
         }
     }
@@ -125,20 +113,23 @@ impl<'a> SimulationImpl<'a> {
     pub fn state(&self) -> &SimulationState {
         &self.simulation_state
     }
-}
 
-impl<'a> Simulation for SimulationImpl<'a> {
-    fn step_simulation<I, IP>(&mut self, dt: Duration, actions: &mut I, action_packets: &mut IP)
-    where
-        I: Iterator<Item = Action>,
-        IP: Iterator<Item = ActionPacket>,
+    fn handle_actions(
+        &mut self,
+        actions: &mut BoxedIt<Action>,
+        action_packets: &mut BoxedIt<ActionPacket>,
+        local_action_packet_publisher: &mut EventPublisher<Event<ActionPacket>>,
+    )
     {
-        for action_packet in
+        for local_action_packet in
             actions.map(|action| ActionPacket::new(self.simulation_state.current_tick(), action))
         {
-            self.local_action_packet_event.publish(&action_packet);
-            let actions_for_tick = self.action_table.entry(action_packet.tick).or_default();
-            actions_for_tick.push(action_packet.action);
+            local_action_packet_publisher.publish(&Event::new(&local_action_packet, &()));
+            let actions_for_tick = self
+                .action_table
+                .entry(local_action_packet.tick)
+                .or_default();
+            actions_for_tick.push(local_action_packet.action);
         }
         for action_packet in action_packets {
             let actions_for_tick = self.action_table.entry(action_packet.tick).or_default();
@@ -151,23 +142,22 @@ impl<'a> Simulation for SimulationImpl<'a> {
             .or_default();
         let actions = std::mem::take(actions_in_table);
         self.simulation_state.load_actions(Actions(actions));
-        self.simulation_state.load_delta_time(dt.into());
-
-        self.schedule.run(self.simulation_state.world_mut());
-        self.state_complete_event
-            .publish(&mut self.simulation_state);
-        self.simulation_state.advance_tick();
-    }
-
-    fn add_query_iter_handler<WQ: WorldQuery<ReadOnly = WQ>>(
-        &mut self,
-        mut f: impl FnMut(QueryIter<WQ, ()>) + 'static,
-    ) {
-        self.state_complete_event
-            .add_event_handler(move |s: &mut SimulationState| s.query(|i| f(i)));
-    }
-
-    fn add_local_action_handler(&mut self, f: impl FnMut(&ActionPacket) + 'static) {
-        self.local_action_packet_event.add_event_handler(f);
     }
 }
+
+impl Simulation for SimulationImpl {
+    fn step_simulation(&mut self, dt: Duration) {
+        self.simulation_state.load_delta_time(dt.into());
+        self.schedule.run(self.simulation_state.world_mut());
+        self.simulation_state.advance_tick();
+    }
+}
+
+//fn add_query_iter_handler<WQ: WorldQuery<ReadOnly = WQ>>(
+//    &mut self,
+//    mut f: impl FnMut(QueryIter<WQ, ()>) + 'static,
+//) {
+//    self.state_complete_publisher.add_event_handler(
+//        move |e: &mut MutEvent<SimulationState>| e.mut_payload().query(|i| f(i)),
+//    );
+//}

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="CPP_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/crates/cooltraption_assets/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/cooltraption_common/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/cooltraption_coolbox/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/cooltraption_input/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/cooltraption_network/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/cooltraption_render/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/cooltraption_render_example/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/cooltraption_runtime/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/cooltraption_runtime_example/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/cooltraption_simulation/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>
