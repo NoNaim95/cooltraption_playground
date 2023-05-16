@@ -16,7 +16,6 @@ use std::sync::mpsc::{self, SyncSender};
 pub mod directors;
 pub mod factories;
 pub mod render_component;
-pub mod sfml_component;
 
 use cooltraption_input::events::Event as CtnInputEvent;
 
