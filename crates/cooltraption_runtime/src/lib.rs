@@ -1,6 +1,9 @@
 #![allow(dead_code, unused)]
+use configurators::Configurator;
+use configurators::ConfiguratorPipeline;
 use cooltraption_render::world_renderer::WorldState;
 use cooltraption_simulation::simulation_state::SimulationState;
+use cooltraption_simulation::SimulationRunOptionsBuilder;
 use smart_default::SmartDefault;
 use std::{collections::VecDeque, iter, marker::PhantomData, sync::mpsc};
 
@@ -13,33 +16,83 @@ use cooltraption_input::{
     input::{InputEvent, InputEventHandler},
 };
 
-mod configurators;
-mod render_component;
-mod factories;
+pub mod configurators;
 pub mod events;
+mod factories;
+mod render_component;
 
 #[derive(SmartDefault)]
-pub struct RuntimeConfiguration {
-    sim_builder: SimulationImplBuilder,
-    tasks: VecDeque<Task>,
-    last_task: Option<Task>,
+pub struct RuntimeConfiguration<'a> {
+    pub sim_builder: SimulationImplBuilder,
+    pub sim_run_options_builder: SimulationRunOptionsBuilder<'a>,
+    pub tasks: VecDeque<Task>,
+    pub last_task: Option<Task>,
 }
 pub type Task = Box<dyn FnOnce() + Send + 'static>;
 
-struct Runtime {}
+#[derive(Default)]
+pub struct Runtime {}
 
 impl<'a> Runtime {
     pub fn run(config: RuntimeConfiguration) -> ! {
-        let simulation = config.sim_builder.build().expect("Correctly built SimBuilder");
-
-        //simulation.run(action_generator, action_packet_generator);
-        for task in config.tasks{
-            std::thread::spawn(task);
-        }
+//
+//        let run_options = config
+//            .sim_run_options_builder
+//            .build()
+//            .expect("Correctly built SimOptions");
+//        std::thread::spawn(|| {
+//        let mut simulation = config
+//            .sim_builder
+//            .build()
+//            .expect("Correctly built SimBuilder");
+//            simulation.run(run_options);
+//        });
+//        for task in config.tasks {
+//            std::thread::spawn(task);
+//        }
+//        if let Some(last_task) = config.last_task {
+//            last_task()
+//        }
         loop {}
     }
-    pub fn config() -> RuntimeConfiguration {
+
+    pub fn run_pipeline(pipeline: ConfiguratorPipeline<'static>) {
+        let mut rt_config = RuntimeConfiguration::default();
+        rt_config = pipeline.configure(rt_config);
+
+        let mut handles = vec![];
+        let sim_handle = std::thread::spawn(move|| {
+            let mut rt_config2 = RuntimeConfiguration::default();
+            rt_config2 = pipeline.configure(rt_config2);
+
+            let run_options = rt_config2
+                .sim_run_options_builder
+                .build()
+                .expect("Correctly built SimOptions");
+
+            let mut simulation = rt_config2
+                .sim_builder
+                .build()
+                .expect("Correctly built SimBuilder");
+
+            simulation.run(run_options);
+        });
+        handles.push(sim_handle);
+        for task in rt_config.tasks {
+            handles.push(
+                std::thread::spawn(task)
+            );
+        }
+        if let Some(last_task) = rt_config.last_task {
+            last_task()
+        }
+
+        for handle in handles {
+            handle.join();
+        }
+    }
+
+    pub fn config() -> RuntimeConfiguration<'a> {
         RuntimeConfiguration::default()
     }
 }
-

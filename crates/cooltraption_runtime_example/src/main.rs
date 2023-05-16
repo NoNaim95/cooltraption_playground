@@ -1,5 +1,8 @@
+#![feature(closure_lifetime_binder)]
+
 use cooltraption_common::events::EventPublisher;
 use cooltraption_render::world_renderer::WorldState;
+use cooltraption_runtime::configurators::{ConfiguratorPipeline, Configurator};
 use cooltraption_simulation::action::{Action, ActionPacket};
 use cooltraption_simulation::*;
 use directors::SimulationImplDirector;
@@ -17,14 +20,19 @@ pub mod sfml_component;
 
 use cooltraption_input::events::Event as CtnInputEvent;
 
+use cooltraption_runtime::{Runtime, RuntimeConfiguration};
+
 fn main() {
-    //let (input_action_sender, input_action_receiver) = mpsc::channel::<Action>();
+    let mut runtime_config = RuntimeConfiguration::default();
+    let mut configurator_pipeline = ConfiguratorPipeline::default();
 
-    //let (state_send, state_recv) = mpsc::sync_channel(5);
+    let configurator1 = for<'a> |mut rt_config: RuntimeConfiguration<'a>| -> RuntimeConfiguration<'a>{
+        rt_config.last_task = Some(Box::new(||{
+            println!("This was the last task!");
+        }));
+        rt_config
+    };
+    configurator_pipeline.add_configurator(configurator1);
 
-    //let it = iter::from_fn(move || state_recv.try_recv().ok());
-
-    //let mut event_publisher = EventPublisher::<CtnInputEvent<InputEvent, InputState>>::default();
-    //event_publisher.add_event_handler(factories::create_input_handler(input_action_sender));
-    //render_component::run_renderer(it, InputEventHandler::new(event_publisher));
+    Runtime::run_pipeline(configurator_pipeline);
 }

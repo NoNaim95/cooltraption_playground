@@ -17,7 +17,7 @@ pub use bevy_ecs::world::*;
 
 use action::{Action, ActionPacket};
 pub use components::{Acceleration, PhysicsBundle, Position, Velocity};
-use cooltraption_common::events::{EventPublisher, MutEventPublisher};
+use cooltraption_common::events::{EventPublisher, MutEventPublisher, EventHandler, MutEventHandler};
 use events::MutEvent;
 use simulation_state::SimulationState;
 use system_sets::physics_set;
@@ -26,7 +26,6 @@ use derive_more::{Add, AddAssign, Deref, Div, From, Into, Mul, Sub};
 use serde::{Deserialize, Serialize};
 
 pub mod action;
-//pub mod builder;
 pub mod components;
 pub mod events;
 pub mod simulation_state;
@@ -39,7 +38,7 @@ pub struct Tick(pub u64);
 #[derive(Resource, Clone, Default)]
 pub struct Actions(Vec<Action>);
 
-type BoxedIt<T> = Box<dyn Iterator<Item = T>>;
+type BoxedIt<T> = Box<dyn Iterator<Item = T> + Send>;
 
 #[derive(Builder)]
 #[builder(pattern = "owned")]
@@ -48,8 +47,22 @@ pub struct SimulationRunOptions<'a>
 {
     actions: BoxedIt<Action>,
     action_packets: BoxedIt<ActionPacket>,
+    #[builder(setter(custom))]
     state_complete_publisher: MutEventPublisher<'a, MutEvent<'a, SimulationState>>,
+    #[builder(setter(custom))]
     local_action_packet_publisher: EventPublisher<'a, Event<'a, ActionPacket>>,
+}
+
+impl<'a> SimulationRunOptionsBuilder<'a> {
+    fn add_state_complete_handler(mut self, event_handler: impl for<'e> MutEventHandler<MutEvent<'e, SimulationState>> + 'a) -> Self {
+        self.state_complete_publisher.as_mut().unwrap().add_event_handler(event_handler);
+        self
+    }
+
+    fn add_local_action_packet_handler(mut self, event_handler: impl for<'e> EventHandler<Event<'e, ActionPacket>> + 'a) -> Self {
+        self.local_action_packet_publisher.as_mut().unwrap().add_event_handler(event_handler);
+        self
+    }
 }
 
 impl<'a> Default for SimulationRunOptions<'a>
@@ -90,7 +103,7 @@ impl SimulationImpl {
         }
     }
 
-    pub fn run<I, IP>(&mut self, mut run_options: SimulationRunOptions) -> !
+    pub fn run(&mut self, mut run_options: SimulationRunOptions) -> !
     {
         let mut start_time = Instant::now();
         loop {

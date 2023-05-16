@@ -9,7 +9,7 @@ use crate::RuntimeConfiguration;
 use crate::factories;
 use crate::render_component;
 
-pub fn add_renderer<'a, F: FnMut()>(mut runtime_config: RuntimeConfiguration) -> RuntimeConfiguration {
+pub fn add_renderer<'a>(mut runtime_config: RuntimeConfiguration) -> RuntimeConfiguration {
     let (world_state_sender, world_state_receiver) = mpsc::sync_channel::<WorldState>(5);
     let mut sim_state_sender = factories::sim_state_sender(world_state_sender);
 

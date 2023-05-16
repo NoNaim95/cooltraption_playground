@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#cooltraption_runtime = { path = "../cooltraption_runtime" }
+cooltraption_runtime = { path = "../cooltraption_runtime" }
 cooltraption_simulation = { path = "../cooltraption_simulation" }
 #cooltraption_network = { path = "../cooltraption_network" }
 cooltraption_common = { path = "../cooltraption_common" }
