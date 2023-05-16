@@ -10,7 +10,7 @@ use crate::RuntimeConfiguration;
 use crate::factories;
 use crate::render_component;
 
-pub mod renderer_configurator;
+pub mod common_configurators;
 
 pub trait Configurator : Send{
     fn configure<'a>(&self, runtime_config: RuntimeConfiguration<'a>) -> RuntimeConfiguration<'a>;
