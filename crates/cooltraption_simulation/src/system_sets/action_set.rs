@@ -28,10 +28,6 @@ pub fn apply_outward_force_action(
         if let Action::OutwardForce(outward_force) = action {
             for (pos, mut vel, mut acc) in (&mut query).into_iter() {
                 vel.0 = (pos.0 - outward_force.position.0) * outward_force.strength * dt.seconds();
-                //acc.0 = -(pos.0 - outward_force.position.0)
-                //    * outward_force.strength
-                //    * Float::from_num(2)
-                //    * dt.seconds();
             }
         }
     }
