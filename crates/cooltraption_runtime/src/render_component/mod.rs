@@ -1,8 +1,9 @@
-mod controller;
+pub mod controller;
 mod controls;
 mod debug_widget;
 
 use controller::Controller;
+use cooltraption_common::events::EventPublisher;
 use cooltraption_render::gui;
 use cooltraption_render::renderer::WgpuInitializer;
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
@@ -11,9 +12,12 @@ use cooltraption_render::world_renderer::{WorldRendererInitializer, WorldState};
 use cooltraption_window::window::{WindowEventHandler, WinitEventLoopHandler};
 use std::env;
 
+use cooltraption_input::input::InputEventHandler;
+
+use self::controller::printCameraMoveEvent;
 
 #[tokio::main]
-pub async fn run_renderer<I>(state_iterator: I)
+pub async fn run_renderer<I>(state_iterator: I, input_event_handler: InputEventHandler<'static>)
 where
     I: Iterator<Item = WorldState> + 'static,
 {
@@ -21,7 +25,10 @@ where
     //env_logger::init();
 
     let (gui_renderer, gui_event_handler, dispatcher) = gui::new();
-    let (controller, controller_event_handler) = Controller::new(dispatcher);
+    let mut camera_moved_event_publisher = EventPublisher::default();
+    camera_moved_event_publisher.add_event_handler(printCameraMoveEvent);
+    let (controller, controller_event_handler) =
+        Controller::new(dispatcher, camera_moved_event_publisher);
 
     let world_renderer = {
         let mut texture_atlas_builder = TextureAtlasBuilder::default();
@@ -46,6 +53,7 @@ where
 
     let mut event_loop_handler = WinitEventLoopHandler::default();
 
+    event_loop_handler.register_event_handler(Box::new(input_event_handler));
     event_loop_handler.register_event_handler(Box::new(WindowEventHandler {}));
     event_loop_handler.register_event_handler(Box::new(gui_event_handler));
     event_loop_handler.register_event_handler(Box::new(wgpu_initializer));

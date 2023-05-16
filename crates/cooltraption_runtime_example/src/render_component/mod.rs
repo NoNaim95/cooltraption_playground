@@ -1,8 +1,10 @@
 mod controller;
 mod controls;
 mod debug_widget;
+mod events;
 
 use controller::Controller;
+use cooltraption_common::events::EventPublisher;
 use cooltraption_render::gui;
 use cooltraption_render::renderer::WgpuInitializer;
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
@@ -13,6 +15,8 @@ use std::env;
 
 use cooltraption_input::input::InputEventHandler;
 
+use self::controller::printCameraMoveEvent;
+
 #[tokio::main]
 pub async fn run_renderer<I>(state_iterator: I, input_event_handler: InputEventHandler<'static>)
 where
@@ -22,7 +26,10 @@ where
     //env_logger::init();
 
     let (gui_renderer, gui_event_handler, dispatcher) = gui::new();
-    let (controller, controller_event_handler) = Controller::new(dispatcher);
+    let mut camera_moved_event_publisher = EventPublisher::default();
+    camera_moved_event_publisher.add_event_handler(printCameraMoveEvent);
+    let (controller, controller_event_handler) =
+        Controller::new(dispatcher, camera_moved_event_publisher);
 
     let world_renderer = {
         let mut texture_atlas_builder = TextureAtlasBuilder::default();

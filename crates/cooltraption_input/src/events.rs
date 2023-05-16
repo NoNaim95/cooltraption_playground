@@ -2,7 +2,6 @@ use cooltraption_common::events::EventFamily;
 
 use crate::input::{InputEvent, InputState};
 
-
 pub struct Event<'a, P, C = ()> {
     payload: &'a P,
     context: &'a C,
@@ -19,7 +18,6 @@ impl<'a, P, C> Event<'a, P, C> {
         &self.context
     }
 }
-
 
 pub struct MutEvent<'a, P, C = ()> {
     payload: &'a mut P,

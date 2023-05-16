@@ -1,6 +1,7 @@
 use cgmath::Vector2;
 use cooltraption_common::events::EventHandler;
-use cooltraption_input::input::{InputEvent, KeyboardInputEvent};
+use cooltraption_input::events::Event as CtnInputEvent;
+use cooltraption_input::input::{InputEvent, InputState, KeyboardInputEvent};
 //use cooltraption_network as networking;
 //use cooltraption_network::client;
 use cooltraption_render::world_renderer::{
@@ -15,14 +16,17 @@ use cooltraption_simulation::{
 use cooltraption_window::window::winit::event::VirtualKeyCode;
 use std::sync::mpsc::{Sender, SyncSender};
 
+use crate::events::Event;
 use cooltraption_simulation::{
     system_sets::{action_set, physics_set},
     IntoSystemConfig, IntoSystemConfigs, Schedule,
 };
 
-pub fn create_input_handler(input_action_sender: Sender<Action>) -> impl EventHandler<InputEvent> {
-    return move |input_event: &InputEvent| {
-        if let InputEvent::KeyboardInputEvent(keyboard_input_event) = input_event {
+pub fn create_input_handler(
+    input_action_sender: Sender<Action>,
+) -> impl for<'a> EventHandler<CtnInputEvent<'a, InputEvent, InputState>> {
+    return move |input_event: &CtnInputEvent<InputEvent, InputState>| {
+        if let InputEvent::KeyboardInputEvent(keyboard_input_event) = input_event.payload() {
             if let KeyboardInputEvent::KeyPressed(key_code, ..) = keyboard_input_event {
                 match key_code {
                     VirtualKeyCode::Space => {

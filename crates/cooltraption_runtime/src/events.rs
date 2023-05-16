@@ -1,3 +1,4 @@
+use crate::render_component::controller::CameraMovedEvent;
 use cooltraption_common::events::EventFamily;
 
 pub struct Event<'a, P, C = ()> {
@@ -17,7 +18,6 @@ impl<'a, P, C> Event<'a, P, C> {
     }
 }
 
-
 pub struct MutEvent<'a, P, C = ()> {
     payload: &'a mut P,
     context: &'a mut C,
@@ -33,4 +33,8 @@ impl<'a, P, C> MutEvent<'a, P, C> {
     pub fn mut_context(&mut self) -> &mut C {
         &mut self.context
     }
+}
+
+impl EventFamily for Event<'_, CameraMovedEvent> {
+    type Event<'e> = Event<'e, CameraMovedEvent>;
 }
