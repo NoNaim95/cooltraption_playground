@@ -17,12 +17,6 @@ use std::sync::mpsc::{Sender, SyncSender};
 
 use cooltraption_input::events::Event as CtnInputEvent;
 
-fn foo(){
-    let f = |e: &CtnInputEvent<CtnInputEvent<InputEvent, InputState>>|{
-
-    };
-}
-
 pub fn create_input_handler(
     input_action_sender: Sender<Action>,
 ) -> impl for<'e> EventHandler<CtnInputEvent<'e, InputEvent, InputState>> {
