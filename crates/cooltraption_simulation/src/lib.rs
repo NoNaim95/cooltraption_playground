@@ -1,3 +1,4 @@
+#![feature(option_get_or_insert_default)]
 extern crate derive_more;
 #[macro_use]
 extern crate derive_builder;
@@ -54,13 +55,13 @@ pub struct SimulationRunOptions<'a>
 }
 
 impl<'a> SimulationRunOptionsBuilder<'a> {
-    fn add_state_complete_handler(mut self, event_handler: impl for<'e> MutEventHandler<MutEvent<'e, SimulationState>> + 'a) -> Self {
-        self.state_complete_publisher.as_mut().unwrap().add_event_handler(event_handler);
+    pub fn add_state_complete_handler(mut self, event_handler: impl for<'e> MutEventHandler<MutEvent<'e, SimulationState>> + Send + 'a) -> Self {
+        self.state_complete_publisher.get_or_insert_default().add_event_handler(event_handler);
         self
     }
 
-    fn add_local_action_packet_handler(mut self, event_handler: impl for<'e> EventHandler<Event<'e, ActionPacket>> + 'a) -> Self {
-        self.local_action_packet_publisher.as_mut().unwrap().add_event_handler(event_handler);
+    pub fn add_local_action_packet_handler(mut self, event_handler: impl for<'e> EventHandler<Event<'e, ActionPacket>> + Send + 'a) -> Self {
+        self.local_action_packet_publisher.get_or_insert_default().add_event_handler(event_handler);
         self
     }
 }
