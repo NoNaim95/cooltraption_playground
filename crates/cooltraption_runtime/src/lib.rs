@@ -18,7 +18,7 @@ use cooltraption_input::{
 
 pub mod configurators;
 pub mod events;
-mod factories;
+pub mod factories;
 mod render_component;
 
 #[derive(SmartDefault)]
@@ -34,62 +34,26 @@ pub type Task = Box<dyn FnOnce() + Send + 'static>;
 pub struct Runtime {}
 
 impl<'a> Runtime {
-    pub fn run(config: RuntimeConfiguration) -> ! {
-//
-//        let run_options = config
-//            .sim_run_options_builder
-//            .build()
-//            .expect("Correctly built SimOptions");
-//        std::thread::spawn(|| {
-//        let mut simulation = config
-//            .sim_builder
-//            .build()
-//            .expect("Correctly built SimBuilder");
-//            simulation.run(run_options);
-//        });
-//        for task in config.tasks {
-//            std::thread::spawn(task);
-//        }
-//        if let Some(last_task) = config.last_task {
-//            last_task()
-//        }
-        loop {}
-    }
+    pub fn run(config: RuntimeConfiguration<'static>) -> ! {
 
-    pub fn run_pipeline(pipeline: ConfiguratorPipeline<'static>) {
-        let mut rt_config = RuntimeConfiguration::default();
-        rt_config = pipeline.configure(rt_config);
-
-        let mut handles = vec![];
-        let sim_handle = std::thread::spawn(move|| {
-            let mut rt_config2 = RuntimeConfiguration::default();
-            rt_config2 = pipeline.configure(rt_config2);
-
-            let run_options = rt_config2
-                .sim_run_options_builder
-                .build()
-                .expect("Correctly built SimOptions");
-
-            let mut simulation = rt_config2
-                .sim_builder
-                .build()
-                .expect("Correctly built SimBuilder");
-
+        let run_options = config
+            .sim_run_options_builder
+            .build()
+            .expect("Correctly built SimOptions");
+        std::thread::spawn(|| {
+        let mut simulation = config
+            .sim_builder
+            .build()
+            .expect("Correctly built SimBuilder");
             simulation.run(run_options);
         });
-        handles.push(sim_handle);
-        for task in rt_config.tasks {
-            handles.push(
-                std::thread::spawn(task)
-            );
+        for task in config.tasks {
+            std::thread::spawn(task);
         }
-        if let Some(last_task) = rt_config.last_task {
+        if let Some(last_task) = config.last_task {
             last_task()
         }
-
-        for handle in handles {
-            handle.join();
-        }
+        loop {}
     }
 
     pub fn config() -> RuntimeConfiguration<'a> {
