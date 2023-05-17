@@ -7,7 +7,6 @@ use cooltraption_runtime::configurators::{Configurator, ConfiguratorOnce, Config
 use cooltraption_runtime::{Runtime, RuntimeConfigurationBuilder};
 
 pub mod factories;
-pub mod render_component;
 
 fn main() {
     let (input_action_sender, input_action_receiver) = channel();
