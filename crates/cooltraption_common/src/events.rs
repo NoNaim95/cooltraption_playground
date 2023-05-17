@@ -12,8 +12,9 @@ impl<'a, T: EventFamily> EventPublisher<'a, T> {
     pub fn add_event_handler(
         &mut self,
         event_handler: impl for<'e> EventHandler<T::Event<'e>> + Send + 'a,
-    ) {
+    ) -> &mut Self {
         self.event_handlers.push(Box::new(event_handler));
+        self
     }
 
     pub fn publish(&mut self, payload: &T::Event<'_>) {
@@ -46,8 +47,9 @@ impl<'a, T: EventFamily> MutEventPublisher<'a, T> {
     pub fn add_event_handler(
         &mut self,
         event_handler: impl for<'e> MutEventHandler<T::Event<'e>> + Send + 'a,
-    ) {
+    ) -> &mut Self {
         self.event_handlers.push(Box::new(event_handler));
+        self
     }
 
     pub fn publish(&mut self, payload: &mut T::Event<'_>) {

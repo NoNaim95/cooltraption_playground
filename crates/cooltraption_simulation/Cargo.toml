@@ -23,4 +23,5 @@ anyhow = "1.0.71"
 
 derive_more = "0.99.17"
 
+getset = "0.1.2"
 derive_builder = "0.12.0"

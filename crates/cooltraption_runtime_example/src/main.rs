@@ -3,7 +3,7 @@
 use cooltraption_common::events::EventPublisher;
 use cooltraption_render::world_renderer::WorldState;
 use cooltraption_runtime::configurators::common_configurators::add_renderer;
-use cooltraption_runtime::configurators::{Configurator, ConfiguratorPipeline};
+use cooltraption_runtime::configurators::{Configurator, ConfiguratorPipeline, ConfiguratorOnce};
 use cooltraption_runtime::factories::create_schedule;
 use cooltraption_simulation::action::{Action, ActionPacket, SpawnBallAction};
 use cooltraption_simulation::*;
@@ -22,61 +22,41 @@ pub mod render_component;
 
 use cooltraption_input::events::Event as CtnInputEvent;
 
-use cooltraption_runtime::{Runtime, RuntimeConfiguration};
+use cooltraption_runtime::{Runtime, RuntimeConfiguration, RuntimeConfigurationBuilder};
 
 fn main() {
     let (input_action_sender, input_action_receiver) = channel();
 
-    let mut runtime_config = RuntimeConfiguration::default();
+    let mut runtime_config_builder = RuntimeConfigurationBuilder::default();
     let mut configurator_pipeline = ConfiguratorPipeline::default();
 
+    let input_iter = Box::new(iter::from_fn(move || input_action_receiver.try_recv().ok()));
     let input_action_configurator =
-        for<'a> |mut rt_config: RuntimeConfiguration<'a>| -> RuntimeConfiguration<'a> {
-            let mut i = 0;
-            rt_config.sim_run_options_builder =
-                rt_config
-                    .sim_run_options_builder
-                    .actions(Box::new(iter::from_fn(move || {
-                        input_action_receiver.try_recv().ok()
-                    })));
+        for<'a> move |mut rt_config: RuntimeConfigurationBuilder<'a>| -> RuntimeConfigurationBuilder<'a> {
+            rt_config.simulation_run_options_builder().set_actions(input_iter);
             rt_config
         };
 
-    /*
-    let random_action_configurator =
-        for<'a> |mut rt_config: RuntimeConfiguration<'a>| -> RuntimeConfiguration<'a> {
-        let mut i = 0;
-        rt_config.sim_run_options_builder =
-            rt_config
-                .sim_run_options_builder
-                .actions(Box::new(iter::from_fn(move || {
-                    i += 1;
-                    if i % 10 == 0 {
-                        return Some(Action::SpawnBall(SpawnBallAction {
-                            position: Default::default(),
-                        }));
-                    }
-                    None
-                })));
-        rt_config
-    };
-    */
 
     let add_schedule_configurator =
-        for<'a> |mut rt_config: RuntimeConfiguration<'a>| -> RuntimeConfiguration<'a> {
-            rt_config.sim_builder = rt_config.sim_builder.schedule(create_schedule());
+        for<'a> |mut rt_config: RuntimeConfigurationBuilder<'a>| -> RuntimeConfigurationBuilder<'a> {
+            //rt_config.sim_builder.schedule(create_schedule());
             rt_config
         };
 
     configurator_pipeline.add_configurator(add_schedule_configurator);
+
     let render_configurator =
-        for<'a> move |config: RuntimeConfiguration<'a>| -> RuntimeConfiguration<'a> {
-            return add_renderer(config, input_action_sender);
+        for<'a> move |config: RuntimeConfigurationBuilder<'a>| -> RuntimeConfigurationBuilder<'a> {
+            return add_renderer(config, input_action_sender.clone());
         };
 
-    runtime_config = configurator_pipeline.configure(runtime_config);
-    runtime_config = input_action_configurator(runtime_config);
-    runtime_config = render_configurator(runtime_config);
 
-    Runtime::run(runtime_config);
+    configurator_pipeline
+        .add_configurator(render_configurator);
+
+    runtime_config_builder = input_action_configurator.configure_once(runtime_config_builder);
+    runtime_config_builder = configurator_pipeline.configure(runtime_config_builder);
+
+    Runtime::run(runtime_config_builder.build());
 }
