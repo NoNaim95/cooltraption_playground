@@ -112,6 +112,12 @@ impl SimulationImplBuilder{
     pub fn schedule(&mut self) -> &mut Schedule{
         &mut self.simulation.schedule
     }
+
+    pub fn set_schedule(&mut self, schedule: Schedule) -> &mut Self{
+        self.simulation.schedule = schedule;
+        self
+    }
+
     pub fn build(self) -> SimulationImpl {
         self.simulation
     }
