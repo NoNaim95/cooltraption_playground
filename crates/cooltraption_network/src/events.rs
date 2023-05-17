@@ -13,10 +13,10 @@ impl<'a, P, C> Event<'a, P, C> {
         Self { payload, context }
     }
     pub fn payload(&self) -> &P {
-        &self.payload
+        self.payload
     }
     pub fn context(&self) -> &C {
-        &self.context
+        self.context
     }
 }
 
@@ -31,10 +31,10 @@ impl<'a, P, C> MutEvent<'a, P, C> {
         Self { payload, context }
     }
     pub fn mut_payload(&mut self) -> &mut P {
-        &mut self.payload
+        self.payload
     }
     pub fn mut_context(&mut self) -> &mut C {
-        &mut self.context
+        self.context
     }
 }
 

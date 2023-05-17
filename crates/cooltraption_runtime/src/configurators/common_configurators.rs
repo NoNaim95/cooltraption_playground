@@ -17,10 +17,10 @@ use crate::RuntimeConfiguration;
 use crate::RuntimeConfigurationBuilder;
 use cooltraption_simulation::events::MutEvent as SimMutEvent;
 
-pub fn add_renderer<'a>(
-    mut runtime_config_builder: RuntimeConfigurationBuilder<'a>,
+pub fn add_renderer(
+    mut runtime_config_builder: RuntimeConfigurationBuilder<'_>,
     input_action_sender: Sender<Action>,
-) -> RuntimeConfigurationBuilder<'a> {
+) -> RuntimeConfigurationBuilder<'_> {
     let (world_state_sender, world_state_receiver) = mpsc::sync_channel::<WorldState>(20);
     let mut sim_state_sender = factories::sim_state_sender(world_state_sender);
 

@@ -14,7 +14,7 @@ use std::env;
 
 use cooltraption_input::input::InputEventHandler;
 
-use self::controller::printCameraMoveEvent;
+use self::controller::print_camera_move_event;
 
 #[tokio::main]
 pub async fn run_renderer<I>(state_iterator: I, input_event_handler: InputEventHandler<'static>)
@@ -26,7 +26,7 @@ where
 
     let (gui_renderer, gui_event_handler, dispatcher) = gui::new();
     let mut camera_moved_event_publisher = EventPublisher::default();
-    camera_moved_event_publisher.add_event_handler(printCameraMoveEvent);
+    camera_moved_event_publisher.add_event_handler(print_camera_move_event);
     let (controller, controller_event_handler) =
         Controller::new(dispatcher, camera_moved_event_publisher);
 

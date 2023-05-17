@@ -59,7 +59,7 @@ impl CameraController for Controller {
     }
 }
 
-pub fn printCameraMoveEvent(event: &Event<CameraMovedEvent>) {
+pub fn print_camera_move_event(event: &Event<CameraMovedEvent>) {
     println!("Camera moved to: {:?}", event.payload());
 }
 

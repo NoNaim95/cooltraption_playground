@@ -18,7 +18,7 @@ pub trait Configurator : ConfiguratorOnce {
 }
 
 pub trait ConfiguratorOnce {
-    fn configure_once<'a>(self, runtime_config: RuntimeConfigurationBuilder<'a>) -> RuntimeConfigurationBuilder<'a>;
+    fn configure_once(self, runtime_config: RuntimeConfigurationBuilder<'_>) -> RuntimeConfigurationBuilder<'_>;
 }
 
 #[derive(Default)]
@@ -46,7 +46,7 @@ impl<'a> Configurator for ConfiguratorPipeline<'a> {
 }
 
 impl<'c> ConfiguratorOnce for ConfiguratorPipeline<'c> {
-    fn configure_once<'a>(self, runtime_config: RuntimeConfigurationBuilder<'a>) -> RuntimeConfigurationBuilder<'a> {
+    fn configure_once(self, runtime_config: RuntimeConfigurationBuilder<'_>) -> RuntimeConfigurationBuilder<'_> {
         self.configure(runtime_config)
     }
 }
@@ -64,7 +64,7 @@ impl<F> ConfiguratorOnce for F
 where
     F: FnOnce(RuntimeConfigurationBuilder) -> RuntimeConfigurationBuilder,
 {
-    fn configure_once<'a>(self, runtime_config: RuntimeConfigurationBuilder<'a>) -> RuntimeConfigurationBuilder<'a> {
+    fn configure_once(self, runtime_config: RuntimeConfigurationBuilder<'_>) -> RuntimeConfigurationBuilder<'_> {
         self(runtime_config)
     }
 }

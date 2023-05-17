@@ -74,24 +74,25 @@ pub type Task = Box<dyn FnOnce() + Send + 'static>;
 pub struct Runtime {}
 
 impl<'a> Runtime {
-    pub fn run(config: RuntimeConfiguration<'static>) -> ! {
-
+    pub fn run(config: RuntimeConfiguration<'static>) {
+        let mut task_handles = vec![];
         let run_options = config
             .sim_run_options_builder
             .build();
-        std::thread::spawn(|| {
+        let sim_handle = std::thread::spawn(|| {
         let mut simulation = config
             .sim_builder
             .build();
             simulation.run(run_options);
         });
+        task_handles.push(sim_handle);
         for task in config.tasks {
-            std::thread::spawn(task);
+            let task_handle = std::thread::spawn(task);
+            task_handles.push(task_handle);
         }
         if let Some(last_task) = config.last_task {
-            last_task()
+            last_task();
         }
-        loop {}
     }
 
     pub fn config() -> RuntimeConfiguration<'a> {

@@ -1,7 +1,4 @@
-#![feature(option_get_or_insert_default)]
 extern crate derive_more;
-#[macro_use]
-extern crate derive_builder;
 
 use std::collections::HashMap;
 use std::iter;
@@ -19,7 +16,7 @@ pub use bevy_ecs::world::*;
 use action::{Action, ActionPacket};
 pub use components::{Acceleration, PhysicsBundle, Position, Velocity};
 use cooltraption_common::events::{
-    EventHandler, EventPublisher, MutEventHandler, MutEventPublisher,
+    EventPublisher, MutEventPublisher,
 };
 use events::MutEvent;
 use simulation_state::SimulationState;

@@ -25,32 +25,32 @@ use cooltraption_simulation::{
 pub fn create_input_handler(
     input_action_sender: Sender<Action>,
 ) -> impl for<'a> EventHandler<CtnInputEvent<'a, InputEvent, InputState>> {
-    return move |input_event: &CtnInputEvent<InputEvent, InputState>| {
-        if let InputEvent::KeyboardInputEvent(keyboard_input_event) = input_event.payload() {
-            if let KeyboardInputEvent::KeyPressed(key_code, ..) = keyboard_input_event {
-                match key_code {
-                    VirtualKeyCode::Space => {
-                        let circular_force_action = CircularForceAction {
-                            position: Position(Vec2f::from_num(0, 0)),
-                            strength: Float::from_num(30),
-                        };
-                        input_action_sender
-                            .send(Action::CircularForce(circular_force_action))
-                            .unwrap();
-                    }
-                    VirtualKeyCode::E => {
-                        let spawn_ball_action = SpawnBallAction {
-                            position: Position(Vec2f::from_num(10, 10)),
-                        };
-                        input_action_sender
-                            .send(Action::SpawnBall(spawn_ball_action))
-                            .unwrap();
-                    }
-                    _ => (),
+    move |input_event: &CtnInputEvent<InputEvent, InputState>| {
+        if let InputEvent::KeyboardInputEvent(KeyboardInputEvent::KeyPressed(key_code, ..)) =
+            input_event.payload()
+        {
+            match key_code {
+                VirtualKeyCode::Space => {
+                    let circular_force_action = CircularForceAction {
+                        position: Position(Vec2f::from_num(0, 0)),
+                        strength: Float::from_num(30),
+                    };
+                    input_action_sender
+                        .send(Action::CircularForce(circular_force_action))
+                        .unwrap();
                 }
+                VirtualKeyCode::E => {
+                    let spawn_ball_action = SpawnBallAction {
+                        position: Position(Vec2f::from_num(10, 10)),
+                    };
+                    input_action_sender
+                        .send(Action::SpawnBall(spawn_ball_action))
+                        .unwrap();
+                }
+                _ => (),
             }
         }
-    };
+    }
 }
 
 pub fn sim_state_sender(

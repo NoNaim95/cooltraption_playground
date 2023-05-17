@@ -1,5 +1,5 @@
 use crate::action::Action;
-use crate::physics_set::Float;
+
 use crate::physics_set::{DeltaTime, FromNum2, FromNum4, Mat2f, Vec2f};
 use crate::{
     action::CircularForceAction, Acceleration, Actions, PhysicsBundle, Position, Velocity,
@@ -26,7 +26,7 @@ pub fn apply_outward_force_action(
 ) {
     for action in &actions.0 {
         if let Action::OutwardForce(outward_force) = action {
-            for (pos, mut vel, mut acc) in (&mut query).into_iter() {
+            for (pos, mut vel, _acc) in (&mut query).into_iter() {
                 vel.0 = (pos.0 - outward_force.position.0) * outward_force.strength * dt.seconds();
             }
         }
