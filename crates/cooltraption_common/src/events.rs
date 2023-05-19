@@ -5,15 +5,16 @@ pub trait EventFamily {
 use smart_default::SmartDefault;
 #[derive(SmartDefault)]
 pub struct EventPublisher<'a, T: EventFamily> {
-    event_handlers: Vec<Box<dyn for<'e> EventHandler<T::Event<'e>> + 'a>>,
+    event_handlers: Vec<Box<dyn for<'e> EventHandler<T::Event<'e>> + Send + 'a>>,
 }
 
 impl<'a, T: EventFamily> EventPublisher<'a, T> {
     pub fn add_event_handler(
         &mut self,
-        event_handler: impl for<'e> EventHandler<T::Event<'e>> + 'a,
-    ) {
+        event_handler: impl for<'e> EventHandler<T::Event<'e>> + Send + 'a,
+    ) -> &mut Self {
         self.event_handlers.push(Box::new(event_handler));
+        self
     }
 
     pub fn publish(&mut self, payload: &T::Event<'_>) {
@@ -38,16 +39,17 @@ where
 
 #[derive(SmartDefault)]
 pub struct MutEventPublisher<'a, T: EventFamily> {
-    event_handlers: Vec<Box<dyn for<'e> MutEventHandler<T::Event<'e>> + 'a>>,
+    event_handlers: Vec<Box<dyn for<'e> MutEventHandler<T::Event<'e>> + Send + 'a>>,
 }
 
 
 impl<'a, T: EventFamily> MutEventPublisher<'a, T> {
     pub fn add_event_handler(
         &mut self,
-        event_handler: impl for<'e> MutEventHandler<T::Event<'e>> + 'a,
-    ) {
+        event_handler: impl for<'e> MutEventHandler<T::Event<'e>> + Send + 'a,
+    ) -> &mut Self {
         self.event_handlers.push(Box::new(event_handler));
+        self
     }
 
     pub fn publish(&mut self, payload: &mut T::Event<'_>) {

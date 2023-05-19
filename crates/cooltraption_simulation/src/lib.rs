@@ -1,6 +1,4 @@
 extern crate derive_more;
-#[macro_use]
-extern crate derive_builder;
 
 use std::collections::HashMap;
 use std::iter;
@@ -17,7 +15,9 @@ pub use bevy_ecs::world::*;
 
 use action::{Action, ActionPacket};
 pub use components::{Acceleration, PhysicsBundle, Position, Velocity};
-use cooltraption_common::events::{EventPublisher, MutEventPublisher};
+use cooltraption_common::events::{
+    EventPublisher, MutEventPublisher,
+};
 use events::MutEvent;
 use simulation_state::SimulationState;
 use system_sets::physics_set;
@@ -26,7 +26,6 @@ use derive_more::{Add, AddAssign, Deref, Div, From, Into, Mul, Sub};
 use serde::{Deserialize, Serialize};
 
 pub mod action;
-//pub mod builder;
 pub mod components;
 pub mod events;
 pub mod simulation_state;
@@ -39,27 +38,56 @@ pub struct Tick(pub u64);
 #[derive(Resource, Clone, Default)]
 pub struct Actions(Vec<Action>);
 
-type BoxedIt<T> = Box<dyn Iterator<Item = T>>;
+type BoxedIt<T> = Box<dyn Iterator<Item = T> + Send>;
 
-#[derive(Builder)]
-#[builder(pattern = "owned")]
-#[builder(default)]
-pub struct SimulationRunOptions<'a>
-{
+pub struct SimulationRunOptions<'a> {
     actions: BoxedIt<Action>,
     action_packets: BoxedIt<ActionPacket>,
     state_complete_publisher: MutEventPublisher<'a, MutEvent<'a, SimulationState>>,
     local_action_packet_publisher: EventPublisher<'a, Event<'a, ActionPacket>>,
 }
 
-impl<'a> Default for SimulationRunOptions<'a>
-{
+#[derive(Default)]
+pub struct SimulationRunOptionsBuilder<'a> {
+    run_opts: SimulationRunOptions<'a>
+}
+
+impl<'a> SimulationRunOptionsBuilder<'a> {
+    pub fn set_actions(&mut self, actions: BoxedIt<Action>) -> &mut Self {
+        self.run_opts.actions = actions;
+        self
+    }
+
+    pub fn set_action_packets(&mut self, action_packets: BoxedIt<ActionPacket>) -> &mut Self {
+        self.run_opts.action_packets = action_packets;
+        self
+    }
+
+    pub fn state_complete_publisher(
+        &mut self,
+    ) -> &mut MutEventPublisher<'a, MutEvent<'a, SimulationState>> {
+        &mut self.run_opts.state_complete_publisher
+    }
+
+    pub fn local_action_packet_publisher(
+        &mut self,
+    ) -> &mut EventPublisher<'a, Event<'a, ActionPacket>> {
+        &mut self.run_opts.local_action_packet_publisher
+    }
+
+    pub fn build(self) -> SimulationRunOptions<'a> {
+        self.run_opts
+    }
+}
+
+
+impl<'a> Default for SimulationRunOptions<'a> {
     fn default() -> Self {
         Self {
-            actions: Box::new(iter::from_fn(||None)),
-            action_packets: Box::new(iter::from_fn(||None)),
+            actions: Box::new(iter::from_fn(|| None)),
+            action_packets: Box::new(iter::from_fn(|| None)),
             state_complete_publisher: Default::default(),
-            local_action_packet_publisher: Default::default()
+            local_action_packet_publisher: Default::default(),
         }
     }
 }
@@ -68,13 +96,31 @@ pub trait Simulation {
     fn step_simulation(&mut self, dt: Duration);
 }
 
-#[derive(Default, Builder)]
-#[builder(pattern = "owned")]
-#[builder(default)]
+#[derive(Default)]
 pub struct SimulationImpl {
     simulation_state: SimulationState,
     schedule: Schedule,
     action_table: HashMap<Tick, Vec<Action>>,
+}
+
+#[derive(Default)]
+pub struct SimulationImplBuilder {
+    simulation: SimulationImpl
+}
+
+impl SimulationImplBuilder{
+    pub fn schedule(&mut self) -> &mut Schedule{
+        &mut self.simulation.schedule
+    }
+
+    pub fn set_schedule(&mut self, schedule: Schedule) -> &mut Self{
+        self.simulation.schedule = schedule;
+        self
+    }
+
+    pub fn build(self) -> SimulationImpl {
+        self.simulation
+    }
 }
 
 impl SimulationImpl {
@@ -90,8 +136,7 @@ impl SimulationImpl {
         }
     }
 
-    pub fn run<I, IP>(&mut self, mut run_options: SimulationRunOptions) -> !
-    {
+    pub fn run(&mut self, mut run_options: SimulationRunOptions) -> ! {
         let mut start_time = Instant::now();
         loop {
             let frame_time = Instant::now() - start_time;
@@ -102,7 +147,8 @@ impl SimulationImpl {
                 &mut run_options.local_action_packet_publisher,
             );
             self.step_simulation(frame_time);
-            run_options.state_complete_publisher
+            run_options
+                .state_complete_publisher
                 .publish(&mut MutEvent::new(&mut self.simulation_state, &mut ()));
 
             start_time = Instant::now();
@@ -119,8 +165,7 @@ impl SimulationImpl {
         actions: &mut BoxedIt<Action>,
         action_packets: &mut BoxedIt<ActionPacket>,
         local_action_packet_publisher: &mut EventPublisher<Event<ActionPacket>>,
-    )
-    {
+    ) {
         for local_action_packet in
             actions.map(|action| ActionPacket::new(self.simulation_state.current_tick(), action))
         {

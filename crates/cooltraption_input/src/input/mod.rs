@@ -13,6 +13,7 @@ use cooltraption_window::window::{winit, WindowContext, WinitEvent};
 
 use crate::events::Event;
 
+#[derive(Default)]
 pub struct InputEventHandler<'a> {
     event_publisher: EventPublisher<'a, Event<'a, InputEvent, InputState>>,
     input_state: InputState,
@@ -57,18 +58,15 @@ impl<'a> InputEventHandler<'a> {
             let event = match input.state {
                 ElementState::Pressed => {
                     self.input_state.keyboard_state.set_button(&key_code, true);
-                    InputEvent::KeyboardInputEvent(KeyboardInputEvent::KeyPressed(
-                        key_code,
-                    ))
+                    InputEvent::KeyboardInputEvent(KeyboardInputEvent::KeyPressed(key_code))
                 }
                 ElementState::Released => {
                     self.input_state.keyboard_state.set_button(&key_code, false);
-                    InputEvent::KeyboardInputEvent(KeyboardInputEvent::KeyReleased(
-                        key_code,
-                    ))
+                    InputEvent::KeyboardInputEvent(KeyboardInputEvent::KeyReleased(key_code))
                 }
             };
-            self.event_publisher.publish(&Event::new(&event, &self.input_state));
+            self.event_publisher
+                .publish(&Event::new(&event, &self.input_state));
         }
     }
 
@@ -76,24 +74,22 @@ impl<'a> InputEventHandler<'a> {
         let event = match state {
             ElementState::Pressed => {
                 self.input_state.mouse_state.set_button(&button, true);
-                InputEvent::MouseButtonEvent(MouseButtonEvent::KeyPressed(
-                    button,
-                ))
+                InputEvent::MouseButtonEvent(MouseButtonEvent::KeyPressed(button))
             }
             ElementState::Released => {
                 self.input_state.mouse_state.set_button(&button, false);
-                InputEvent::MouseButtonEvent(MouseButtonEvent::KeyReleased(
-                    button,
-                ))
+                InputEvent::MouseButtonEvent(MouseButtonEvent::KeyReleased(button))
             }
         };
-        self.event_publisher.publish(&Event::new(&event, &self.input_state));
+        self.event_publisher
+            .publish(&Event::new(&event, &self.input_state));
     }
 
     fn mouse_moved(&mut self, pos: &mut PhysicalPosition<f64>) {
         self.input_state.mouse_state.set_mouse_position(*pos);
         let event = InputEvent::MouseMoved(*pos);
-        self.event_publisher.publish(&Event::new(&event, &self.input_state));
+        self.event_publisher
+            .publish(&Event::new(&event, &self.input_state));
     }
 }
 

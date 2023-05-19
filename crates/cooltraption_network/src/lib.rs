@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate higher_order_closure;
-
 pub mod node_event_handler;
 pub mod network_state_handler;
 pub mod client;
