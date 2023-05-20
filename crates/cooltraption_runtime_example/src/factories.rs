@@ -4,7 +4,7 @@ use std::iter;
 
 fn sometimes_spawn_ball(
     mut rt_config_builder: RuntimeConfigurationBuilder<'_>,
-) -> RuntimeConfigurationBuilder<'_> {
+) {
     let mut i = 0;
     let boxed_it = Box::new(iter::from_fn(move || {
         i += 1;
@@ -18,5 +18,4 @@ fn sometimes_spawn_ball(
     rt_config_builder
         .simulation_run_options_builder()
         .set_actions(boxed_it);
-    rt_config_builder
 }
