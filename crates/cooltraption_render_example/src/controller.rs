@@ -4,11 +4,13 @@ use cgmath::num_traits::*;
 use cgmath::*;
 use cooltraption_render::gui::{GuiActionDispatcher, WidgetId};
 use cooltraption_render::world_renderer::camera::controls::*;
+use cooltraption_render::world_renderer::gizmos;
 use cooltraption_window::events::EventHandler;
 use cooltraption_window::window::winit::event::{
     ElementState, MouseButton, MouseScrollDelta, VirtualKeyCode,
 };
 use cooltraption_window::window::{winit, WindowContext, WindowEvent, WinitEvent};
+use std::ops::{Add, Sub};
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 
@@ -61,6 +63,12 @@ impl InputStateEventHandler {
         let move_hardness = 25.0 * delta_time.as_secs_f32();
         let zoom_speed = 0.2;
         let zoom_hardness = 35.0 * delta_time.as_secs_f32();
+
+        let mouse_pos = self.mouse_state.pos();
+        gizmos::rect(
+            mouse_pos.add(Vector2::new(0.1, 0.1)),
+            mouse_pos.sub(Vector2::new(0.1, 0.1)),
+        );
 
         if self.keyboard_state.is_down(&VirtualKeyCode::W) {
             move_vec.y += 1.0;
