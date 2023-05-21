@@ -3,6 +3,8 @@ pub mod network_state_handler;
 pub mod client;
 pub mod events;
 pub mod server;
+pub mod packets;
 
 
-pub use message_io::node::{ self, NodeEvent, StoredNodeEvent, StoredNetEvent };
+pub use message_io::node::{ self, NodeEvent };
+pub use message_io::network::Transport;
