@@ -6,7 +6,7 @@ use cooltraption_render::gui::{GuiActionDispatcher, WidgetId};
 use cooltraption_render::unique_id;
 use cooltraption_render::world_renderer::camera::controls::*;
 use cooltraption_render::world_renderer::gizmos;
-use cooltraption_render::world_renderer::gizmos::{Origin, Size};
+use cooltraption_render::world_renderer::gizmos::{Origin, Shape};
 use cooltraption_window::events::EventHandler;
 use cooltraption_window::window::winit::event::{
     ElementState, MouseButton, MouseScrollDelta, VirtualKeyCode,
@@ -66,8 +66,10 @@ impl InputStateEventHandler {
         let zoom_hardness = 35.0 * delta_time.as_secs_f32();
 
         let mouse_pos = self.mouse_state.pos();
-        gizmos::ellipse(
+        gizmos::shape(
             unique_id!(),
+            Shape::Ellipse,
+            gizmos::Color::MAGENTA,
             gizmos::BoundingBox::Origin(Origin::Center(mouse_pos.into()), (0.1, 0.1)),
         );
 
@@ -145,8 +147,10 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputStateEventHand
                             self.target_pos = self.mouse_state.pos();
                         }
 
-                        gizmos::ellipse(
+                        gizmos::shape(
                             unique_id!(),
+                            Shape::Ellipse,
+                            gizmos::Color::GREEN,
                             gizmos::BoundingBox::Origin(
                                 Origin::Center(self.mouse_state.pos().into()),
                                 (0.2, 0.2),

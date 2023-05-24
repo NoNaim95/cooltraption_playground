@@ -7,7 +7,7 @@ use cgmath::num_traits::Float;
 use cgmath::Vector2;
 use cooltraption_render::renderer::WgpuInitializer;
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
-use cooltraption_render::world_renderer::gizmos::Origin;
+use cooltraption_render::world_renderer::gizmos::{Origin, Shape};
 use cooltraption_render::world_renderer::texture_atlas::TextureAtlasBuilder;
 use cooltraption_render::world_renderer::world_state::{
     Drawable, Id, Position, Rotation, Scale, Transform,
@@ -87,8 +87,10 @@ fn run_mock_simulation(state_send: SyncSender<Vec<Drawable>>, fixed_delta_time: 
             )
         };
 
-        gizmos::rect(
+        gizmos::shape(
             unique_id!(),
+            Shape::Rect,
+            gizmos::Color::YELLOW,
             gizmos::BoundingBox::Origin(Origin::Center(floating.neg().into()), (0.8, 0.8)),
         );
 
