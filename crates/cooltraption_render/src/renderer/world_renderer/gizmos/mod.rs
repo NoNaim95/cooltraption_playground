@@ -1,9 +1,8 @@
-mod ellipse;
-mod rect;
 mod vertex;
 
 use crate::world_renderer::camera::controls::CameraController;
 use crate::world_renderer::camera::Camera;
+use crate::world_renderer::gizmos::vertex::Vertex;
 use crate::world_renderer::mesh::Mesh;
 use cgmath::{Matrix4, Vector3};
 use egui::epaint::ahash::{HashMap, HashMapExt};
@@ -13,9 +12,12 @@ use std::time::{Duration, Instant};
 use uuid::Uuid;
 use wgpu::util::DeviceExt;
 use wgpu::{
-    util, BindGroupLayout, Buffer, BufferUsages, CommandEncoder, Device, IndexFormat, LoadOp,
-    Operations, Queue, RenderPass, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
-    TextureFormat, TextureView,
+    include_wgsl, util, BindGroupLayout, BlendState, Buffer, BufferUsages, ColorTargetState,
+    ColorWrites, CommandEncoder, Device, Face, FragmentState, FrontFace, IndexFormat, LoadOp,
+    MultisampleState, Operations, PipelineLayoutDescriptor, PolygonMode, PrimitiveState,
+    PrimitiveTopology, Queue, RenderPass, RenderPassColorAttachment, RenderPassDescriptor,
+    RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, TextureFormat, TextureView,
+    VertexState,
 };
 
 #[macro_export]
@@ -295,13 +297,25 @@ impl GizmoStages {
         Self {
             stages: vec![
                 GizmoStage::new(
-                    Mesh::new(device, rect::VERTICES, rect::INDICES, "Rect Gizmo"),
-                    rect::create_pipeline(device, format, camera_bgl),
+                    Mesh::new(device, VERTICES, INDICES, "Rect Gizmo"),
+                    create_pipeline(
+                        device,
+                        format,
+                        camera_bgl,
+                        include_wgsl!("shaders/rect.wgsl"),
+                        "Rect",
+                    ),
                     create_instance_buffer(&[], device, "Rect"),
                 ),
                 GizmoStage::new(
-                    Mesh::new(device, ellipse::VERTICES, ellipse::INDICES, "Ellipse Gizmo"),
-                    ellipse::create_pipeline(device, format, camera_bgl),
+                    Mesh::new(device, VERTICES, INDICES, "Ellipse Gizmo"),
+                    create_pipeline(
+                        device,
+                        format,
+                        camera_bgl,
+                        include_wgsl!("shaders/ellipse.wgsl"),
+                        "Ellipse",
+                    ),
                     create_instance_buffer(&[], device, "Ellipse"),
                 ),
             ],
@@ -339,3 +353,74 @@ pub fn create_instance_buffer(data: &[u8], device: &Device, label: &'static str)
         usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
     })
 }
+
+pub fn create_pipeline(
+    device: &Device,
+    format: &TextureFormat,
+    camera_bgl: &BindGroupLayout,
+    shader: ShaderModuleDescriptor,
+    name: &'static str,
+) -> RenderPipeline {
+    let render_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
+        label: Some(format!("{} Gizmo Render Pipeline Layout", name).as_str()),
+        bind_group_layouts: &[camera_bgl],
+        push_constant_ranges: &[],
+    });
+
+    let shader = device.create_shader_module(shader);
+
+    device.create_render_pipeline(&RenderPipelineDescriptor {
+        label: Some(format!("{} Gizmo Render Pipeline", name).as_str()),
+        layout: Some(&render_pipeline_layout),
+        vertex: VertexState {
+            module: &shader,
+            entry_point: "vs_main",
+            buffers: &[Vertex::desc(), GizmoRaw::desc()],
+        },
+        fragment: Some(FragmentState {
+            module: &shader,
+            entry_point: "fs_main",
+            targets: &[Some(ColorTargetState {
+                format: *format,
+                blend: Some(BlendState::ALPHA_BLENDING),
+                write_mask: ColorWrites::ALL,
+            })],
+        }),
+        primitive: PrimitiveState {
+            topology: PrimitiveTopology::TriangleList,
+            strip_index_format: None,
+            front_face: FrontFace::Ccw,
+            cull_mode: Some(Face::Back),
+            // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+            polygon_mode: PolygonMode::Fill,
+            // Requires Features::DEPTH_CLIP_CONTROL
+            unclipped_depth: false,
+            // Requires Features::CONSERVATIVE_RASTERIZATION
+            conservative: false,
+        },
+        depth_stencil: None,
+        multisample: MultisampleState {
+            count: 1,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
+        multiview: None,
+    })
+}
+
+pub const VERTICES: &[Vertex] = &[
+    Vertex {
+        position: [-1.0, -1.0, 0.0],
+    },
+    Vertex {
+        position: [1.0, -1.0, 0.0],
+    },
+    Vertex {
+        position: [1.0, 1.0, 0.0],
+    },
+    Vertex {
+        position: [-1.0, 1.0, 0.0],
+    },
+];
+
+pub const INDICES: &[u16] = &[0, 1, 2, 2, 3, 0];
