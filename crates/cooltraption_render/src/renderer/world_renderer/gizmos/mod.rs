@@ -49,6 +49,6 @@ pub fn render_all<'a, 'b: 'a, C: CameraController>(
     }
 
     for stage in gizmos.stages_mut() {
-        stage.clear();
+        stage.clear_old();
     }
 }

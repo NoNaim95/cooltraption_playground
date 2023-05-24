@@ -1,13 +1,13 @@
 use crate::world_renderer::gizmos::shapes::vertex::Vertex;
 use crate::world_renderer::gizmos::*;
-use cgmath::{Matrix4, Point2, Vector3};
+use cgmath::{Matrix4, Point2, Vector2, Vector3};
 use uuid::Uuid;
 use wgpu::{
     BindGroupLayout, BlendState, ColorTargetState, ColorWrites, Face, FragmentState, FrontFace,
     MultisampleState, PolygonMode, PrimitiveState, PrimitiveTopology,
 };
 
-pub struct Rect {
+pub struct Ellipse {
     x: f32,
     y: f32,
     width: f32,
@@ -15,7 +15,7 @@ pub struct Rect {
     color: Color,
 }
 
-impl Rect {
+impl Ellipse {
     pub fn to_raw(&self, age: Age) -> ShapeRaw {
         let transform: [[f32; 4]; 4] =
             (Matrix4::from_translation(Vector3::new(
@@ -37,19 +37,19 @@ impl Rect {
     }
 }
 
-pub fn rect(uuid: Uuid, bounding_box: BoundingBox) {
+pub fn ellipse(uuid: Uuid, bounding_box: BoundingBox) {
     let top_left = bounding_box.top_left();
     let size = bounding_box.size();
 
     if let Some(gizmos) = GIZMOS.lock().expect("gizmo mutex").as_mut() {
-        gizmos.add_rect(
+        gizmos.add_ellipse(
             uuid,
-            Rect {
+            Ellipse {
                 x: top_left.0,
                 y: top_left.1,
                 width: size.0,
                 height: size.1,
-                color: Color::RED,
+                color: Color::BLUE,
             },
         );
     }
@@ -61,15 +61,15 @@ pub fn create_pipeline(
     camera_bgl: &BindGroupLayout,
 ) -> RenderPipeline {
     let render_pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
-        label: Some("Rect Gizmo Render Pipeline Layout"),
+        label: Some("Ellipse Gizmo Render Pipeline Layout"),
         bind_group_layouts: &[camera_bgl],
         push_constant_ranges: &[],
     });
 
-    let shader = device.create_shader_module(include_wgsl!("rect.wgsl"));
+    let shader = device.create_shader_module(include_wgsl!("ellipse.wgsl"));
 
     device.create_render_pipeline(&RenderPipelineDescriptor {
-        label: Some("Rect Gizmo Render Pipeline"),
+        label: Some("Ellipse Gizmo Render Pipeline"),
         layout: Some(&render_pipeline_layout),
         vertex: VertexState {
             module: &shader,

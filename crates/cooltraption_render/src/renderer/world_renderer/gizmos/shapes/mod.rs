@@ -1,15 +1,76 @@
+mod ellipse;
 mod rect;
 mod vertex;
 
 use crate::world_renderer::camera::controls::CameraController;
 use crate::world_renderer::camera::Camera;
 use crate::world_renderer::mesh::Mesh;
+use egui::epaint::ahash::{HashMap, HashMapExt};
+pub use ellipse::{ellipse, Ellipse};
 pub use rect::{rect, Rect};
+use std::f32::MAX;
+use uuid::Uuid;
 use wgpu::util::DeviceExt;
 use wgpu::{
     util, BindGroupLayout, Buffer, BufferUsages, Device, IndexFormat, Queue, RenderPass,
     RenderPipeline, TextureFormat,
 };
+
+#[macro_export]
+macro_rules! unique_id {
+    () => {{
+        use lazy_static::lazy_static;
+        use uuid::Uuid;
+        lazy_static! {
+            static ref UNIQUE_ID: Uuid = Uuid::new_v4();
+        }
+        *UNIQUE_ID
+    }};
+}
+
+pub type Coord = (f32, f32);
+pub type Size = (f32, f32);
+pub type Age = f32;
+
+#[derive(Copy, Clone)]
+pub enum BoundingBox {
+    Corners(Coord, Coord),
+    Origin(Origin, Size),
+}
+
+impl BoundingBox {
+    fn top_left(&self) -> Coord {
+        match self {
+            BoundingBox::Corners(p1, p2) => (p1.0.min(p2.0), p1.1.min(p2.1)),
+            BoundingBox::Origin(origin, size) => {
+                let (x, y) = match origin {
+                    Origin::TopLeft(coord) => *coord,
+                    Origin::TopRight(coord) => (coord.0 - size.0, coord.1),
+                    Origin::BottomLeft(coord) => (coord.0, coord.1 - size.1),
+                    Origin::BottomRight(coord) => (coord.0 - size.0, coord.1 - size.1),
+                    Origin::Center(coord) => (coord.0 - size.0 / 2.0, coord.1 - size.1 / 2.0),
+                };
+                (x, y)
+            }
+        }
+    }
+
+    fn size(&self) -> Size {
+        match self {
+            BoundingBox::Corners(p1, p2) => ((p1.0 - p2.0).abs(), (p1.1 - p2.1).abs()),
+            BoundingBox::Origin(_, size) => *size,
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+pub enum Origin {
+    TopLeft(Coord),
+    TopRight(Coord),
+    BottomLeft(Coord),
+    BottomRight(Coord),
+    Center(Coord),
+}
 
 pub struct Color {
     pub r: f64,
@@ -33,13 +94,15 @@ impl Color {
 }
 
 pub enum Shape {
-    Rect(Rect),
+    Rect(Uuid, Age, Rect),
+    Ellipse(Uuid, Age, Ellipse),
 }
 
 impl Shape {
     pub fn to_raw(&self) -> ShapeRaw {
         match self {
-            Shape::Rect(rect) => rect.to_raw(),
+            Shape::Rect(_, age, rect) => rect.to_raw(*age),
+            Shape::Ellipse(_, age, ellipse) => ellipse.to_raw(*age),
         }
     }
 }
@@ -48,7 +111,7 @@ impl Shape {
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ShapeRaw {
     transform: [[f32; 4]; 4],
-    color: [f32; 3],
+    color: [f32; 4],
 }
 
 impl ShapeRaw {
@@ -57,7 +120,7 @@ impl ShapeRaw {
         2 => Float32x4,
         3 => Float32x4,
         4 => Float32x4,
-        5 => Float32x3,
+        5 => Float32x4,
     ];
 
     pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
@@ -73,7 +136,7 @@ pub struct GizmoStage {
     pipeline: RenderPipeline,
     mesh: Mesh,
     instance_buffer: Buffer,
-    gizmos: Vec<Shape>,
+    gizmos: HashMap<Uuid, Shape>,
 }
 
 impl GizmoStage {
@@ -84,7 +147,17 @@ impl GizmoStage {
         queue: &Queue,
         camera: &'a Camera<C>,
     ) {
-        let shapes_raw = self.gizmos.iter().map(Shape::to_raw).collect::<Vec<_>>();
+        // Update gizmo ages
+        self.gizmos.values_mut().for_each(|gizmo| match gizmo {
+            Shape::Rect(_, age, _) => {
+                *age += 0.001;
+            }
+            Shape::Ellipse(_, age, _) => {
+                *age += 0.001;
+            }
+        });
+
+        let shapes_raw = self.gizmos.values().map(Shape::to_raw).collect::<Vec<_>>();
         let shapes_data = bytemuck::cast_slice::<_, u8>(&shapes_raw);
 
         if self.instance_buffer.size() < shapes_data.len() as u64 {
@@ -102,8 +175,12 @@ impl GizmoStage {
         render_pass.draw_indexed(0..self.mesh.num_indices(), 0, 0..self.gizmos.len() as _);
     }
 
-    pub fn clear(&mut self) {
-        self.gizmos.clear();
+    pub fn clear_old(&mut self) {
+        const MAX_AGE: f32 = 1.0;
+        self.gizmos.retain(|_, shape| match shape {
+            Shape::Rect(_, age, _) => *age < MAX_AGE,
+            Shape::Ellipse(_, age, _) => *age < MAX_AGE,
+        });
     }
 }
 
@@ -113,7 +190,7 @@ impl GizmoStage {
             pipeline,
             mesh,
             instance_buffer,
-            gizmos: vec![],
+            gizmos: HashMap::new(),
         }
     }
 }
@@ -125,16 +202,31 @@ pub struct GizmoStages {
 impl GizmoStages {
     pub fn new(device: &Device, format: &TextureFormat, camera_bgl: &BindGroupLayout) -> Self {
         Self {
-            stages: vec![GizmoStage::new(
-                Mesh::new(device, rect::VERTICES, rect::INDICES, "Rect Gizmo"),
-                rect::create_pipeline(device, format, camera_bgl),
-                create_instance_buffer(&[], device, "Rect"),
-            )],
+            stages: vec![
+                GizmoStage::new(
+                    Mesh::new(device, rect::VERTICES, rect::INDICES, "Rect Gizmo"),
+                    rect::create_pipeline(device, format, camera_bgl),
+                    create_instance_buffer(&[], device, "Rect"),
+                ),
+                GizmoStage::new(
+                    Mesh::new(device, ellipse::VERTICES, ellipse::INDICES, "Ellipse Gizmo"),
+                    ellipse::create_pipeline(device, format, camera_bgl),
+                    create_instance_buffer(&[], device, "Ellipse"),
+                ),
+            ],
         }
     }
 
-    pub fn add_rect(&mut self, rect: Rect) {
-        self.stages[0].gizmos.push(Shape::Rect(rect));
+    pub fn add_rect(&mut self, uuid: Uuid, rect: Rect) {
+        self.stages[0]
+            .gizmos
+            .insert(uuid, Shape::Rect(uuid, 0.0, rect));
+    }
+
+    pub fn add_ellipse(&mut self, uuid: Uuid, ellipse: Ellipse) {
+        self.stages[1]
+            .gizmos
+            .insert(uuid, Shape::Ellipse(uuid, 0.0, ellipse));
     }
 
     pub fn render<'a, 'b: 'a, C: CameraController>(

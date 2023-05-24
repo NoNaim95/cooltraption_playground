@@ -11,11 +11,13 @@ use winit::window::Window;
 use crate::renderer::render_frame::RenderFrame;
 use crate::renderer::wgpu_state::WgpuState;
 use crate::renderer::{BoxedRenderer, RenderError, Renderer, RendererInitializer};
+use crate::unique_id;
 use crate::world_renderer::camera::controls::CameraController;
 use crate::world_renderer::camera::Camera;
+use crate::world_renderer::gizmos::Origin;
 use crate::world_renderer::gpu_texture_atlas::GpuTextureAtlas;
 use crate::world_renderer::mesh::{Mesh, Vertex};
-use crate::world_renderer::world_state::{Drawable, WorldState};
+use crate::world_renderer::world_state::{Drawable, Transform, WorldState};
 pub use world_state::render_entity::{RenderEntity, RenderEntityRaw};
 
 pub mod camera;
@@ -94,8 +96,18 @@ where
             render_pass.draw_indexed(0..self.mesh.num_indices(), 0, 0..entities.len() as _);
         }
 
-        gizmos::rect(Point2::new(-1.0, -0.5), Point2::new(1.0, 0.5));
-        gizmos::rect(Point2::new(-0.5, -1.0), Point2::new(0.5, 1.0));
+        gizmos::rect(
+            unique_id!(),
+            gizmos::BoundingBox::Corners((-1.0, -0.5), (1.0, 0.5)),
+        );
+        gizmos::rect(
+            unique_id!(),
+            gizmos::BoundingBox::Corners((-0.5, -1.0), (0.5, 1.0)),
+        );
+        gizmos::rect(
+            unique_id!(),
+            gizmos::BoundingBox::Origin(Origin::Center((0.0, 0.0)), (0.5, 0.5)),
+        );
 
         gizmos::render_all(
             &mut render_frame.encoder,

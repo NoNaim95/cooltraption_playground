@@ -5,14 +5,15 @@ mod debug_widget;
 use crate::controller::Controller;
 use cgmath::num_traits::Float;
 use cgmath::Vector2;
-use cooltraption_render::gui;
 use cooltraption_render::renderer::WgpuInitializer;
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
+use cooltraption_render::world_renderer::gizmos::Origin;
 use cooltraption_render::world_renderer::texture_atlas::TextureAtlasBuilder;
 use cooltraption_render::world_renderer::world_state::{
     Drawable, Id, Position, Rotation, Scale, Transform,
 };
-use cooltraption_render::world_renderer::WorldRendererInitializer;
+use cooltraption_render::world_renderer::{gizmos, WorldRendererInitializer};
+use cooltraption_render::{gui, unique_id};
 use cooltraption_window::window::{WindowEventHandler, WinitEventLoopHandler};
 use log::info;
 use std::env;
@@ -85,6 +86,11 @@ fn run_mock_simulation(state_send: SyncSender<Vec<Drawable>>, fixed_delta_time: 
                 Vector2::new(wrap(time * 1.5, -4.0..4.0), 0.0),
             )
         };
+
+        gizmos::rect(
+            unique_id!(),
+            gizmos::BoundingBox::Origin(Origin::Center(floating.neg().into()), (0.8, 0.8)),
+        );
 
         let drawables = vec![
             Drawable {
