@@ -10,10 +10,8 @@ use winit::window::Window;
 use crate::renderer::render_frame::RenderFrame;
 use crate::renderer::wgpu_state::WgpuState;
 use crate::renderer::{BoxedRenderer, RenderError, Renderer, RendererInitializer};
-use crate::unique_id;
 use crate::world_renderer::camera::controls::CameraController;
 use crate::world_renderer::camera::Camera;
-use crate::world_renderer::gizmos::{Origin, Shape};
 use crate::world_renderer::gpu_texture_atlas::GpuTextureAtlas;
 use crate::world_renderer::mesh::{Mesh, Vertex};
 use crate::world_renderer::world_state::{Drawable, WorldState};
@@ -94,25 +92,6 @@ where
 
             render_pass.draw_indexed(0..self.mesh.num_indices(), 0, 0..entities.len() as _);
         }
-
-        gizmos::shape(
-            unique_id!(),
-            Shape::Rect,
-            gizmos::Color::BLUE,
-            gizmos::BoundingBox::Corners((-1.0, -0.5), (1.0, 0.5)),
-        );
-        gizmos::shape(
-            unique_id!(),
-            Shape::Rect,
-            gizmos::Color::BLUE,
-            gizmos::BoundingBox::Corners((-0.5, -1.0), (0.5, 1.0)),
-        );
-        gizmos::shape(
-            unique_id!(),
-            Shape::Rect,
-            gizmos::Color::BLUE,
-            gizmos::BoundingBox::Origin(Origin::Center((0.0, 0.0)), (0.5, 0.5)),
-        );
 
         gizmos::render_all(
             &mut render_frame.encoder,

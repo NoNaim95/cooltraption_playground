@@ -7,13 +7,13 @@ use cgmath::num_traits::Float;
 use cgmath::Vector2;
 use cooltraption_render::renderer::WgpuInitializer;
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
-use cooltraption_render::world_renderer::gizmos::{Origin, Shape};
+use cooltraption_render::world_renderer::gizmos::{BoundingBox, Color, Origin, Shape};
 use cooltraption_render::world_renderer::texture_atlas::TextureAtlasBuilder;
 use cooltraption_render::world_renderer::world_state::{
     Drawable, Id, Position, Rotation, Scale, Transform,
 };
-use cooltraption_render::world_renderer::{gizmos, WorldRendererInitializer};
-use cooltraption_render::{gui, unique_id};
+use cooltraption_render::world_renderer::WorldRendererInitializer;
+use cooltraption_render::{gui, rect, unique_id};
 use cooltraption_window::window::{WindowEventHandler, WinitEventLoopHandler};
 use log::info;
 use std::env;
@@ -87,11 +87,9 @@ fn run_mock_simulation(state_send: SyncSender<Vec<Drawable>>, fixed_delta_time: 
             )
         };
 
-        gizmos::shape(
-            unique_id!(),
-            Shape::Rect,
-            gizmos::Color::YELLOW,
-            gizmos::BoundingBox::Origin(Origin::Center(floating.neg().into()), (0.8, 0.8)),
+        rect!(
+            BoundingBox::Sized(Origin::Center(floating.neg().into()), (0.8, 0.8)),
+            Color::YELLOW
         );
 
         let drawables = vec![

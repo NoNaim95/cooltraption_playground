@@ -1,6 +1,5 @@
 mod ellipse;
 mod rect;
-mod shapes;
 mod vertex;
 
 use crate::world_renderer::camera::controls::CameraController;
@@ -18,6 +17,38 @@ use wgpu::{
     Operations, Queue, RenderPass, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
     TextureFormat, TextureView,
 };
+
+#[macro_export]
+macro_rules! unique_id {
+    () => {{
+        use lazy_static::lazy_static;
+        use uuid::Uuid;
+        lazy_static! {
+            static ref UNIQUE_ID: Uuid = Uuid::new_v4();
+        }
+        *UNIQUE_ID
+    }};
+}
+
+#[macro_export]
+macro_rules! rect {
+    ($bounding_box:expr, $color:expr) => {
+        $crate::world_renderer::gizmos::shape(unique_id!(), Shape::Rect, $color, $bounding_box)
+    };
+}
+
+#[macro_export]
+macro_rules! ellipse {
+    ($bounding_box:expr, $color:expr) => {
+        $crate::world_renderer::gizmos::shape(unique_id!(), Shape::Ellipse, $color, $bounding_box)
+    };
+}
+
+pub fn shape(uuid: Uuid, shape: Shape, color: Color, bounding_box: BoundingBox) {
+    if let Some(gizmos) = GIZMOS.lock().expect("gizmo mutex").as_mut() {
+        gizmos.add_gizmo(Gizmo::new(uuid, Instant::now(), bounding_box, color, shape));
+    }
+}
 
 lazy_static! {
     static ref GIZMOS: Mutex<Option<GizmoStages>> = Mutex::new(None);
@@ -60,24 +91,6 @@ pub fn render_all<'a, 'b: 'a, C: CameraController>(
     }
 }
 
-#[macro_export]
-macro_rules! unique_id {
-    () => {{
-        use lazy_static::lazy_static;
-        use uuid::Uuid;
-        lazy_static! {
-            static ref UNIQUE_ID: Uuid = Uuid::new_v4();
-        }
-        *UNIQUE_ID
-    }};
-}
-
-pub fn shape(uuid: Uuid, shape: Shape, color: Color, bounding_box: BoundingBox) {
-    if let Some(gizmos) = GIZMOS.lock().expect("gizmo mutex").as_mut() {
-        gizmos.add_gizmo(Gizmo::new(uuid, Instant::now(), bounding_box, color, shape));
-    }
-}
-
 const MAX_AGE: Duration = Duration::from_secs(4);
 
 pub type Coord = (f32, f32);
@@ -85,15 +98,15 @@ pub type Size = (f32, f32);
 
 #[derive(Copy, Clone)]
 pub enum BoundingBox {
-    Corners(Coord, Coord),
-    Origin(Origin, Size),
+    Cornered(Coord, Coord),
+    Sized(Origin, Size),
 }
 
 impl BoundingBox {
     fn center(&self) -> Coord {
         match self {
-            BoundingBox::Corners(p1, p2) => ((p1.0 + p2.0) / 2.0, (p1.1 + p2.1) / 2.0),
-            BoundingBox::Origin(origin, size) => {
+            BoundingBox::Cornered(p1, p2) => ((p1.0 + p2.0) / 2.0, (p1.1 + p2.1) / 2.0),
+            BoundingBox::Sized(origin, size) => {
                 let (x, y) = match origin {
                     Origin::TopLeft(coord) => (coord.0 + size.0 / 2.0, coord.1 + size.1 / 2.0),
                     Origin::TopRight(coord) => (coord.0 - size.0 / 2.0, coord.1 + size.1 / 2.0),
@@ -108,8 +121,8 @@ impl BoundingBox {
 
     fn size(&self) -> Size {
         match self {
-            BoundingBox::Corners(p1, p2) => ((p1.0 - p2.0).abs(), (p1.1 - p2.1).abs()),
-            BoundingBox::Origin(_, size) => *size,
+            BoundingBox::Cornered(p1, p2) => ((p1.0 - p2.0).abs(), (p1.1 - p2.1).abs()),
+            BoundingBox::Sized(_, size) => *size,
         }
     }
 }
