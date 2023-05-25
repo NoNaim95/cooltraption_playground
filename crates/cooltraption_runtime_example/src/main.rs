@@ -1,30 +1,49 @@
-use cooltraption_common::events::EventPublisher;
-use cooltraption_render::world_renderer::WorldState;
-use cooltraption_simulation::action::{Action, ActionPacket};
-use cooltraption_simulation::*;
-use directors::SimulationImplDirector;
-
+#![feature(closure_lifetime_binder)]
 use std::iter;
+use std::sync::mpsc::channel;
 
-use cooltraption_input::input::{InputEvent, InputEventHandler, InputState};
+use cooltraption_runtime::configurators::common_configurators::add_renderer;
+use cooltraption_runtime::configurators::{
+    ConfiguratorOnce, ConfiguratorOncePipeline, ConfiguratorPipeline,
+};
+use cooltraption_runtime::factories::create_schedule;
+use cooltraption_runtime::{Runtime, RuntimeConfigurationBuilder};
 
-use std::sync::mpsc::{self, SyncSender};
-
-pub mod directors;
 pub mod factories;
-pub mod render_component;
-pub mod sfml_component;
-
-use cooltraption_input::events::Event as CtnInputEvent;
 
 fn main() {
-    //let (input_action_sender, input_action_receiver) = mpsc::channel::<Action>();
+    let (input_action_sender, input_action_receiver) = channel();
 
-    //let (state_send, state_recv) = mpsc::sync_channel(5);
+    let mut runtime_config_builder = RuntimeConfigurationBuilder::default();
+    let mut configurator_pipeline = ConfiguratorPipeline::default();
+    let mut configurator_once_pipeline = ConfiguratorOncePipeline::default();
 
-    //let it = iter::from_fn(move || state_recv.try_recv().ok());
+    let input_action_iter = Box::new(iter::from_fn(move || input_action_receiver.try_recv().ok()));
 
-    //let mut event_publisher = EventPublisher::<CtnInputEvent<InputEvent, InputState>>::default();
-    //event_publisher.add_event_handler(factories::create_input_handler(input_action_sender));
-    //render_component::run_renderer(it, InputEventHandler::new(event_publisher));
+    let input_action_configurator = move |rt_config: &mut RuntimeConfigurationBuilder<'_>| {
+        rt_config
+            .simulation_run_options_builder()
+            .set_actions(input_action_iter);
+    };
+
+    let add_schedule_configurator = |rt_config: &mut RuntimeConfigurationBuilder<'_>| {
+        rt_config
+            .simulation_builder()
+            .set_schedule(create_schedule());
+    };
+
+
+    let render_configurator = move |config: &mut RuntimeConfigurationBuilder<'_>| {
+        return add_renderer(config, input_action_sender.clone());
+    };
+
+    configurator_pipeline.add_configurator(add_schedule_configurator);
+    configurator_pipeline.add_configurator(render_configurator);
+
+    configurator_once_pipeline.add_configurator_once(configurator_pipeline);
+    configurator_once_pipeline.add_configurator_once(input_action_configurator);
+
+    configurator_once_pipeline.boxed().configure_once(&mut runtime_config_builder);
+
+    Runtime::run(runtime_config_builder.build());
 }

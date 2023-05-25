@@ -1,9 +1,9 @@
 use cooltraption_common::events::{
-    EventHandler, EventPublisher, MutEventHandler, MutEventPublisher,
+    EventHandler, EventPublisher,
 };
 use message_io::{
     network::Endpoint,
-    node::{NodeEvent, NodeHandler, StoredNetEvent, StoredNodeEvent},
+    node::{NodeEvent, NodeHandler},
 };
 use std::collections::HashSet;
 
@@ -35,7 +35,7 @@ impl<'a> EventHandler<Event<'a, NodeEvent<'a, Signal>>> for NodeEventHandler<'a>
         if let NodeEvent::Network(net_event) = event.payload() {
             match net_event {
                 message_io::network::NetEvent::Connected(_, _) => {
-                    println!("")
+                    println!()
                 },
                 message_io::network::NetEvent::Accepted(_, _) =>{
                     println!("Client Connected!, setting network_state accordingly!");
@@ -48,6 +48,6 @@ impl<'a> EventHandler<Event<'a, NodeEvent<'a, Signal>>> for NodeEventHandler<'a>
                 },
             }
         }
-        self.network_state_publisher.publish(&Event::new(&event.payload(), &self.network_state));
+        self.network_state_publisher.publish(&Event::new(event.payload(), &self.network_state));
     }
 }

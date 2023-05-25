@@ -90,6 +90,8 @@ impl InputStateEventHandler {
         self.target_pos += move_vec;
         self.view.position =
             self.view.position + (self.target_pos - self.view.position) * move_hardness;
+        //Log view position
+        println!("View position: {:?}", self.view.position);
 
         self.target_zoom *= 2.0_f32.pow(self.mouse_state.scroll() * zoom_speed);
         self.view.zoom = (self.view.zoom.ln()
