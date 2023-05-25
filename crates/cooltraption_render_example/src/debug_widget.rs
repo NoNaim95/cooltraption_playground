@@ -59,8 +59,8 @@ impl FpsCounter {
 
 pub struct DebugWidget {
     window_size: PhysicalSize<u32>,
-    tps: FpsCounter,
     fps: FpsCounter,
+    eps: FpsCounter,
     is_open: bool,
 }
 
@@ -69,8 +69,8 @@ impl Default for DebugWidget {
         Self {
             is_open: true,
             window_size: Default::default(),
-            tps: FpsCounter::new(),
             fps: FpsCounter::new(),
+            eps: FpsCounter::new(),
         }
     }
 }
@@ -80,7 +80,7 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for DebugWidget {
         self.window_size = context.window.inner_size();
 
         // Update tps
-        self.tps.tick();
+        self.eps.tick();
     }
 }
 
@@ -98,7 +98,7 @@ impl Widget for DebugWidget {
                 ui.add_space(10.0);
 
                 ui.label(format!("FPS {}", self.fps));
-                ui.label(format!("TPS {}", self.tps));
+                ui.label(format!("EPS {}", self.eps));
             });
 
         self.is_open

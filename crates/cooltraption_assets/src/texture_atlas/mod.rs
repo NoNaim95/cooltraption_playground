@@ -9,7 +9,7 @@ mod texture_atlas_builder;
 
 pub struct TextureAtlas {
     rgba: RgbaImage,
-    texture_map: HashMap<u64, Rectangle>,
+    region_map: HashMap<u64, Rectangle>,
 }
 
 impl TextureAtlas {
@@ -17,7 +17,11 @@ impl TextureAtlas {
         &self.rgba
     }
 
+    pub fn region_map(&self) -> &HashMap<u64, Rectangle> {
+        &self.region_map
+    }
+
     pub fn get_texture_region(&self, texture_hash: u64) -> Option<&Rectangle> {
-        self.texture_map.get(&texture_hash)
+        self.region_map.get(&texture_hash)
     }
 }

@@ -1,5 +1,7 @@
-use cgmath::{Matrix4, Quaternion, Vector3};
-use cooltraption_assets::texture_atlas::Rectangle;
+use crate::world_renderer::gpu_texture_atlas::GpuTextureAtlas;
+use crate::world_renderer::world_state::Transform;
+use cgmath::{Matrix4, Quaternion, Rad, Rotation3, Vector3};
+use cooltraption_assets::asset_bundle::{Asset, AssetBundle};
 use wgpu::BufferAddress;
 
 #[derive(Debug)]
@@ -7,7 +9,7 @@ pub struct RenderEntity {
     pub position: Vector3<f32>,
     pub rotation: Quaternion<f32>,
     pub scale: Vector3<f32>,
-    pub atlas_region: Rectangle,
+    pub texture_index: usize,
 }
 
 impl RenderEntity {
@@ -21,8 +23,30 @@ impl RenderEntity {
 
         RenderEntityRaw {
             transform,
-            region_offset: self.atlas_region.min.to_array(),
-            region_size: self.atlas_region.size().to_array(),
+            texture_index: self.texture_index as u32,
+        }
+    }
+
+    pub fn try_from(
+        transform: &Transform,
+        asset_name: &str,
+        texture_atlas_resource: &GpuTextureAtlas,
+        assets: &AssetBundle,
+    ) -> Option<Self> {
+        if let Some(Asset::Sprite(asset)) = assets.get_asset(asset_name) {
+            let texture_index = texture_atlas_resource.get_texture_index(asset.texture_hash)?;
+            let pos = &transform.position;
+            let scale = &transform.scale;
+            let rot = &transform.rot;
+
+            Some(RenderEntity {
+                position: Vector3::new(pos.0.x, pos.0.y, 0.0),
+                scale: Vector3::new(scale.0.x, scale.0.y, 1.0),
+                rotation: Quaternion::from_angle_z(Rad(rot.0)),
+                texture_index,
+            })
+        } else {
+            None
         }
     }
 }
@@ -31,8 +55,7 @@ impl RenderEntity {
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct RenderEntityRaw {
     transform: [[f32; 3]; 4],
-    region_offset: [i32; 2],
-    region_size: [i32; 2],
+    texture_index: u32,
 }
 
 impl RenderEntityRaw {
@@ -65,16 +88,9 @@ impl RenderEntityRaw {
                 },
                 // region offset
                 wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Sint32x2,
+                    format: wgpu::VertexFormat::Uint32,
                     offset: mem::size_of::<[[f32; 3]; 4]>() as BufferAddress,
                     shader_location: 6,
-                },
-                // region size
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Sint32x2,
-                    offset: mem::size_of::<[[f32; 3]; 4]>() as BufferAddress
-                        + mem::size_of::<[i32; 2]>() as BufferAddress,
-                    shader_location: 7,
                 },
             ],
         }

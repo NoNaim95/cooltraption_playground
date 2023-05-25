@@ -1,4 +1,4 @@
-use cgmath::{Matrix4, Point3, Vector2, Vector3};
+use cgmath::{EuclideanSpace, InnerSpace, Matrix4, Point2, Point3, Vector2, Vector3};
 
 #[rustfmt::skip]
 pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
@@ -9,37 +9,28 @@ pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
 );
 
 pub struct CameraState {
-    pub target: Point3<f32>,
-    pub aspect: f32,
-    pub z_near: f32,
-    pub z_far: f32,
-    pub zoom: f32,
+    pub pos: Point2<f32>,
+    pub size: Vector2<f32>,
 }
 
 impl CameraState {
     pub fn new(size: Vector2<f32>) -> Self {
         Self {
-            target: Point3::new(0.0, 0.0, 0.0),
-            aspect: size.x / size.y,
-            z_near: 0.1,
-            z_far: 100.0,
-            zoom: 1.0,
+            pos: Point2::origin(),
+            size: size.normalize(),
         }
     }
 
     fn build_view_projection_matrix(&self) -> Matrix4<f32> {
-        let view = Matrix4::look_at_rh(
-            self.target + Vector3::unit_z(),
-            self.target,
-            Vector3::unit_y(),
-        );
+        let pos = Point3::new(self.pos.x, self.pos.y, 0.0);
+        let view = Matrix4::look_at_rh(pos + Vector3::unit_z(), pos, Vector3::unit_y());
         let proj = cgmath::ortho(
-            -self.aspect / self.zoom,
-            self.aspect / self.zoom,
-            -1.0 / self.zoom,
-            1.0 / self.zoom,
-            self.z_near,
-            self.z_far,
+            -self.size.x / 2.0,
+            self.size.x / 2.0,
+            -self.size.y / 2.0,
+            self.size.y / 2.0,
+            f32::MIN,
+            f32::MAX,
         );
 
         OPENGL_TO_WGPU_MATRIX * proj * view

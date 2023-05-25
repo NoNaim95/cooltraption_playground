@@ -1,5 +1,5 @@
 use crate::controls::ButtonMap;
-use cgmath::{Vector2, Zero};
+use cgmath::{EuclideanSpace, Point2};
 use cooltraption_window::window::winit::event::MouseButton;
 
 const BUTTON_COUNT: usize = 163;
@@ -8,14 +8,12 @@ const BUTTON_COUNT: usize = 163;
 pub struct MouseState {
     buttons: [bool; BUTTON_COUNT],
     scroll: f32,
-    pos: Vector2<f64>,
-    pos_delta: Vector2<f64>,
+    pos: Point2<f32>,
 }
 
 impl MouseState {
     pub fn reset(&mut self) {
         self.scroll = 0.0;
-        self.pos_delta = Vector2::zero();
     }
 
     pub fn add_scroll(&mut self, delta: f32) {
@@ -26,11 +24,12 @@ impl MouseState {
         self.scroll
     }
 
-    pub fn set_pos(&mut self, pos: Vector2<f64>) {
-        let delta = pos - self.pos;
-
-        self.pos_delta += delta;
+    pub fn set_pos(&mut self, pos: Point2<f32>) {
         self.pos = pos;
+    }
+
+    pub fn pos(&self) -> Point2<f32> {
+        self.pos
     }
 }
 
@@ -55,8 +54,7 @@ impl Default for MouseState {
         Self {
             buttons: [false; BUTTON_COUNT],
             scroll: 0.0,
-            pos: Vector2::zero(),
-            pos_delta: Vector2::zero(),
+            pos: Point2::origin(),
         }
     }
 }

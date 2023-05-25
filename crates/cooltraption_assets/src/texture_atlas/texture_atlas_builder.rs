@@ -16,7 +16,7 @@ pub struct TextureAtlasBuilder {
 impl Default for TextureAtlasBuilder {
     fn default() -> Self {
         Self {
-            atlas_allocator: AtlasAllocator::new(size2(1000, 1000)),
+            atlas_allocator: AtlasAllocator::new(size2(512, 512)),
             alloc_map: HashMap::new(),
         }
     }
@@ -32,10 +32,12 @@ impl TextureAtlasBuilder {
     fn alloc_size(&mut self, size: Size) -> Allocation {
         match self.atlas_allocator.allocate(size) {
             None => {
-                let new_size = self.atlas_allocator.size().max(size);
-                // resize to make sufficient space vertically in the texture atlas
-                // TODO: Use resize_and_rearrange and handle ChangeList correctly
-                self.atlas_allocator.grow(new_size + size2(0, size.height));
+                let min_size = self.atlas_allocator.size().min(size);
+
+                // TODO: Maybe use grow_and_rearrange and handle ChangeList
+                // Grows the atlas vertically and set the width to the minimum required width to fit all textures
+                self.atlas_allocator
+                    .grow(size2(min_size.width, min_size.height + size.height));
 
                 self.alloc_size(size)
             }
@@ -70,6 +72,9 @@ impl TextureAtlasBuilder {
             texture_map.insert(texture_hash, self.atlas_allocator[*alloc]);
         }
 
-        TextureAtlas { rgba, texture_map }
+        TextureAtlas {
+            rgba,
+            region_map: texture_map,
+        }
     }
 }

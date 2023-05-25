@@ -1,230 +1,137 @@
+use cooltraption_assets::asset_bundle::Asset::Strings;
 use cooltraption_assets::asset_bundle::AssetBundle;
-use cooltraption_assets::texture_atlas::{TextureAtlas, TextureAtlasBuilder};
+use cooltraption_assets::texture_atlas::TextureAtlasBuilder;
 pub use cooltraption_assets::*;
+use std::time::Duration;
 use wgpu::util::DeviceExt;
 use wgpu::*;
 use winit::window::Window;
 
 use crate::renderer::render_frame::RenderFrame;
-use crate::renderer::vertex::{Vertex, INDICES, VERTICES};
 use crate::renderer::wgpu_state::WgpuState;
-pub use crate::renderer::world_renderer::render_entity::{RenderEntity, RenderEntityRaw};
-pub use crate::renderer::world_renderer::world_state::WorldState;
-use crate::renderer::{BoxedRenderer, Renderer, RendererInitializer};
+use crate::renderer::{BoxedRenderer, RenderError, Renderer, RendererInitializer};
 use crate::world_renderer::camera::controls::CameraController;
 use crate::world_renderer::camera::Camera;
+use crate::world_renderer::gpu_texture_atlas::GpuTextureAtlas;
+use crate::world_renderer::mesh::{Mesh, Vertex};
+use crate::world_renderer::world_state::{Drawable, WorldState};
+pub use world_state::render_entity::{RenderEntity, RenderEntityRaw};
 
 pub mod camera;
-mod render_entity;
+pub mod gizmos;
+mod gpu_texture_atlas;
+mod mesh;
 pub mod world_state;
 
 struct WorldRenderer<C, I>
 where
     C: CameraController,
-    I: Iterator<Item = WorldState>,
+    I: Iterator<Item = Vec<Drawable>>,
 {
     render_pipeline: RenderPipeline,
-    vertex_buffer: Buffer,
-    index_buffer: Buffer,
-    num_indices: u32,
-    atlas_bind_group: BindGroup,
+    mesh: Mesh,
     instance_buffer: Buffer,
-    texture_atlas: TextureAtlas,
-    camera: Camera<C>,
+    gpu_texture_atlas: GpuTextureAtlas,
     assets: AssetBundle,
-    state_recv: I,
-    world_state: [WorldState; 2],
-}
-
-pub struct WorldRendererInitializer<C, I>
-where
-    C: CameraController,
-    I: Iterator<Item = WorldState>,
-{
-    pub texture_atlas_builder: TextureAtlasBuilder,
-    pub assets: AssetBundle,
-    pub controller: C,
-    pub state_recv: I,
+    camera: Camera<C>,
+    world_state: WorldState<I>,
 }
 
 impl<C, I> Renderer for WorldRenderer<C, I>
 where
     C: CameraController,
-    I: Iterator<Item = WorldState>,
+    I: Iterator<Item = Vec<Drawable>>,
 {
-    fn render(&mut self, render_frame: &mut RenderFrame) {
-        while let Some(state) = self.state_recv.next() {
-            self.update_state(state);
+    fn render(&mut self, render_frame: &mut RenderFrame) -> Result<(), Box<dyn RenderError>> {
+        let entities = self
+            .world_state
+            .create_entities(&self.gpu_texture_atlas, &self.assets);
+
+        let clear_color = try_get_background(&self.assets).unwrap_or(Color::RED);
+
+        {
+            let mut render_pass = render_frame
+                .encoder
+                .begin_render_pass(&RenderPassDescriptor {
+                    label: Some("Render Pass"),
+                    color_attachments: &[Some(RenderPassColorAttachment {
+                        view: &render_frame.view,
+                        resolve_target: None,
+                        ops: Operations {
+                            load: LoadOp::Clear(clear_color),
+                            store: true,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                });
+
+            let entities_raw = entities
+                .iter()
+                .map(RenderEntity::to_raw)
+                .collect::<Vec<_>>();
+            let entities_data = bytemuck::cast_slice::<_, u8>(&entities_raw);
+
+            if self.instance_buffer.size() < entities_data.len() as u64 {
+                self.instance_buffer = create_instance_buffer(entities_data, render_frame.device);
+            } else {
+                render_frame
+                    .queue
+                    .write_buffer(&self.instance_buffer, 0, entities_data);
+            }
+
+            self.camera.update_camera_buffer(render_frame.queue);
+            self.camera.set_view_size(render_frame.window.inner_size());
+
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, self.gpu_texture_atlas.texture_bind_group(), &[]);
+            render_pass.set_bind_group(1, self.camera.bind_group(), &[]);
+            render_pass.set_bind_group(2, self.gpu_texture_atlas.region_bind_group(), &[]);
+            render_pass.set_vertex_buffer(0, self.mesh.vertices().slice(..));
+            render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+            render_pass.set_index_buffer(self.mesh.indices().slice(..), IndexFormat::Uint16);
+
+            render_pass.draw_indexed(0..self.mesh.num_indices(), 0, 0..entities.len() as _);
         }
 
-        let instances = self.world_state[1].interpolate(
-            &self.world_state[0],
-            &self.assets,
-            &self.texture_atlas,
+        gizmos::render_all(
+            &mut render_frame.encoder,
+            &render_frame.view,
+            render_frame.device,
+            render_frame.queue,
+            &self.camera,
         );
 
-        let mut render_pass = render_frame
-            .encoder
-            .begin_render_pass(&RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &render_frame.view,
-                    resolve_target: None,
-                    ops: Operations {
-                        load: LoadOp::Clear(Color {
-                            r: 0.02,
-                            g: 0.02,
-                            b: 0.02,
-                            a: 1.0,
-                        }),
-                        store: true,
-                    },
-                })],
-                depth_stencil_attachment: None,
-            });
-
-        let instances_raw = instances
-            .iter()
-            .map(RenderEntity::to_raw)
-            .collect::<Vec<_>>();
-        let instance_data = bytemuck::cast_slice::<_, u8>(&instances_raw);
-
-        if self.instance_buffer.size() < instance_data.len() as u64 {
-            self.instance_buffer = create_instance_buffer(instance_data, render_frame.device);
-        } else {
-            render_frame
-                .queue
-                .write_buffer(&self.instance_buffer, 0, instance_data);
-        }
-
-        self.camera.update_camera_buffer(render_frame.queue);
-        self.camera.set_view_size(render_frame.window.inner_size());
-
-        render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_bind_group(0, &self.atlas_bind_group, &[]);
-        render_pass.set_bind_group(1, self.camera.camera_bind_group(), &[]);
-        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-        render_pass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint16);
-
-        render_pass.draw_indexed(0..self.num_indices, 0, 0..instances.len() as _);
+        Ok(())
     }
 }
 
-impl<C, I> WorldRenderer<C, I>
+pub struct WorldRendererInitializer<C, I>
 where
     C: CameraController,
-    I: Iterator<Item = WorldState>,
+    I: Iterator<Item = Vec<Drawable>>,
 {
-    fn update_state(&mut self, new_state: WorldState) {
-        self.world_state.swap(0, 1);
-        self.world_state[0] = new_state;
-    }
-}
-
-fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
-    device.create_buffer_init(&util::BufferInitDescriptor {
-        label: Some("Instance Buffer"),
-        contents: data,
-        usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
-    })
+    pub texture_atlas_builder: TextureAtlasBuilder,
+    pub fixed_delta_time: Duration,
+    pub assets: AssetBundle,
+    pub controller: C,
+    pub state_recv: I,
 }
 
 impl<C, I> RendererInitializer for WorldRendererInitializer<C, I>
 where
     C: CameraController + 'static,
-    I: Iterator<Item = WorldState> + 'static,
+    I: Iterator<Item = Vec<Drawable>> + 'static,
 {
     fn init(self: Box<Self>, wgpu_state: &mut WgpuState, _window: &Window) -> BoxedRenderer {
-        let texture_atlas = self.texture_atlas_builder.build();
+        let (camera, camera_bgl) = Camera::init(self.controller, &wgpu_state.device);
 
-        let texture_size = Extent3d {
-            width: texture_atlas.rgba().width(),
-            height: texture_atlas.rgba().height(),
-            depth_or_array_layers: 1,
-        };
-
-        let atlas_texture = wgpu_state.device.create_texture(&TextureDescriptor {
-            size: texture_size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: TextureDimension::D2,
-            format: TextureFormat::Rgba8UnormSrgb,
-            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
-            label: Some("atlas_texture"),
-            view_formats: &[TextureFormat::Rgba8UnormSrgb],
-        });
-
-        wgpu_state.queue.write_texture(
-            ImageCopyTexture {
-                texture: &atlas_texture,
-                mip_level: 0,
-                origin: Origin3d::ZERO,
-                aspect: TextureAspect::All,
-            },
-            texture_atlas.rgba(),
-            ImageDataLayout {
-                offset: 0,
-                bytes_per_row: std::num::NonZeroU32::new(4 * texture_atlas.rgba().width()),
-                rows_per_image: std::num::NonZeroU32::new(texture_atlas.rgba().height()),
-            },
-            texture_size,
+        let (gpu_texture_atlas, bind_group_layouts) = GpuTextureAtlas::allocate(
+            self.texture_atlas_builder,
+            &wgpu_state.device,
+            &wgpu_state.queue,
         );
 
-        let atlas_view = atlas_texture.create_view(&TextureViewDescriptor::default());
-        let atlas_sampler = wgpu_state.device.create_sampler(&SamplerDescriptor {
-            address_mode_u: AddressMode::ClampToEdge,
-            address_mode_v: AddressMode::ClampToEdge,
-            address_mode_w: AddressMode::ClampToEdge,
-            mag_filter: FilterMode::Nearest,
-            min_filter: FilterMode::Nearest,
-            mipmap_filter: FilterMode::Nearest,
-            ..Default::default()
-        });
-
-        let camera = Camera::init(self.controller, wgpu_state);
-
-        let atlas_bind_group_layout =
-            wgpu_state
-                .device
-                .create_bind_group_layout(&BindGroupLayoutDescriptor {
-                    entries: &[
-                        BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: ShaderStages::FRAGMENT,
-                            ty: BindingType::Texture {
-                                multisampled: false,
-                                view_dimension: TextureViewDimension::D2,
-                                sample_type: TextureSampleType::Float { filterable: true },
-                            },
-                            count: None,
-                        },
-                        BindGroupLayoutEntry {
-                            binding: 1,
-                            visibility: ShaderStages::FRAGMENT,
-                            // This should match the filterable field of the
-                            // corresponding Texture entry above.
-                            ty: BindingType::Sampler(SamplerBindingType::Filtering),
-                            count: None,
-                        },
-                    ],
-                    label: Some("atlas_bind_group_layout"),
-                });
-
-        let atlas_bind_group = wgpu_state.device.create_bind_group(&BindGroupDescriptor {
-            layout: &atlas_bind_group_layout,
-            entries: &[
-                BindGroupEntry {
-                    binding: 0,
-                    resource: BindingResource::TextureView(&atlas_view),
-                },
-                BindGroupEntry {
-                    binding: 1,
-                    resource: BindingResource::Sampler(&atlas_sampler),
-                },
-            ],
-            label: Some("atlas_bind_group"),
-        });
+        let mesh = Mesh::quad(&wgpu_state.device);
 
         let shader = wgpu_state
             .device
@@ -235,41 +142,47 @@ where
         let render_pipeline = create_pipeline(
             &wgpu_state.device,
             &wgpu_state.config.format,
-            &[&atlas_bind_group_layout, camera.camera_bind_group_layout()],
+            &[
+                &bind_group_layouts.texture,
+                &camera_bgl,
+                &bind_group_layouts.region,
+            ],
             &shader,
         );
 
-        let vertex_buffer = wgpu_state
-            .device
-            .create_buffer_init(&util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(VERTICES),
-                usage: BufferUsages::VERTEX,
-            });
-
-        let index_buffer = wgpu_state
-            .device
-            .create_buffer_init(&util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(INDICES),
-                usage: BufferUsages::INDEX,
-            });
-        let num_indices = INDICES.len() as u32;
+        gizmos::init(&wgpu_state.device, &wgpu_state.config.format, &camera_bgl);
 
         Box::new(WorldRenderer {
             render_pipeline,
-            vertex_buffer,
-            index_buffer,
-            num_indices,
-            atlas_bind_group,
+            mesh,
             instance_buffer,
-            texture_atlas,
+            gpu_texture_atlas,
             camera,
             assets: self.assets,
-            state_recv: Box::new(self.state_recv),
-            world_state: [Default::default(), Default::default()],
+            world_state: WorldState::new(self.state_recv, self.fixed_delta_time),
         })
     }
+}
+
+fn try_get_background(assets: &AssetBundle) -> Option<Color> {
+    if let Some(Strings(background)) = assets.get_asset("background") {
+        let r = background.map.get("red")?.parse::<f64>().ok()?;
+        let g = background.map.get("green")?.parse::<f64>().ok()?;
+        let b = background.map.get("blue")?.parse::<f64>().ok()?;
+        let a = background.map.get("alpha")?.parse::<f64>().ok()?;
+
+        Some(Color { r, g, b, a })
+    } else {
+        None
+    }
+}
+
+fn create_instance_buffer(data: &[u8], device: &Device) -> Buffer {
+    device.create_buffer_init(&util::BufferInitDescriptor {
+        label: Some("Instance Buffer"),
+        contents: data,
+        usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
+    })
 }
 
 fn create_pipeline(
@@ -288,7 +201,6 @@ fn create_pipeline(
         label: Some("Render Pipeline"),
         layout: Some(&render_pipeline_layout),
         vertex: VertexState {
-            // TODO: Load shaders from assets
             module: shader,
             entry_point: "vs_main",
             buffers: &[Vertex::desc(), RenderEntityRaw::desc()],

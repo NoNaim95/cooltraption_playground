@@ -1,5 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::error::Error;
+use std::fmt::{Debug, Display, Formatter};
 use std::rc::Rc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Instant;
@@ -10,7 +12,7 @@ use egui_winit_platform::{Platform, PlatformDescriptor};
 use winit::window::Window;
 
 use crate::renderer::wgpu_state::WgpuState;
-use crate::renderer::{BoxedRenderer, RenderFrame, Renderer, RendererInitializer};
+use crate::renderer::{BoxedRenderer, RenderError, RenderFrame, Renderer, RendererInitializer};
 use cooltraption_window::window::{WindowContext, WinitEvent};
 pub use egui;
 pub use widget::Widget;
@@ -109,7 +111,7 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for GuiEventHandler {
 }
 
 impl Renderer for GuiRenderer {
-    fn render(&mut self, render_frame: &mut RenderFrame) {
+    fn render(&mut self, render_frame: &mut RenderFrame) -> Result<(), Box<dyn RenderError>> {
         if let Some(platform) = self.platform.borrow_mut().as_mut() {
             // Begin to draw the UI frame.
             platform.update_time(self.start_time.elapsed().as_secs_f64());
@@ -132,8 +134,8 @@ impl Renderer for GuiRenderer {
             };
             let t_delta: egui::TexturesDelta = full_output.textures_delta;
             self.render_pass
-                .add_textures(render_frame.device, render_frame.queue, &t_delta)
-                .expect("add texture ok");
+                .add_textures(render_frame.device, render_frame.queue, &t_delta)?;
+
             self.render_pass.update_buffers(
                 render_frame.device,
                 render_frame.queue,
@@ -142,20 +144,18 @@ impl Renderer for GuiRenderer {
             );
 
             // Record all render passes.
-            self.render_pass
-                .execute(
-                    &mut render_frame.encoder,
-                    &render_frame.view,
-                    &paint_jobs,
-                    &screen_descriptor,
-                    None,
-                )
-                .unwrap();
+            self.render_pass.execute(
+                &mut render_frame.encoder,
+                &render_frame.view,
+                &paint_jobs,
+                &screen_descriptor,
+                None,
+            )?;
 
-            self.render_pass
-                .remove_textures(t_delta)
-                .expect("remove texture ok");
+            self.render_pass.remove_textures(t_delta)?;
         }
+
+        Ok(())
     }
 }
 
@@ -175,5 +175,24 @@ impl RendererInitializer for GuiRendererInitializer {
             render_pass: RenderPass::new(&wgpu_state.device, wgpu_state.config.format, 1),
             widgets: self.widgets,
         })
+    }
+}
+
+#[derive(Debug)]
+struct GuiBackendError(egui_wgpu_backend::BackendError);
+
+impl RenderError for GuiBackendError {}
+
+impl Error for GuiBackendError {}
+
+impl Display for GuiBackendError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GuiBackendError: {}", self.0)
+    }
+}
+
+impl From<egui_wgpu_backend::BackendError> for Box<dyn RenderError> {
+    fn from(err: egui_wgpu_backend::BackendError) -> Self {
+        Box::new(GuiBackendError(err))
     }
 }
