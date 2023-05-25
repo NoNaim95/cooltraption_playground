@@ -149,7 +149,7 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputStateEventHand
                                 Origin::Center(self.mouse_state.pos().into()),
                                 (0.15, 0.15),
                             ),
-                            Color::GREEN
+                            Color::AQUA
                         );
                     }
                     winit::event::WindowEvent::MouseWheel {

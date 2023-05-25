@@ -62,6 +62,30 @@ impl Color {
     pub const MAGENTA: Self = Self::new(1.0, 0.0, 1.0);
     pub const YELLOW: Self = Self::new(1.0, 1.0, 0.0);
     pub const CYAN: Self = Self::new(0.0, 1.0, 1.0);
+    pub const PURPLE: Self = Self::new(0.6, 0.2, 0.8);
+    pub const ORANGE: Self = Self::new(1.0, 0.6, 0.0);
+    pub const TEAL: Self = Self::new(0.0, 0.5, 0.5);
+    pub const ROSE: Self = Self::new(0.91, 0.31, 0.47);
+    pub const PINK: Self = Self::new(1.0, 0.4, 0.7);
+    pub const LIME: Self = Self::new(0.7, 1.0, 0.0);
+    pub const INDIGO: Self = Self::new(0.4, 0.0, 0.8);
+    pub const GOLD: Self = Self::new(1.0, 0.8, 0.0);
+    pub const AQUA: Self = Self::new(0.0, 0.8, 0.8);
+    pub const CRIMSON: Self = Self::new(0.86, 0.08, 0.24);
+    pub const EMERALD: Self = Self::new(0.31, 0.78, 0.47);
+    pub const SAPPHIRE: Self = Self::new(0.06, 0.32, 0.73);
+    pub const CHARCOAL: Self = Self::new(0.21, 0.27, 0.31);
+    pub const IVORY: Self = Self::new(0.99, 0.99, 0.94);
+    pub const VIOLET: Self = Self::new(0.54, 0.17, 0.89);
+    pub const AMBER: Self = Self::new(1.0, 0.75, 0.0);
+    pub const TURQUOISE: Self = Self::new(0.19, 0.84, 0.78);
+    pub const PLUM: Self = Self::new(0.56, 0.27, 0.52);
+    pub const MUSTARD: Self = Self::new(0.74, 0.64, 0.0);
+    pub const AZURE: Self = Self::new(0.0, 0.5, 1.0);
+    pub const RUBY: Self = Self::new(0.88, 0.07, 0.37);
+    pub const CORAL: Self = Self::new(1.0, 0.5, 0.31);
+    pub const OCEAN: Self = Self::new(0.0, 0.47, 0.75);
+    pub const STEEL: Self = Self::new(0.27, 0.51, 0.71);
 
     pub const fn new(r: f64, g: f64, b: f64) -> Self {
         Self { r, g, b }
