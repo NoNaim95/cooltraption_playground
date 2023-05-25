@@ -9,22 +9,31 @@ pub struct Mesh {
 
 impl Mesh {
     pub fn quad(device: &Device) -> Mesh {
-        let vertices = device.create_buffer_init(&util::BufferInitDescriptor {
-            label: Some("Quad Vertex Buffer"),
-            contents: bytemuck::cast_slice(QUAD_VERTICES),
+        Self::new(device, QUAD_VERTICES, QUAD_INDICES, "Quad")
+    }
+
+    pub fn new<V: bytemuck::Pod>(
+        device: &Device,
+        vertices: &[V],
+        indices: &[u16],
+        label: &'static str,
+    ) -> Mesh {
+        let vertex_buffer = device.create_buffer_init(&util::BufferInitDescriptor {
+            label: Some(format!("{} Vertex Buffer", label).as_str()),
+            contents: bytemuck::cast_slice(vertices),
             usage: BufferUsages::VERTEX,
         });
 
-        let indices = device.create_buffer_init(&util::BufferInitDescriptor {
-            label: Some("Quad Index Buffer"),
-            contents: bytemuck::cast_slice(QUAD_INDICES),
+        let index_buffer = device.create_buffer_init(&util::BufferInitDescriptor {
+            label: Some(format!("{} Index Buffer", label).as_str()),
+            contents: bytemuck::cast_slice(indices),
             usage: BufferUsages::INDEX,
         });
-        let num_indices = QUAD_INDICES.len() as u32;
+        let num_indices = indices.len() as u32;
 
         Self {
-            vertices,
-            indices,
+            vertices: vertex_buffer,
+            indices: index_buffer,
             num_indices,
         }
     }

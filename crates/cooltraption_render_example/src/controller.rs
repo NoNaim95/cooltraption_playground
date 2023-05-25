@@ -4,6 +4,8 @@ use cgmath::num_traits::*;
 use cgmath::*;
 use cooltraption_render::gui::{GuiActionDispatcher, WidgetId};
 use cooltraption_render::world_renderer::camera::controls::*;
+use cooltraption_render::world_renderer::gizmos::{BoundingBox, Color, Origin, Shape};
+use cooltraption_render::{ellipse, unique_id};
 use cooltraption_window::events::EventHandler;
 use cooltraption_window::window::winit::event::{
     ElementState, MouseButton, MouseScrollDelta, VirtualKeyCode,
@@ -61,6 +63,12 @@ impl InputStateEventHandler {
         let move_hardness = 25.0 * delta_time.as_secs_f32();
         let zoom_speed = 0.2;
         let zoom_hardness = 35.0 * delta_time.as_secs_f32();
+
+        let mouse_pos = self.mouse_state.pos();
+        ellipse!(
+            BoundingBox::Sized(Origin::Center(mouse_pos.into()), (0.1, 0.1)),
+            Color::MAGENTA
+        );
 
         if self.keyboard_state.is_down(&VirtualKeyCode::W) {
             move_vec.y += 1.0;
@@ -135,6 +143,14 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputStateEventHand
                         if button == &MouseButton::Left && state == &ElementState::Pressed {
                             self.target_pos = self.mouse_state.pos();
                         }
+
+                        ellipse!(
+                            BoundingBox::Sized(
+                                Origin::Center(self.mouse_state.pos().into()),
+                                (0.15, 0.15),
+                            ),
+                            Color::AQUA
+                        );
                     }
                     winit::event::WindowEvent::MouseWheel {
                         delta: MouseScrollDelta::LineDelta(_x, y),

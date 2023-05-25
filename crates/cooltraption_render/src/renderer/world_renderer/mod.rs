@@ -18,6 +18,7 @@ use crate::world_renderer::world_state::{Drawable, WorldState};
 pub use world_state::render_entity::{RenderEntity, RenderEntityRaw};
 
 pub mod camera;
+pub mod gizmos;
 mod gpu_texture_atlas;
 mod mesh;
 pub mod world_state;
@@ -48,47 +49,57 @@ where
 
         let clear_color = try_get_background(&self.assets).unwrap_or(Color::RED);
 
-        let mut render_pass = render_frame
-            .encoder
-            .begin_render_pass(&RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &render_frame.view,
-                    resolve_target: None,
-                    ops: Operations {
-                        load: LoadOp::Clear(clear_color),
-                        store: true,
-                    },
-                })],
-                depth_stencil_attachment: None,
-            });
+        {
+            let mut render_pass = render_frame
+                .encoder
+                .begin_render_pass(&RenderPassDescriptor {
+                    label: Some("Render Pass"),
+                    color_attachments: &[Some(RenderPassColorAttachment {
+                        view: &render_frame.view,
+                        resolve_target: None,
+                        ops: Operations {
+                            load: LoadOp::Clear(clear_color),
+                            store: true,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                });
 
-        let entities_raw = entities
-            .iter()
-            .map(RenderEntity::to_raw)
-            .collect::<Vec<_>>();
-        let entities_data = bytemuck::cast_slice::<_, u8>(&entities_raw);
+            let entities_raw = entities
+                .iter()
+                .map(RenderEntity::to_raw)
+                .collect::<Vec<_>>();
+            let entities_data = bytemuck::cast_slice::<_, u8>(&entities_raw);
 
-        if self.instance_buffer.size() < entities_data.len() as u64 {
-            self.instance_buffer = create_instance_buffer(entities_data, render_frame.device);
-        } else {
-            render_frame
-                .queue
-                .write_buffer(&self.instance_buffer, 0, entities_data);
+            if self.instance_buffer.size() < entities_data.len() as u64 {
+                self.instance_buffer = create_instance_buffer(entities_data, render_frame.device);
+            } else {
+                render_frame
+                    .queue
+                    .write_buffer(&self.instance_buffer, 0, entities_data);
+            }
+
+            self.camera.update_camera_buffer(render_frame.queue);
+            self.camera.set_view_size(render_frame.window.inner_size());
+
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, self.gpu_texture_atlas.texture_bind_group(), &[]);
+            render_pass.set_bind_group(1, self.camera.bind_group(), &[]);
+            render_pass.set_bind_group(2, self.gpu_texture_atlas.region_bind_group(), &[]);
+            render_pass.set_vertex_buffer(0, self.mesh.vertices().slice(..));
+            render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+            render_pass.set_index_buffer(self.mesh.indices().slice(..), IndexFormat::Uint16);
+
+            render_pass.draw_indexed(0..self.mesh.num_indices(), 0, 0..entities.len() as _);
         }
 
-        self.camera.update_camera_buffer(render_frame.queue);
-        self.camera.set_view_size(render_frame.window.inner_size());
-
-        render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_bind_group(0, self.gpu_texture_atlas.texture_bind_group(), &[]);
-        render_pass.set_bind_group(1, self.camera.bind_group(), &[]);
-        render_pass.set_bind_group(2, self.gpu_texture_atlas.region_bind_group(), &[]);
-        render_pass.set_vertex_buffer(0, self.mesh.vertices().slice(..));
-        render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-        render_pass.set_index_buffer(self.mesh.indices().slice(..), IndexFormat::Uint16);
-
-        render_pass.draw_indexed(0..self.mesh.num_indices(), 0, 0..entities.len() as _);
+        gizmos::render_all(
+            &mut render_frame.encoder,
+            &render_frame.view,
+            render_frame.device,
+            render_frame.queue,
+            &self.camera,
+        );
 
         Ok(())
     }
@@ -138,6 +149,8 @@ where
             ],
             &shader,
         );
+
+        gizmos::init(&wgpu_state.device, &wgpu_state.config.format, &camera_bgl);
 
         Box::new(WorldRenderer {
             render_pipeline,
