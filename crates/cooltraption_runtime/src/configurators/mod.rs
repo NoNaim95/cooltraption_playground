@@ -2,8 +2,7 @@ use std::iter;
 use std::rc::Rc;
 use std::sync::mpsc;
 
-use cooltraption_common::events::MutEventPublisher;
-use cooltraption_render::world_renderer::DrawableInterpolator;
+use cooltraption_render::world_renderer::WorldState;
 use cooltraption_simulation::simulation_state::SimulationState;
 
 use crate::factories;
@@ -14,11 +13,11 @@ use crate::RuntimeConfigurationBuilder;
 pub mod common_configurators;
 
 pub trait Configurator: ConfiguratorOnce {
-    fn configure(&self, runtime_config: &mut RuntimeConfigurationBuilder<'_>);
+    fn configure(&self, runtime_config: &mut RuntimeConfigurationBuilder);
 }
 
 pub trait ConfiguratorOnce {
-    fn configure_once(self: Box<Self>, runtime_config: &mut RuntimeConfigurationBuilder<'_>);
+    fn configure_once(self: Box<Self>, runtime_config: &mut RuntimeConfigurationBuilder);
 }
 
 #[derive(Default)]
@@ -34,7 +33,7 @@ impl<'a> ConfiguratorPipeline<'a> {
 }
 
 impl<'a> Configurator for ConfiguratorPipeline<'a> {
-    fn configure(&self, runtime_config: &mut RuntimeConfigurationBuilder<'_>) {
+    fn configure(&self, runtime_config: &mut RuntimeConfigurationBuilder) {
         for configurator in &self.configurators {
             configurator.configure(runtime_config);
         }
@@ -42,7 +41,7 @@ impl<'a> Configurator for ConfiguratorPipeline<'a> {
 }
 
 impl<'c> ConfiguratorOnce for ConfiguratorPipeline<'c> {
-    fn configure_once(self: Box<Self>, runtime_config: &mut RuntimeConfigurationBuilder<'_>) {
+    fn configure_once(self: Box<Self>, runtime_config: &mut RuntimeConfigurationBuilder) {
         self.configure(runtime_config)
     }
 }
@@ -66,7 +65,7 @@ impl<'a> ConfiguratorOncePipeline<'a> {
 }
 
 impl<'a> ConfiguratorOnce for ConfiguratorOncePipeline<'a> {
-    fn configure_once(self: Box<Self>, runtime_config: &mut RuntimeConfigurationBuilder<'_>) {
+    fn configure_once(self: Box<Self>, runtime_config: &mut RuntimeConfigurationBuilder) {
         for configurator in self.configurators {
             configurator.configure_once(runtime_config);
         }
@@ -86,7 +85,7 @@ impl<F> ConfiguratorOnce for F
 where
     F: FnOnce(&mut RuntimeConfigurationBuilder),
 {
-    fn configure_once(self: Box<Self>, runtime_config: &mut RuntimeConfigurationBuilder<'_>) {
+    fn configure_once(self: Box<Self>, runtime_config: &mut RuntimeConfigurationBuilder) {
         self(runtime_config)
     }
 }

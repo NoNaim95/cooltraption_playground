@@ -13,32 +13,29 @@ use std::{collections::VecDeque, iter, marker::PhantomData, sync::mpsc};
 
 use cooltraption_simulation::SimulationImplBuilder;
 
-use cooltraption_common::events::EventPublisher;
-use cooltraption_common::events::MutEventPublisher;
 use cooltraption_input::{
     self,
     input::{InputEvent, InputEventHandler},
 };
 
 pub mod configurators;
-pub mod events;
 pub mod factories;
 mod render_component;
 
 #[derive(SmartDefault)]
-pub struct RuntimeConfiguration<'a> {
+pub struct RuntimeConfiguration {
     pub sim_builder: SimulationImplBuilder,
-    pub sim_run_options_builder: SimulationRunOptionsBuilder<'a>,
+    pub sim_run_options_builder: SimulationRunOptionsBuilder,
     pub tasks: VecDeque<Task>,
     pub last_task: Option<Task>,
 }
 
 #[derive(Default)]
-pub struct RuntimeConfigurationBuilder<'a> {
-    runtime_config: RuntimeConfiguration<'a>,
+pub struct RuntimeConfigurationBuilder {
+    runtime_config: RuntimeConfiguration
 }
 
-impl<'a> RuntimeConfigurationBuilder<'a> {
+impl RuntimeConfigurationBuilder {
     pub fn add_task(&mut self, task: Task) -> &mut Self {
         self.runtime_config.tasks.push_back(task);
         self
@@ -56,11 +53,11 @@ impl<'a> RuntimeConfigurationBuilder<'a> {
         &mut self.runtime_config.sim_builder
     }
 
-    pub fn simulation_run_options_builder(&mut self) -> &mut SimulationRunOptionsBuilder<'a> {
+    pub fn simulation_run_options_builder(&mut self) -> &mut SimulationRunOptionsBuilder {
         &mut self.runtime_config.sim_run_options_builder
     }
 
-    pub fn build(self) -> RuntimeConfiguration<'a> {
+    pub fn build(self) -> RuntimeConfiguration {
         self.runtime_config
     }
 }
@@ -71,7 +68,7 @@ pub type Task = Box<dyn FnOnce() + Send + 'static>;
 pub struct Runtime {}
 
 impl<'a> Runtime {
-    pub fn run(config: RuntimeConfiguration<'static>) {
+    pub fn run(config: RuntimeConfiguration) {
         let mut task_handles = vec![];
         let run_options = config.sim_run_options_builder.build();
         let sim_handle = std::thread::spawn(|| {
@@ -88,7 +85,7 @@ impl<'a> Runtime {
         }
     }
 
-    pub fn config() -> RuntimeConfiguration<'a> {
+    pub fn config() -> RuntimeConfiguration {
         RuntimeConfiguration::default()
     }
 }

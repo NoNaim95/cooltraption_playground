@@ -1,9 +1,7 @@
 use super::controls::{ButtonMap, KeyboardState, MouseState};
 use super::debug_widget::DebugWidget;
-use crate::events::Event;
 use cgmath::num_traits::*;
 use cgmath::*;
-use cooltraption_common::events::EventPublisher;
 use cooltraption_render::gui::{GuiActionDispatcher, WidgetId};
 use cooltraption_render::world_renderer::camera::controls::*;
 use cooltraption_window::events::EventHandler;
@@ -17,7 +15,7 @@ pub struct Controller {
     recv: Receiver<CameraView>,
 }
 
-pub struct InputStateEventHandler<'a> {
+pub struct InputStateEventHandler {
     keyboard_state: KeyboardState,
     mouse_state: MouseState,
     gui: GuiActionDispatcher,
@@ -26,14 +24,14 @@ pub struct InputStateEventHandler<'a> {
     target_zoom: f32,
     view: CameraView,
     send: Sender<CameraView>,
-    camera_moved_event_publisher: EventPublisher<'a, Event<'a, CameraMovedEvent>>,
+    camera_moved_callbacks: Vec<Box<dyn FnMut(&CameraMovedEvent)>>,
 }
 
 impl<'a> Controller {
     pub fn new(
         gui: GuiActionDispatcher,
-        camera_moved_event_publisher: EventPublisher<'a, Event<'a, CameraMovedEvent>>,
-    ) -> (Self, InputStateEventHandler<'a>) {
+        camera_moved_event_publisher: Vec<Box<dyn FnMut(&CameraMovedEvent)>>,
+    ) -> (Self, InputStateEventHandler) {
         let (send, recv) = std::sync::mpsc::channel();
 
         let controller = Controller { recv };
@@ -46,7 +44,7 @@ impl<'a> Controller {
             target_zoom: 1.0,
             view: Default::default(),
             send,
-            camera_moved_event_publisher,
+            camera_moved_callbacks: camera_moved_event_publisher,
         };
 
         (controller, event_handler)
@@ -59,8 +57,8 @@ impl CameraController for Controller {
     }
 }
 
-pub fn print_camera_move_event(event: &Event<CameraMovedEvent>) {
-    println!("Camera moved to: {:?}", event.payload());
+pub fn print_camera_move_event(event: &CameraMovedEvent) {
+    println!("Camera moved to: {:?}", event);
 }
 
 #[derive(Debug)]
@@ -68,7 +66,7 @@ pub struct CameraMovedEvent {
     camera_pos: Point2<f32>,
 }
 
-impl<'a> InputStateEventHandler<'a> {
+impl InputStateEventHandler {
     fn send_controls(&mut self, delta_time: &Duration) {
         let mut move_vec = Vector2::zero();
 
@@ -102,8 +100,9 @@ impl<'a> InputStateEventHandler<'a> {
             let camera_moved_event = CameraMovedEvent {
                 camera_pos: self.view.position,
             };
-            let event = Event::new(&camera_moved_event, &());
-            self.camera_moved_event_publisher.publish(&event);
+            for callback in &mut self.camera_moved_callbacks {
+                callback(&camera_moved_event);
+            }
         }
 
         self.target_zoom *= 2.0_f32.pow(self.mouse_state.scroll() * zoom_speed);
@@ -115,7 +114,7 @@ impl<'a> InputStateEventHandler<'a> {
     }
 }
 
-impl<'a> EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputStateEventHandler<'a> {
+impl<'a> EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputStateEventHandler {
     fn handle_event(&mut self, event: &mut WinitEvent, context: &mut WindowContext) {
         match event.0 {
             winit::event::Event::WindowEvent { event, window_id } => {

@@ -13,7 +13,7 @@ use cooltraption_window::window::{winit, WindowContext, WinitEvent};
 
 #[derive(Default)]
 pub struct InputEventHandler {
-    callbacks: Vec<Box<dyn FnMut(&InputEvent, &InputState)>>,
+    callbacks: Vec<Box<dyn FnMut(&InputEvent, &InputState) + Send>>,
     input_state: InputState,
 }
 
@@ -44,7 +44,7 @@ pub enum MouseButtonEvent {
 }
 
 impl InputEventHandler {
-    pub fn new(callbacks: Vec<Box<dyn FnMut(&InputEvent, &InputState)>>) -> Self {
+    pub fn new(callbacks: Vec<Box<dyn FnMut(&InputEvent, &InputState) + Send >>) -> Self {
         Self {
             callbacks,
             input_state: InputState::default(),

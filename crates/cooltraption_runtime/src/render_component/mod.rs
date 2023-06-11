@@ -3,10 +3,10 @@ mod controls;
 mod debug_widget;
 
 use controller::Controller;
-use cooltraption_common::events::EventPublisher;
 use cooltraption_render::gui;
 use cooltraption_render::renderer::WgpuInitializer;
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
+use cooltraption_render::world_renderer::camera::controls::CameraController;
 use cooltraption_render::world_renderer::texture_atlas::TextureAtlasBuilder;
 use cooltraption_render::world_renderer::{DrawableInterpolator, WorldRendererInitializer};
 use cooltraption_window::window::{WindowEventHandler, WinitEventLoopHandler};
@@ -14,10 +14,10 @@ use std::env;
 
 use cooltraption_input::input::InputEventHandler;
 
-use self::controller::print_camera_move_event;
+use self::controller::{print_camera_move_event, CameraMovedEvent};
 
 #[tokio::main]
-pub async fn run_renderer<I>(state_iterator: I, input_event_handler: InputEventHandler<'static>)
+pub async fn run_renderer<I>(state_iterator: I, input_event_handler: InputEventHandler)
 where
     I: Iterator<Item = DrawableInterpolator> + 'static,
 {
@@ -25,10 +25,10 @@ where
     //env_logger::init();
 
     let (gui_renderer, gui_event_handler, dispatcher) = gui::new();
-    let mut camera_moved_event_publisher = EventPublisher::default();
-    camera_moved_event_publisher.add_event_handler(print_camera_move_event);
+    let mut camera_moved_callbacks: Vec<Box<dyn FnMut(&CameraMovedEvent)>> = vec![];
+    camera_moved_callbacks.push(Box::new(print_camera_move_event));
     let (controller, controller_event_handler) =
-        Controller::new(dispatcher, camera_moved_event_publisher);
+        Controller::new(dispatcher, camera_moved_callbacks);
 
     let world_renderer = {
         let mut texture_atlas_builder = TextureAtlasBuilder::default();

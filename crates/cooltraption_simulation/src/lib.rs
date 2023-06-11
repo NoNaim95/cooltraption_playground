@@ -37,8 +37,8 @@ type BoxedIt<T> = Box<dyn Iterator<Item = T> + Send>;
 pub struct SimulationRunOptions {
     actions: BoxedIt<Action>,
     action_packets: BoxedIt<ActionPacket>,
-    state_complete_callbacks: Vec<Box<dyn FnMut(&mut SimulationState)>>,
-    local_action_packet_callbacks: Vec<Box<dyn FnMut(&ActionPacket)>>,
+    state_complete_callbacks: Vec<Box<dyn FnMut(&mut SimulationState) + Send>>,
+    local_action_packet_callbacks: Vec<Box<dyn FnMut(&ActionPacket) + Send>>,
 }
 
 #[derive(Default)]
@@ -57,15 +57,15 @@ impl SimulationRunOptionsBuilder {
         self
     }
 
-    pub fn state_complete_publisher(
+    pub fn state_complete_callbacks(
         &mut self,
-    ) -> &mut Vec<Box<dyn FnMut(&mut SimulationState)>> {
+    ) -> &mut Vec<Box<dyn FnMut(&mut SimulationState) + Send>> {
         &mut self.run_opts.state_complete_callbacks
     }
 
-    pub fn local_action_packet_publisher(
+    pub fn local_action_packet_callbacks(
         &mut self,
-    ) -> &mut Vec<Box<dyn FnMut(&ActionPacket)>> {
+    ) -> &mut Vec<Box<dyn FnMut(&ActionPacket) + Send>> {
         &mut self.run_opts.local_action_packet_callbacks
     }
 
@@ -158,7 +158,7 @@ impl SimulationImpl {
         &mut self,
         actions: &mut BoxedIt<Action>,
         action_packets: &mut BoxedIt<ActionPacket>,
-        local_action_packet_callbacks: &mut Vec<Box<dyn FnMut(&ActionPacket)>>,
+        local_action_packet_callbacks: &mut Vec<Box<dyn FnMut(&ActionPacket) + Send>>,
     ) {
         for local_action_packet in
             actions.map(|action| ActionPacket::new(self.simulation_state.current_tick(), action))
