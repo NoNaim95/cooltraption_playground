@@ -3,7 +3,6 @@ mod mouse_state;
 
 use crate::input::keyboard_state::KeyboardState;
 use crate::input::mouse_state::MouseState;
-use cooltraption_common::events::EventPublisher;
 use cooltraption_window::events::EventHandler;
 use cooltraption_window::window::winit::dpi::PhysicalPosition;
 use cooltraption_window::window::winit::event::{
@@ -11,11 +10,10 @@ use cooltraption_window::window::winit::event::{
 };
 use cooltraption_window::window::{winit, WindowContext, WinitEvent};
 
-use crate::events::Event;
 
 #[derive(Default)]
-pub struct InputEventHandler<'a> {
-    event_publisher: EventPublisher<'a, Event<'a, InputEvent, InputState>>,
+pub struct InputEventHandler {
+    callbacks: Vec<Box<dyn FnMut(&InputEvent, &InputState)>>,
     input_state: InputState,
 }
 
@@ -45,10 +43,10 @@ pub enum MouseButtonEvent {
     KeyReleased(MouseButton),
 }
 
-impl<'a> InputEventHandler<'a> {
-    pub fn new(event_publisher: EventPublisher<'a, Event<'a, InputEvent, InputState>>) -> Self {
+impl InputEventHandler {
+    pub fn new(callbacks: Vec<Box<dyn FnMut(&InputEvent, &InputState)>>) -> Self {
         Self {
-            event_publisher,
+            callbacks,
             input_state: InputState::default(),
         }
     }
@@ -65,8 +63,9 @@ impl<'a> InputEventHandler<'a> {
                     InputEvent::KeyboardInputEvent(KeyboardInputEvent::KeyReleased(key_code))
                 }
             };
-            self.event_publisher
-                .publish(&Event::new(&event, &self.input_state));
+            for callback in &mut self.callbacks {
+                callback(&event, &self.input_state);
+            }
         }
     }
 
@@ -81,19 +80,21 @@ impl<'a> InputEventHandler<'a> {
                 InputEvent::MouseButtonEvent(MouseButtonEvent::KeyReleased(button))
             }
         };
-        self.event_publisher
-            .publish(&Event::new(&event, &self.input_state));
+        for callback in &mut self.callbacks {
+            callback(&event, &self.input_state);
+        }
     }
 
     fn mouse_moved(&mut self, pos: &mut PhysicalPosition<f64>) {
         self.input_state.mouse_state.set_mouse_position(*pos);
         let event = InputEvent::MouseMoved(*pos);
-        self.event_publisher
-            .publish(&Event::new(&event, &self.input_state));
+        for callback in &mut self.callbacks {
+            callback(&event, &self.input_state);
+        }
     }
 }
 
-impl<'a> EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputEventHandler<'a> {
+impl<'a> EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputEventHandler {
     fn handle_event(&mut self, event: &mut WinitEvent, _context: &mut WindowContext) {
         if let winit::event::Event::WindowEvent { event, .. } = event.0 {
             match event {
