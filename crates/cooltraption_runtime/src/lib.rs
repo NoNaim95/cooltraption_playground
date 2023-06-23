@@ -5,7 +5,7 @@ extern crate derive_builder;
 
 use configurators::Configurator;
 use configurators::ConfiguratorPipeline;
-use cooltraption_render::world_renderer::WorldState;
+use cooltraption_render::world_renderer::DrawableInterpolator;
 use cooltraption_simulation::simulation_state::SimulationState;
 use cooltraption_simulation::SimulationRunOptionsBuilder;
 use smart_default::SmartDefault;
@@ -35,7 +35,7 @@ pub struct RuntimeConfiguration<'a> {
 
 #[derive(Default)]
 pub struct RuntimeConfigurationBuilder<'a> {
-    runtime_config: RuntimeConfiguration<'a>
+    runtime_config: RuntimeConfiguration<'a>,
 }
 
 impl<'a> RuntimeConfigurationBuilder<'a> {
@@ -65,9 +65,6 @@ impl<'a> RuntimeConfigurationBuilder<'a> {
     }
 }
 
-
-
-
 pub type Task = Box<dyn FnOnce() + Send + 'static>;
 
 #[derive(Default)]
@@ -76,13 +73,9 @@ pub struct Runtime {}
 impl<'a> Runtime {
     pub fn run(config: RuntimeConfiguration<'static>) {
         let mut task_handles = vec![];
-        let run_options = config
-            .sim_run_options_builder
-            .build();
+        let run_options = config.sim_run_options_builder.build();
         let sim_handle = std::thread::spawn(|| {
-        let mut simulation = config
-            .sim_builder
-            .build();
+            let mut simulation = config.sim_builder.build();
             simulation.run(run_options);
         });
         task_handles.push(sim_handle);

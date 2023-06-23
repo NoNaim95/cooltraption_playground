@@ -9,12 +9,13 @@ use controls::{CameraController, CameraView};
 pub mod camera_state;
 pub mod controls;
 
+/// The camera is responsible for managing the camera state and updating the camera buffer.
 pub struct Camera<C: CameraController> {
     camera_state: CameraState,
     camera_uniform: CameraUniform,
     buffer: Buffer,
     bind_group: BindGroup,
-    controller: C,
+    controller: C, // Maybe make self.controller a parameter in update_camera_buffer and not an attribute to loosen dependency?
 }
 
 impl<C: CameraController> Camera<C> {

@@ -7,10 +7,11 @@ pub const MAX_AGE: Duration = Duration::from_secs(4);
 pub type Coord = (f32, f32);
 pub type Size = (f32, f32);
 
+/// Bounding box of a gizmo, specifies the position and size of the gizmo.
 #[derive(Copy, Clone)]
 pub enum BoundingBox {
-    Cornered(Coord, Coord),
-    Sized(Origin, Size),
+    Cornered(Coord, Coord), // Specify using corners
+    Sized(Origin, Size),    // Specify using origin and size
 }
 
 impl BoundingBox {
@@ -92,13 +93,14 @@ impl Color {
     }
 }
 
+/// The different shapes a gizmo can have, used to determine the gizmo stage in which the gizmo should be rendered
 pub enum Shape {
     Rect,
     Ellipse,
 }
 
 pub struct Gizmo {
-    uuid: Uuid,
+    uuid: Uuid, // UUID used to uniquely identify the gizmo across frames
     birth: Instant,
     bounding_box: BoundingBox,
     color: Color,
@@ -106,6 +108,7 @@ pub struct Gizmo {
 }
 
 impl Gizmo {
+    /// Create a new gizmo manually, one should use macros instead
     pub fn new(
         uuid: Uuid,
         birth: Instant,

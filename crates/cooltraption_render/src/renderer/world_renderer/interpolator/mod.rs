@@ -1,4 +1,4 @@
-use crate::world_renderer::world_state::time::Time;
+use crate::world_renderer::interpolator::time::Time;
 use cooltraption_assets::asset_bundle::AssetBundle;
 use std::collections::BTreeMap;
 use std::time::Duration;
@@ -12,33 +12,40 @@ mod drawable;
 pub mod render_entity;
 mod time;
 
-pub struct WorldState<I: Iterator<Item = Vec<Drawable>>> {
+pub struct DrawableInterpolator<I: Iterator<Item = Vec<Drawable>>> {
     state_recv: I,
     time: Time,
     drawables: [BTreeMap<Id, Drawable>; 2],
+    render_entities: Vec<RenderEntity>,
 }
 
-impl<I: Iterator<Item = Vec<Drawable>>> WorldState<I> {
+impl<I: Iterator<Item = Vec<Drawable>>> DrawableInterpolator<I> {
     pub fn new(state_recv: I, fixed_delta_time: Duration) -> Self {
         Self {
             state_recv,
             time: Time::new(fixed_delta_time),
             drawables: Default::default(),
+            render_entities: Default::default(),
         }
     }
 
-    pub fn create_entities(
-        &mut self,
-        texture_atlas_resource: &GpuTextureAtlas,
-        assets: &AssetBundle,
-    ) -> Vec<RenderEntity> {
+    /// Interpolates the current state with the previous state and returns the interpolated render entities
+    pub fn interpolate(&mut self, texture_atlas_resource: &GpuTextureAtlas, assets: &AssetBundle) {
         while let Some(drawables) = self.state_recv.next() {
             self.update(drawables);
         }
 
         let amount = self.time.alpha();
+        self.create_render_entities(texture_atlas_resource, assets, amount);
+    }
 
-        let render_entities = self
+    fn create_render_entities(
+        &mut self,
+        texture_atlas_resource: &GpuTextureAtlas,
+        assets: &AssetBundle,
+        amount: f32,
+    ) {
+        self.render_entities = self
             .drawables
             .current()
             .values()
@@ -53,11 +60,11 @@ impl<I: Iterator<Item = Vec<Drawable>>> WorldState<I> {
                     )
                 } else {
                     None // Don't render entities that haven't been present before
+                         // This prevents entities like bullets from spawning and
+                         // not moving for 1 tick
                 }
             })
-            .collect();
-
-        render_entities
+            .collect()
     }
 
     fn update(&mut self, drawables: Vec<Drawable>) {
@@ -65,6 +72,10 @@ impl<I: Iterator<Item = Vec<Drawable>>> WorldState<I> {
         self.drawables.push_new(BTreeMap::from_iter(
             drawables.into_iter().map(|d| (d.id, d)),
         ));
+    }
+
+    pub fn render_entities(&self) -> &Vec<RenderEntity> {
+        &self.render_entities
     }
 }
 

@@ -13,15 +13,15 @@ use crate::renderer::{BoxedRenderer, RenderError, Renderer, RendererInitializer}
 use crate::world_renderer::camera::controls::CameraController;
 use crate::world_renderer::camera::Camera;
 use crate::world_renderer::gpu_texture_atlas::GpuTextureAtlas;
+use crate::world_renderer::interpolator::{Drawable, DrawableInterpolator};
 use crate::world_renderer::mesh::{Mesh, Vertex};
-use crate::world_renderer::world_state::{Drawable, WorldState};
-pub use world_state::render_entity::{RenderEntity, RenderEntityRaw};
+pub use interpolator::render_entity::{RenderEntity, RenderEntityRaw};
 
 pub mod camera;
 pub mod gizmos;
 mod gpu_texture_atlas;
+pub mod interpolator;
 mod mesh;
-pub mod world_state;
 
 struct WorldRenderer<C, I>
 where
@@ -34,7 +34,7 @@ where
     gpu_texture_atlas: GpuTextureAtlas,
     assets: AssetBundle,
     camera: Camera<C>,
-    world_state: WorldState<I>,
+    interpolator: DrawableInterpolator<I>,
 }
 
 impl<C, I> Renderer for WorldRenderer<C, I>
@@ -43,9 +43,9 @@ where
     I: Iterator<Item = Vec<Drawable>>,
 {
     fn render(&mut self, render_frame: &mut RenderFrame) -> Result<(), Box<dyn RenderError>> {
-        let entities = self
-            .world_state
-            .create_entities(&self.gpu_texture_atlas, &self.assets);
+        self.interpolator
+            .interpolate(&self.gpu_texture_atlas, &self.assets);
+        let entities = self.interpolator.render_entities();
 
         let clear_color = try_get_background(&self.assets).unwrap_or(Color::RED);
 
@@ -159,7 +159,7 @@ where
             gpu_texture_atlas,
             camera,
             assets: self.assets,
-            world_state: WorldState::new(self.state_recv, self.fixed_delta_time),
+            interpolator: DrawableInterpolator::new(self.state_recv, self.fixed_delta_time),
         })
     }
 }

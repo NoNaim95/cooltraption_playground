@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::sync::mpsc;
 
 use cooltraption_common::events::MutEventPublisher;
-use cooltraption_render::world_renderer::WorldState;
+use cooltraption_render::world_renderer::DrawableInterpolator;
 use cooltraption_simulation::simulation_state::SimulationState;
 
 use crate::factories;

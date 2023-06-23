@@ -8,10 +8,10 @@ use cgmath::Vector2;
 use cooltraption_render::renderer::WgpuInitializer;
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
 use cooltraption_render::world_renderer::gizmos::{BoundingBox, Color, Origin, Shape};
-use cooltraption_render::world_renderer::texture_atlas::TextureAtlasBuilder;
-use cooltraption_render::world_renderer::world_state::{
+use cooltraption_render::world_renderer::interpolator::{
     Drawable, Id, Position, Rotation, Scale, Transform,
 };
+use cooltraption_render::world_renderer::texture_atlas::TextureAtlasBuilder;
 use cooltraption_render::world_renderer::WorldRendererInitializer;
 use cooltraption_render::{gui, rect, unique_id};
 use cooltraption_window::window::{WindowEventHandler, WinitEventLoopHandler};

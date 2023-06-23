@@ -1,5 +1,5 @@
 use crate::world_renderer::gpu_texture_atlas::GpuTextureAtlas;
-use crate::world_renderer::world_state::Transform;
+use crate::world_renderer::interpolator::Transform;
 use cgmath::{Matrix4, Quaternion, Rad, Rotation3, Vector3};
 use cooltraption_assets::asset_bundle::{Asset, AssetBundle};
 use wgpu::BufferAddress;

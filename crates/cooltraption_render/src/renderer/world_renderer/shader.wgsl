@@ -15,6 +15,7 @@ struct Region {
     height: i32,
 }
 
+// Map texture index (from GpuTextureAtlas) -> region
 @group(2) @binding(0)
 var<storage, read> regions: array<Region>;
 
@@ -64,6 +65,7 @@ fn vs_main(
 
 // Fragment shader
 
+// The actual texture atlas texture
 @group(0) @binding(0)
 var atlas_texture: texture_2d<f32>;
 @group(0) @binding(1)

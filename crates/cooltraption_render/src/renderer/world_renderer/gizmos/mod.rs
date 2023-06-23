@@ -27,6 +27,7 @@ pub fn shape(uuid: Uuid, shape: Shape, color: Color, bounding_box: BoundingBox) 
     }
 }
 
+/// Initializes the gizmo system. This should be called once before any gizmos are rendered.
 pub fn init(
     device: &wgpu::Device,
     format: &wgpu::TextureFormat,
@@ -36,6 +37,8 @@ pub fn init(
     GIZMOS.lock().expect("gizmo mutex").replace(gizmos);
 }
 
+/// Renders all gizmos to the given view with perspective from the given camera.
+/// This method should be called after all other world rendering has been done.
 pub fn render_all<'a, 'b: 'a, C: CameraController>(
     encoder: &mut wgpu::CommandEncoder,
     view: &wgpu::TextureView,
@@ -68,6 +71,8 @@ pub fn render_all<'a, 'b: 'a, C: CameraController>(
     }
 }
 
+/// Gizmos are rendered in stages, each stage has a different pipeline and mesh.
+/// A stage therefore is a collection of gizmos that are rendered in the same way.
 pub struct GizmoStage {
     pipeline: wgpu::RenderPipeline,
     mesh: Mesh,

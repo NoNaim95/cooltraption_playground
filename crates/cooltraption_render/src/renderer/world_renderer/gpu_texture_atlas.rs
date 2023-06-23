@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::*;
 
-// The gpu equivalent of the TextureAtlas struct
+/// Texture atlas but all resources were uploaded to the GPU
+/// Used to only refer to a texture by its index in the atlas
+/// shader.wgsl has a uniform array of texture regions
 pub struct GpuTextureAtlas {
     index_map: HashMap<u64, usize>, // Maps a texture hash to an index in the regions vector in the shader
     bind_groups: BindGroups,
