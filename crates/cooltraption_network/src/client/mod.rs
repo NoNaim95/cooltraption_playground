@@ -1,5 +1,4 @@
-use crate::{events::Event, server::Signal};
-use cooltraption_common::events::EventPublisher;
+use crate::server::Signal;
 use message_io::{
     network::Endpoint,
     node::{self, NodeEvent, NodeHandler, NodeListener},
@@ -21,10 +20,10 @@ impl Client {
 
 fn run_listener<'a>(
     listener: NodeListener<Signal>,
-    mut publisher: EventPublisher<'a, Event<'a, NodeEvent<'a, Signal>>>,
+    mut publisher: impl FnMut(&NodeEvent<Signal>)
 ) {
     let f = move |event: NodeEvent<Signal>| {
-        publisher.publish(&Event::new(&event, &()));
+        publisher(&event);
     };
 
     listener.for_each(f);

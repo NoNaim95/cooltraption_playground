@@ -1,8 +1,3 @@
-
-
-
-
-
 pub struct NetworkStateHandler {
     max_clients: usize,
 }
