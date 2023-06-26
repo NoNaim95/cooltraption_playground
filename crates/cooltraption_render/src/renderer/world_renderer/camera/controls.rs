@@ -1,9 +1,11 @@
 use cgmath::{EuclideanSpace, InnerSpace, Point2, Vector2};
 
+/// A camera controller that can be used to get the current camera view
 pub trait CameraController {
     fn get_view(&self) -> Option<CameraView>;
 }
 
+/// The view of the camera as returned by a camera controller
 #[derive(Clone, Copy, Debug)]
 pub struct CameraView {
     pub position: Point2<f32>,

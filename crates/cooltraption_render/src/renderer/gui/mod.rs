@@ -24,15 +24,18 @@ type SharedWidgetsMap = Rc<RefCell<HashMap<WidgetId, Box<dyn Widget>>>>;
 
 pub type WidgetId = &'static str;
 
+/// A command that is sent to the gui system
 pub enum GuiCommand {
     Open(Box<dyn Widget>),
     Close(WidgetId),
 }
 
+/// A dispatcher that can be used to send commands asynchronously to the gui system
 pub struct GuiActionDispatcher {
     command_send: Sender<GuiCommand>,
 }
 
+/// Construct the gui system components
 pub fn new() -> (GuiRendererInitializer, GuiEventHandler, GuiActionDispatcher) {
     let platform = SharedPlatform::default();
     let widgets = SharedWidgetsMap::default();
@@ -54,6 +57,7 @@ pub fn new() -> (GuiRendererInitializer, GuiEventHandler, GuiActionDispatcher) {
 }
 
 impl GuiActionDispatcher {
+    /// Open a widget
     pub fn open(&self, widget: Box<dyn Widget>) -> WidgetId {
         let id = widget.id();
         self.command_send
@@ -62,6 +66,7 @@ impl GuiActionDispatcher {
         id
     }
 
+    /// Close a widget
     pub fn close(&self, id: WidgetId) {
         self.command_send
             .send(GuiCommand::Close(id))
@@ -76,12 +81,14 @@ struct GuiRenderer {
     widgets: SharedWidgetsMap,
 }
 
+/// The event handler of the gui system; should be registered to the window
 pub struct GuiEventHandler {
     platform: SharedPlatform,
     widgets: SharedWidgetsMap,
     command_recv: Receiver<GuiCommand>,
 }
 
+/// The initializer for the renderer of the gui system; should be registered to the renderer
 pub struct GuiRendererInitializer {
     platform: SharedPlatform,
     widgets: SharedWidgetsMap,

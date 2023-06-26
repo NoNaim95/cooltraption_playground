@@ -8,6 +8,7 @@ pub const OPENGL_TO_WGPU_MATRIX: Matrix4<f32> = Matrix4::new(
     0.0, 0.0, 0.5, 1.0,
 );
 
+/// The camera state consisting of the center point and view size
 pub struct CameraState {
     pub pos: Point2<f32>,
     pub size: Vector2<f32>,

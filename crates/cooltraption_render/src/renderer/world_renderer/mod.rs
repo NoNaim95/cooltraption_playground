@@ -105,15 +105,21 @@ where
     }
 }
 
+/// The initializer for the [WorldRenderer]
 pub struct WorldRendererInitializer<C, I>
 where
     C: CameraController,
     I: Iterator<Item = Vec<Drawable>>,
 {
+    /// The texture atlas builder
     pub texture_atlas_builder: TextureAtlasBuilder,
+    /// The fixed delta time between frames
     pub fixed_delta_time: Duration,
+    /// The assets
     pub assets: AssetBundle,
+    /// The camera controller
     pub controller: C,
+    /// The iterator that yields a list of [Drawable]s to render each frame
     pub state_recv: I,
 }
 

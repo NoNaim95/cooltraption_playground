@@ -64,6 +64,7 @@ impl<C: CameraController> Camera<C> {
         )
     }
 
+    /// Update the view from controller inputs and write the camera buffer.
     pub fn update_camera_buffer(&mut self, queue: &Queue) {
         if let Some(view) = self.controller.get_view() {
             self.apply_view(&view)
@@ -83,6 +84,7 @@ impl<C: CameraController> Camera<C> {
         self.camera_state.size = self.camera_state.size.normalize_to(1.0 / view.zoom);
     }
 
+    /// Set the size of the view in pixels.
     pub fn set_view_size(&mut self, new_size: PhysicalSize<u32>) {
         let new_size = Vector2::new(new_size.width as f32, new_size.height as f32);
         self.camera_state.size = self.camera_state.size.project_on(new_size);
