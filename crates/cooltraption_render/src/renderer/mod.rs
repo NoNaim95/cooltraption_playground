@@ -18,15 +18,14 @@ pub type BoxedRendererInitializer = Box<dyn RendererInitializer>;
 
 pub trait RenderError: std::error::Error {}
 
-/// Represents a renderer.
-/// A renderer is responsible for rendering a layer to a render frame.
+/// Is responsible for rendering a layer to a render frame.
 ///
 /// A layer could be the GUI layer or the scene layer for example.
 pub trait Renderer {
     fn render(&mut self, render_frame: &mut RenderFrame) -> Result<(), Box<dyn RenderError>>;
 }
 
-/// A renderer initializer is responsible for initializing a renderer.
+/// Initializes a renderer.
 /// This follows the state pattern, where a renderer initializer will initialize and return a new renderer.
 /// Each renderer therefore has its own initializer.
 pub trait RendererInitializer {
