@@ -21,8 +21,8 @@ fn main() {
     server_example();
 }
 
-use cooltraption_network::node_event_handler::NetworkStateImpl;
-use cooltraption_network::node_event_handler::{NetworkStateEvent, NodeEventHandler};
+use cooltraption_network::network_state::NetworkStateImpl;
+use cooltraption_network::network_state::{NetworkStateEvent, NodeEventHandler};
 use cooltraption_network::server::Server;
 use cooltraption_network::server::Signal;
 use cooltraption_network::{node, NodeEvent, Transport};

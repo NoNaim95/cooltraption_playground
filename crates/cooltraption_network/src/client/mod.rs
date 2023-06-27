@@ -1,30 +1,59 @@
-use crate::server::Signal;
-use message_io::{
-    network::Endpoint,
-    node::{self, NodeEvent, NodeHandler, NodeListener},
+use std::{
+    net::ToSocketAddrs,
+    sync::{Arc, Mutex, MutexGuard},
+    thread::JoinHandle,
 };
-use std::net::SocketAddrV4;
 
-#[derive(Default)]
-pub struct Client {}
-impl Client {
-    pub fn connect(server: SocketAddrV4) -> (NodeHandler<Signal>, NodeListener<Signal>, Endpoint) {
-        let (handler, listener) = node::split::<Signal>();
-        let (server, _) = handler
-            .network()
-            .connect(message_io::network::Transport::FramedTcp, server)
-            .expect("localhost to allow outgoing connections");
-        (handler, listener, server)
-    }
+use message_io::node;
+
+use crate::network_state::{
+    ConcurrentNetworkState, NetworkStateEvent, NetworkStateImpl, NodeEventHandler, Signal,
+};
+
+pub fn connect(
+    server: impl ToSocketAddrs,
+    mut network_state_event_handlers: Vec<
+        Box<dyn FnMut(&NetworkStateEvent, &mut MutexGuard<NetworkStateImpl>) + Send>,
+    >,
+) -> (JoinHandle<()>, ConcurrentNetworkState) {
+    let (handler, listener) = node::split::<Signal>();
+    handler
+        .network()
+        .connect(
+            message_io::network::Transport::FramedTcp,
+            server.to_socket_addrs().unwrap().next().unwrap(),
+        )
+        .expect("localhost to allow outgoing connections");
+
+    let network_state = Arc::new(Mutex::new(NetworkStateImpl::new(handler)));
+    let mut node_event_handler =
+        NodeEventHandler::new(Arc::clone(&network_state), network_state_event_handlers);
+
+    let handle = std::thread::spawn(move || {
+        listener.for_each(|node_event| node_event_handler.handle_node_event(node_event));
+    });
+
+    (handle, network_state)
 }
 
-fn run_listener<'a>(
-    listener: NodeListener<Signal>,
-    mut publisher: impl FnMut(&NodeEvent<Signal>)
-) {
-    let f = move |event: NodeEvent<Signal>| {
-        publisher(&event);
-    };
+pub fn listen(
+    addr: impl ToSocketAddrs,
+    mut network_state_event_handlers: Vec<
+        Box<dyn FnMut(&NetworkStateEvent, &mut MutexGuard<NetworkStateImpl>) + Send>,
+    >,
+) -> (JoinHandle<()>, ConcurrentNetworkState) {
+    let (handler, listener) = node::split::<Signal>();
 
-    listener.for_each(f);
+    handler
+        .network()
+        .listen(message_io::network::Transport::FramedTcp, addr)
+        .unwrap();
+    let network_state = Arc::new(Mutex::new(NetworkStateImpl::new(handler)));
+    let mut node_event_handler =
+        NodeEventHandler::new(Arc::clone(&network_state), network_state_event_handlers);
+
+    let handle = std::thread::spawn(move || {
+        listener.for_each(|node_event| node_event_handler.handle_node_event(node_event));
+    });
+    (handle, network_state)
 }
