@@ -18,14 +18,15 @@ pub type BoxedRendererInitializer = Box<dyn RendererInitializer>;
 
 pub trait RenderError: std::error::Error {}
 
-/// Is responsible for rendering a layer to a render frame.
+/// A [Renderer] responsible for rendering a layer to a render frame.
 ///
 /// A layer could be the GUI layer or the scene layer for example.
 pub trait Renderer {
     fn render(&mut self, render_frame: &mut RenderFrame) -> Result<(), Box<dyn RenderError>>;
 }
 
-/// Initializes a renderer.
+/// Initializes a [Renderer].
+///
 /// This follows the state pattern, where a renderer initializer will initialize and return a new renderer.
 /// Each renderer therefore has its own initializer.
 pub trait RendererInitializer {
@@ -33,6 +34,7 @@ pub trait RendererInitializer {
 }
 
 /// This is the main initializer component for the rendering system.
+///
 /// It waits for the Init event and then initializes the renderers.
 #[derive(Default)]
 pub struct WgpuInitializer {
@@ -40,6 +42,7 @@ pub struct WgpuInitializer {
 }
 
 /// This is the main renderer component for the rendering system.
+///
 /// It is responsible for all renderers and is created by the WgpuInitializer.
 pub struct WgpuWindowRenderer {
     wgpu_state: WgpuState,

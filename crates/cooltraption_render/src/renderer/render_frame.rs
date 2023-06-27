@@ -6,6 +6,9 @@ use wgpu::SurfaceTexture;
 use wgpu::TextureView;
 use winit::window::Window;
 
+/// A render frame is a single frame that is rendered to the screen.
+///
+/// It contains all the information needed to render a frame.
 #[derive(Debug)]
 pub struct RenderFrame<'a> {
     pub delta_time: &'a Duration,

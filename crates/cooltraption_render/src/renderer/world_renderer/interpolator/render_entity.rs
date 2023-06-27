@@ -4,6 +4,9 @@ use cgmath::{Matrix4, Quaternion, Rad, Rotation3, Vector3};
 use cooltraption_assets::asset_bundle::{Asset, AssetBundle};
 use wgpu::BufferAddress;
 
+/// A render entity that can be rendered by the world renderer
+///
+/// It is created by interpolating two drawables
 #[derive(Debug)]
 pub struct RenderEntity {
     pub position: Vector3<f32>,

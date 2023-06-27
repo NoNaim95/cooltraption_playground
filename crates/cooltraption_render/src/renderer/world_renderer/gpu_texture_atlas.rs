@@ -1,24 +1,23 @@
-use cooltraption_assets::texture_atlas::{Rectangle, TextureAtlas, TextureAtlasBuilder};
+use cooltraption_assets::texture_atlas::{Rectangle, TextureAtlas};
 use std::collections::HashMap;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::*;
 
-/// Texture atlas but all resources were uploaded to the GPU
-/// Used to only refer to a texture by its index in the atlas
-/// shader.wgsl has a uniform array of texture regions
+/// A GPU allocated texture atlas
+///
+/// Created using a [`TextureAtlas`]
 pub struct GpuTextureAtlas {
     index_map: HashMap<u64, usize>, // Maps a texture hash to an index in the regions vector in the shader
     bind_groups: BindGroups,
 }
 
 impl GpuTextureAtlas {
+    /// Allocate a texture atlas on the GPU
     pub fn allocate(
-        texture_atlas_builder: TextureAtlasBuilder,
+        texture_atlas: TextureAtlas,
         device: &Device,
         queue: &Queue,
     ) -> (Self, BindGroupLayouts) {
-        let texture_atlas = texture_atlas_builder.build();
-
         let texture_size = Extent3d {
             width: texture_atlas.rgba().width(),
             height: texture_atlas.rgba().height(),

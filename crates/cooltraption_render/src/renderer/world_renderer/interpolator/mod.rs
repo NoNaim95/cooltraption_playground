@@ -12,6 +12,7 @@ mod drawable;
 pub mod render_entity;
 mod time;
 
+/// Interpolates two world states and creates render entities from the interpolated state
 pub struct DrawableInterpolator<I: Iterator<Item = Vec<Drawable>>> {
     state_recv: I,
     time: Time,

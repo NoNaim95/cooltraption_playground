@@ -1,3 +1,5 @@
+//! The world renderer is a renderer that renders a 2D world with a camera that can be controlled by the user.
+
 use cooltraption_assets::asset_bundle::Asset::Strings;
 use cooltraption_assets::asset_bundle::AssetBundle;
 use cooltraption_assets::texture_atlas::TextureAtlasBuilder;
@@ -105,7 +107,7 @@ where
     }
 }
 
-/// The initializer for the [WorldRenderer]
+/// The initializer for the WorldRenderer
 pub struct WorldRendererInitializer<C, I>
 where
     C: CameraController,
@@ -132,7 +134,7 @@ where
         let (camera, camera_bgl) = Camera::init(self.controller, &wgpu_state.device);
 
         let (gpu_texture_atlas, bind_group_layouts) = GpuTextureAtlas::allocate(
-            self.texture_atlas_builder,
+            self.texture_atlas_builder.build(),
             &wgpu_state.device,
             &wgpu_state.queue,
         );

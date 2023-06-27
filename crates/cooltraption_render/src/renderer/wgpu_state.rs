@@ -3,6 +3,7 @@ use wgpu::*;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
+/// The state of the wgpu renderer.
 #[derive(Debug)]
 pub struct WgpuState {
     pub surface: Surface,

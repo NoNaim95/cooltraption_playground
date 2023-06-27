@@ -1,6 +1,7 @@
 use wgpu::util::DeviceExt;
 use wgpu::{util, Buffer, BufferUsages, Device};
 
+/// A GPU allocated mesh
 pub struct Mesh {
     vertices: Buffer,
     indices: Buffer,

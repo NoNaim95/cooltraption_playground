@@ -1,6 +1,9 @@
 use cgmath::{Vector2, VectorSpace};
 use num_traits::FloatConst;
 
+/// A drawable is a renderable object in the world.
+///
+/// During rendering it is interpolated between the previous and next frame and turned into a render entity.
 #[derive(Debug)]
 pub struct Drawable {
     pub id: Id,
@@ -68,5 +71,8 @@ impl Default for Scale {
     }
 }
 
+/// A unique id for a drawable
+///
+/// This is used to identify drawables between frames
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Id(pub u64);
