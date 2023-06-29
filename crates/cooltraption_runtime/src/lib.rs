@@ -82,6 +82,10 @@ impl<'a> Runtime {
         if let Some(last_task) = config.last_task {
             last_task();
         }
+
+        for task in task_handles {
+            task.join();
+        }
     }
 
     pub fn config() -> RuntimeConfiguration {
