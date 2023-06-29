@@ -8,18 +8,20 @@ use cooltraption_render::renderer::WgpuInitializer;
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
 use cooltraption_render::world_renderer::camera::controls::CameraController;
 use cooltraption_render::world_renderer::texture_atlas::TextureAtlasBuilder;
-use cooltraption_render::world_renderer::{DrawableInterpolator, WorldRendererInitializer};
+use cooltraption_render::world_renderer::WorldRendererInitializer;
 use cooltraption_window::window::{WindowEventHandler, WinitEventLoopHandler};
 use std::env;
+use std::time::Duration;
 
 use cooltraption_input::input::InputEventHandler;
+use cooltraption_render::world_renderer::interpolator::Drawable;
 
 use self::controller::{print_camera_move_event, CameraMovedEvent};
 
 #[tokio::main]
 pub async fn run_renderer<I>(state_iterator: I, input_event_handler: InputEventHandler)
 where
-    I: Iterator<Item = DrawableInterpolator> + 'static,
+    I: Iterator<Item = Vec<Drawable>> + 'static,
 {
     env::set_var("RUST_LOG", "info");
     //env_logger::init();
@@ -42,6 +44,7 @@ where
         Box::new(WorldRendererInitializer {
             controller,
             texture_atlas_builder,
+            fixed_delta_time: Duration::from_secs_f32(1.0 / 50.0),
             assets,
             state_recv: state_iterator,
         })

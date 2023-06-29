@@ -2,7 +2,6 @@ use std::iter;
 use std::rc::Rc;
 use std::sync::mpsc;
 
-use cooltraption_render::world_renderer::WorldState;
 use cooltraption_simulation::simulation_state::SimulationState;
 
 use crate::factories;

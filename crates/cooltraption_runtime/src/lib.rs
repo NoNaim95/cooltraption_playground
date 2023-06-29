@@ -5,7 +5,6 @@ extern crate derive_builder;
 
 use configurators::Configurator;
 use configurators::ConfiguratorPipeline;
-use cooltraption_render::world_renderer::DrawableInterpolator;
 use cooltraption_simulation::simulation_state::SimulationState;
 use cooltraption_simulation::SimulationRunOptionsBuilder;
 use smart_default::SmartDefault;

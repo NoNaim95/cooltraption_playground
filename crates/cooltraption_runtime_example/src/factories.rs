@@ -3,7 +3,7 @@ use cooltraption_simulation::action::{Action, SpawnBallAction};
 use std::iter;
 
 fn sometimes_spawn_ball(
-    mut rt_config_builder: RuntimeConfigurationBuilder<'_>,
+    mut rt_config_builder: RuntimeConfigurationBuilder,
 ) {
     let mut i = 0;
     let boxed_it = Box::new(iter::from_fn(move || {

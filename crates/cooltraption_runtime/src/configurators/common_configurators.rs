@@ -3,7 +3,7 @@ use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 
 use cooltraption_input::input::{InputEvent, InputEventHandler, InputState};
-use cooltraption_render::world_renderer::DrawableInterpolator;
+use cooltraption_render::world_renderer::interpolator::Drawable;
 use cooltraption_simulation::action::Action;
 use cooltraption_simulation::simulation_state::SimulationState;
 
@@ -17,7 +17,7 @@ pub fn add_renderer(
     mut runtime_config_builder: &mut RuntimeConfigurationBuilder,
     input_action_sender: Sender<Action>,
 ) {
-    let (world_state_sender, world_state_receiver) = mpsc::sync_channel::<DrawableInterpolator>(20);
+    let (world_state_sender, world_state_receiver) = mpsc::sync_channel::<Vec<Drawable>>(20);
     let mut sim_state_sender = factories::sim_state_sender(world_state_sender);
 
     runtime_config_builder

@@ -2,10 +2,8 @@ use cgmath::Vector2;
 use cooltraption_input::input::{InputEvent, InputState, KeyboardInputEvent};
 //use cooltraption_network as networking;
 //use cooltraption_network::client;
-use cooltraption_render::world_renderer::{
-    interpolator::{Drawable, Id, Rotation, Scale},
-    DrawableInterpolator,
-};
+use cooltraption_render::world_renderer::interpolator::Transform;
+use cooltraption_render::world_renderer::interpolator::{Drawable, Id, Rotation, Scale};
 use cooltraption_simulation::{
     action::{Action, CircularForceAction, SpawnBallAction},
     system_sets::physics_set::{Float, FromNum2, Vec2f},
@@ -52,7 +50,7 @@ pub fn create_input_handler(
 }
 
 pub fn sim_state_sender(
-    world_state_sender: SyncSender<DrawableInterpolator>,
+    world_state_sender: SyncSender<Vec<Drawable>>,
 ) -> impl FnMut(QueryIter<'_, '_, (Entity, &Position), ()>) {
     move |comp_iter: QueryIter<(Entity, &Position), ()>| {
         let mut drawables = vec![];
@@ -62,15 +60,16 @@ pub fn sim_state_sender(
             pos /= 100.0;
             let drawable = Drawable {
                 id: Id(entity.index() as u64),
-                position: cooltraption_render::world_renderer::interpolator::Position(pos),
-                scale: Scale(Vector2::new(1.0, 1.0)),
                 asset_name: String::from("dude"),
-                rot: Rotation::default(),
+                transform: Transform {
+                    position: cooltraption_render::world_renderer::interpolator::Position(pos),
+                    scale: Scale(Vector2::new(1.0, 1.0)),
+                    rot: Default::default(),
+                },
             };
             drawables.push(drawable);
         }
-        let world_state = DrawableInterpolator { drawables };
-        world_state_sender.send(world_state).unwrap();
+        world_state_sender.send(drawables).unwrap();
     }
 }
 

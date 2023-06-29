@@ -1,6 +1,8 @@
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
+
+#[cfg(feature = "debug")]
 use std::path::PathBuf;
 
 use guillotiere::{size2, AllocId, Allocation, AtlasAllocator, Size};
