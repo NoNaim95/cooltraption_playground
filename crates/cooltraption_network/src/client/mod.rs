@@ -1,20 +1,19 @@
 use std::{
     net::ToSocketAddrs,
-    sync::{Arc, Mutex, MutexGuard},
+    sync::{Arc, Mutex},
     thread::JoinHandle,
 };
 
 use message_io::node;
 
 use crate::network_state::{
-    ConcurrentNetworkState, NetworkStateEvent, NetworkStateImpl, NodeEventHandler, Signal,
+    ConcurrentNetworkState, NetworkStateEventHandler, NetworkStateImpl,
+    NodeEventHandler, Signal,
 };
 
 pub fn connect(
     server: impl ToSocketAddrs,
-    mut network_state_event_handlers: Vec<
-        Box<dyn FnMut(&NetworkStateEvent, &mut MutexGuard<NetworkStateImpl>) + Send>,
-    >,
+    network_state_event_handlers: Vec<NetworkStateEventHandler>,
 ) -> (JoinHandle<()>, ConcurrentNetworkState) {
     let (handler, listener) = node::split::<Signal>();
     handler
@@ -38,9 +37,7 @@ pub fn connect(
 
 pub fn listen(
     addr: impl ToSocketAddrs,
-    mut network_state_event_handlers: Vec<
-        Box<dyn FnMut(&NetworkStateEvent, &mut MutexGuard<NetworkStateImpl>) + Send>,
-    >,
+    network_state_event_handlers: Vec<NetworkStateEventHandler>,
 ) -> (JoinHandle<()>, ConcurrentNetworkState) {
     let (handler, listener) = node::split::<Signal>();
 

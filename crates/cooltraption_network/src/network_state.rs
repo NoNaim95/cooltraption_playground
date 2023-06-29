@@ -96,6 +96,7 @@ impl NetworkStateImpl {
     }
 }
 pub type ConcurrentNetworkState = Arc<Mutex<NetworkStateImpl>>;
+pub type NetworkStateEventHandler = Box<dyn FnMut(&NetworkStateEvent, &mut MutexGuard<NetworkStateImpl>) + Send>;
 
 pub enum NetworkStateEvent {
     Connected(Connection),
@@ -107,12 +108,12 @@ pub enum NetworkStateEvent {
 pub struct NodeEventHandler
 {
     pub network_state: ConcurrentNetworkState,
-    pub network_state_publisher: Vec<Box<dyn FnMut(&NetworkStateEvent, &mut MutexGuard<NetworkStateImpl>) + Send>>,
+    pub network_state_publisher: Vec<NetworkStateEventHandler>,
 }
 
 impl NodeEventHandler
 {
-    pub fn new(network_state: ConcurrentNetworkState, network_state_publisher: Vec<Box<dyn FnMut(&NetworkStateEvent, &mut MutexGuard<NetworkStateImpl>) + Send>>) -> Self {
+    pub fn new(network_state: ConcurrentNetworkState, network_state_publisher: Vec<NetworkStateEventHandler>) -> Self {
         Self {
             network_state,
             network_state_publisher,
