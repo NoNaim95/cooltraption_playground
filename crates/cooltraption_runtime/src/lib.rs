@@ -1,21 +1,10 @@
-#![allow(dead_code, unused)]
-#![feature(option_get_or_insert_default)]
-#[macro_use]
 extern crate derive_builder;
 
-use configurators::Configurator;
-use configurators::ConfiguratorPipeline;
-use cooltraption_simulation::simulation_state::SimulationState;
-use cooltraption_simulation::SimulationRunOptionsBuilder;
+use std::collections::VecDeque;
+
 use smart_default::SmartDefault;
-use std::{collections::VecDeque, iter, marker::PhantomData, sync::mpsc};
 
-use cooltraption_simulation::SimulationImplBuilder;
-
-use cooltraption_input::{
-    self,
-    input::{InputEvent, InputEventHandler},
-};
+use cooltraption_simulation::builders::{SimulationImplBuilder, SimulationRunOptionsBuilder};
 
 pub mod configurators;
 pub mod factories;
@@ -31,7 +20,7 @@ pub struct RuntimeConfiguration {
 
 #[derive(Default)]
 pub struct RuntimeConfigurationBuilder {
-    runtime_config: RuntimeConfiguration
+    runtime_config: RuntimeConfiguration,
 }
 
 impl RuntimeConfigurationBuilder {
@@ -66,7 +55,7 @@ pub type Task = Box<dyn FnOnce() + Send + 'static>;
 #[derive(Default)]
 pub struct Runtime {}
 
-impl<'a> Runtime {
+impl Runtime {
     pub fn run(config: RuntimeConfiguration) {
         let mut task_handles = vec![];
         let run_options = config.sim_run_options_builder.build();
@@ -84,7 +73,7 @@ impl<'a> Runtime {
         }
 
         for task in task_handles {
-            task.join();
+            task.join().unwrap();
         }
     }
 

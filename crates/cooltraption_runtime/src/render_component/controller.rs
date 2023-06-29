@@ -1,5 +1,6 @@
 use super::controls::{ButtonMap, KeyboardState, MouseState};
 use super::debug_widget::DebugWidget;
+use super::CameraMovedEventHandler;
 use cgmath::num_traits::*;
 use cgmath::*;
 use cooltraption_render::gui::{GuiActionDispatcher, WidgetId};
@@ -24,13 +25,13 @@ pub struct InputStateEventHandler {
     target_zoom: f32,
     view: CameraView,
     send: Sender<CameraView>,
-    camera_moved_callbacks: Vec<Box<dyn FnMut(&CameraMovedEvent)>>,
+    camera_moved_callbacks: Vec<CameraMovedEventHandler>,
 }
 
-impl<'a> Controller {
+impl Controller {
     pub fn new(
         gui: GuiActionDispatcher,
-        camera_moved_event_publisher: Vec<Box<dyn FnMut(&CameraMovedEvent)>>,
+        camera_moved_event_publisher: Vec<CameraMovedEventHandler>,
     ) -> (Self, InputStateEventHandler) {
         let (send, recv) = std::sync::mpsc::channel();
 
@@ -61,6 +62,7 @@ pub fn print_camera_move_event(event: &CameraMovedEvent) {
     println!("Camera moved to: {:?}", event);
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct CameraMovedEvent {
     camera_pos: Point2<f32>,
@@ -114,7 +116,7 @@ impl InputStateEventHandler {
     }
 }
 
-impl<'a> EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputStateEventHandler {
+impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputStateEventHandler {
     fn handle_event(&mut self, event: &mut WinitEvent, context: &mut WindowContext) {
         match event.0 {
             winit::event::Event::WindowEvent { event, window_id } => {

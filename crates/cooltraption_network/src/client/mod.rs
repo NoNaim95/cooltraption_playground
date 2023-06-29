@@ -7,8 +7,7 @@ use std::{
 use message_io::node;
 
 use crate::network_state::{
-    ConcurrentNetworkState, NetworkStateEventHandler, NetworkStateImpl,
-    NodeEventHandler, Signal,
+    ConcurrentNetworkState, NetworkStateEventHandler, NetworkStateImpl, NodeEventHandler, Signal,
 };
 
 pub fn connect(

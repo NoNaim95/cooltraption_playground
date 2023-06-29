@@ -21,11 +21,15 @@ use system_sets::physics_set;
 use derive_more::{Add, AddAssign, Deref, Div, From, Into, Mul, Sub};
 use serde::{Deserialize, Serialize};
 
+use builders::*;
+
 pub mod action;
+pub mod builders;
 pub mod components;
 pub mod simulation_state;
 pub mod system_sets;
 
+#[rustfmt::skip]
 #[derive( Debug, Resource, Clone, Default, Eq, Hash, PartialEq, Copy, Serialize, Deserialize, Deref, Add, Mul, Sub, Div, From, Into, AddAssign,)]
 pub struct Tick(pub u64);
 
@@ -34,52 +38,19 @@ pub struct Actions(Vec<Action>);
 
 type BoxedIt<T> = Box<dyn Iterator<Item = T> + Send>;
 
-pub struct SimulationRunOptions {
+pub struct SimulationRunConfig {
     actions: BoxedIt<Action>,
     action_packets: BoxedIt<ActionPacket>,
-    state_complete_callbacks: Vec<Box<dyn FnMut(&mut SimulationState) + Send>>,
-    local_action_packet_callbacks: Vec<Box<dyn FnMut(&ActionPacket) + Send>>,
+    state_complete_handler: Vec<SimulationStateHandler>,
+    local_action_packet_callbacks: Vec<LocalActionPacketHandler>,
 }
 
-#[derive(Default)]
-pub struct SimulationRunOptionsBuilder {
-    run_opts: SimulationRunOptions
-}
-
-impl SimulationRunOptionsBuilder {
-    pub fn set_actions(&mut self, actions: BoxedIt<Action>) -> &mut Self {
-        self.run_opts.actions = actions;
-        self
-    }
-
-    pub fn set_action_packets(&mut self, action_packets: BoxedIt<ActionPacket>) -> &mut Self {
-        self.run_opts.action_packets = action_packets;
-        self
-    }
-
-    pub fn state_complete_callbacks(
-        &mut self,
-    ) -> &mut Vec<Box<dyn FnMut(&mut SimulationState) + Send>> {
-        &mut self.run_opts.state_complete_callbacks
-    }
-
-    pub fn local_action_packet_callbacks(
-        &mut self,
-    ) -> &mut Vec<Box<dyn FnMut(&ActionPacket) + Send>> {
-        &mut self.run_opts.local_action_packet_callbacks
-    }
-
-    pub fn build(self) -> SimulationRunOptions {
-        self.run_opts
-    }
-}
-
-impl<'a> Default for SimulationRunOptions {
+impl Default for SimulationRunConfig {
     fn default() -> Self {
         Self {
             actions: Box::new(iter::from_fn(|| None)),
             action_packets: Box::new(iter::from_fn(|| None)),
-            state_complete_callbacks: Default::default(),
+            state_complete_handler: Default::default(),
             local_action_packet_callbacks: Default::default(),
         }
     }
@@ -96,26 +67,6 @@ pub struct SimulationImpl {
     action_table: HashMap<Tick, Vec<Action>>,
 }
 
-#[derive(Default)]
-pub struct SimulationImplBuilder {
-    simulation: SimulationImpl
-}
-
-impl SimulationImplBuilder{
-    pub fn schedule(&mut self) -> &mut Schedule{
-        &mut self.simulation.schedule
-    }
-
-    pub fn set_schedule(&mut self, schedule: Schedule) -> &mut Self{
-        self.simulation.schedule = schedule;
-        self
-    }
-
-    pub fn build(self) -> SimulationImpl {
-        self.simulation
-    }
-}
-
 impl SimulationImpl {
     pub fn new(
         simulation_state: SimulationState,
@@ -129,7 +80,7 @@ impl SimulationImpl {
         }
     }
 
-    pub fn run(&mut self, mut run_options: SimulationRunOptions) -> ! {
+    pub fn run(&mut self, mut run_options: SimulationRunConfig) -> ! {
         let mut start_time = Instant::now();
         loop {
             let frame_time = Instant::now() - start_time;
@@ -141,8 +92,8 @@ impl SimulationImpl {
             );
             self.step_simulation(frame_time);
 
-            for callback in &mut run_options.state_complete_callbacks {
-                callback(&mut self.simulation_state)
+            for handler in &mut run_options.state_complete_handler {
+                handler(&mut self.simulation_state)
             }
 
             start_time = Instant::now();
@@ -158,13 +109,13 @@ impl SimulationImpl {
         &mut self,
         actions: &mut BoxedIt<Action>,
         action_packets: &mut BoxedIt<ActionPacket>,
-        local_action_packet_callbacks: &mut Vec<Box<dyn FnMut(&ActionPacket) + Send>>,
+        local_action_packet_handlers: &mut [LocalActionPacketHandler],
     ) {
         for local_action_packet in
             actions.map(|action| ActionPacket::new(self.simulation_state.current_tick(), action))
         {
-            for callback in local_action_packet_callbacks.iter_mut() {
-                    callback(&local_action_packet);
+            for handler in local_action_packet_handlers.iter_mut() {
+                handler(&local_action_packet);
             }
 
             let actions_for_tick = self

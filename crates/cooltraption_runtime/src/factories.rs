@@ -3,7 +3,7 @@ use cooltraption_input::input::{InputEvent, InputState, KeyboardInputEvent};
 //use cooltraption_network as networking;
 //use cooltraption_network::client;
 use cooltraption_render::world_renderer::interpolator::Transform;
-use cooltraption_render::world_renderer::interpolator::{Drawable, Id, Rotation, Scale};
+use cooltraption_render::world_renderer::interpolator::{Drawable, Id, Scale};
 use cooltraption_simulation::{
     action::{Action, CircularForceAction, SpawnBallAction},
     system_sets::physics_set::{Float, FromNum2, Vec2f},
@@ -17,11 +17,10 @@ use cooltraption_simulation::{
     IntoSystemConfig, IntoSystemConfigs, Schedule,
 };
 
-
 pub fn create_input_handler(
     input_action_sender: Sender<Action>,
 ) -> impl for<'a> FnMut(&InputEvent, &InputState) + Send {
-    move |input_event: &InputEvent, input_state: &InputState| {
+    move |input_event: &InputEvent, _input_state: &InputState| {
         if let InputEvent::KeyboardInputEvent(KeyboardInputEvent::KeyPressed(key_code, ..)) =
             input_event
         {

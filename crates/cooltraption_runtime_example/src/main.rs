@@ -1,4 +1,3 @@
-#![feature(closure_lifetime_binder)]
 use std::sync::mpsc::channel;
 use std::{env, iter};
 
@@ -40,7 +39,7 @@ fn runtime_example() {
     };
 
     let render_configurator = move |config: &mut RuntimeConfigurationBuilder| {
-        return add_renderer(config, input_action_sender.clone());
+        add_renderer(config, input_action_sender.clone());
     };
 
     configurator_pipeline.add_configurator(add_schedule_configurator);

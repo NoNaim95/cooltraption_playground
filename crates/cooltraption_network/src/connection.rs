@@ -1,5 +1,5 @@
-use std::net::SocketAddr;
 use message_io::network::Endpoint;
+use std::net::SocketAddr;
 use uuid::Uuid;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]

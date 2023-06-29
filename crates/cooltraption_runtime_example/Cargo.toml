@@ -16,7 +16,6 @@ cooltraption_assets = { path = "../cooltraption_assets" }
 cooltraption_input = { path = "../cooltraption_input" }
 
 pipeline_rs = { git = "https://github.com/NoNaim95/pipeline_rs", branch = "master" }
-sfml = "0.20.0"
 log = "0.4"
 env_logger = "0.10"
 cgmath = "0.18"

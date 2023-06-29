@@ -6,7 +6,6 @@ use controller::Controller;
 use cooltraption_render::gui;
 use cooltraption_render::renderer::WgpuInitializer;
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
-use cooltraption_render::world_renderer::camera::controls::CameraController;
 use cooltraption_render::world_renderer::texture_atlas::TextureAtlasBuilder;
 use cooltraption_render::world_renderer::WorldRendererInitializer;
 use cooltraption_window::window::{WindowEventHandler, WinitEventLoopHandler};
@@ -18,14 +17,16 @@ use cooltraption_render::world_renderer::interpolator::Drawable;
 
 use self::controller::{print_camera_move_event, CameraMovedEvent};
 
+type CameraMovedEventHandler = Box<dyn FnMut(&CameraMovedEvent)>;
+
 #[tokio::main]
 pub async fn run_renderer<I>(state_iterator: I, input_event_handler: InputEventHandler)
 where
     I: Iterator<Item = Vec<Drawable>> + 'static,
 {
     let (gui_renderer, gui_event_handler, dispatcher) = gui::new();
-    let mut camera_moved_callbacks: Vec<Box<dyn FnMut(&CameraMovedEvent)>> = vec![];
-    camera_moved_callbacks.push(Box::new(print_camera_move_event));
+    let camera_moved_callbacks: Vec<CameraMovedEventHandler> =
+        vec![Box::new(print_camera_move_event)];
     let (controller, controller_event_handler) =
         Controller::new(dispatcher, camera_moved_callbacks);
 

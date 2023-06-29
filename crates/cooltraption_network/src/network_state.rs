@@ -1,4 +1,4 @@
-use std::sync::{MutexGuard, Mutex, Arc};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::connection::Connection;
 use crate::packets::Packet;
@@ -28,7 +28,7 @@ impl NetworkStateImpl {
     pub fn send_packet(&self, packet: Packet<()>, connection: &Connection) {
         let endpoint = self.connections.get_by_left(connection).unwrap();
         self.node_handler.network().send(
-            endpoint.clone(),
+            *endpoint,
             serde_yaml::to_string(&packet).unwrap().as_bytes(),
         );
     }
@@ -64,39 +64,40 @@ impl NetworkStateImpl {
                         panic!("connection failed");
                     }
                     println!("Connected to Server!");
-                    self.add_endpoint(endpoint.clone());
+                    self.add_endpoint(*endpoint);
                     NetworkStateEvent::Connected(
-                        self.connections.get_by_right(&endpoint).unwrap().clone(),
+                        self.connections.get_by_right(endpoint).unwrap().clone(),
                     )
                 }
                 message_io::network::NetEvent::Accepted(endpoint, _) => {
                     println!("Client Connected!");
-                    self.add_endpoint(endpoint.clone());
+                    self.add_endpoint(*endpoint);
                     NetworkStateEvent::Accepted(
-                        self.connections.get_by_right(&endpoint).unwrap().clone(),
+                        self.connections.get_by_right(endpoint).unwrap().clone(),
                     )
                 }
                 message_io::network::NetEvent::Message(endpoint, message) => {
                     println!("Message received!");
-                    let connection = self.connections.get_by_right(&endpoint).unwrap().clone();
-                    let packet = serde_yaml::from_slice::<Packet<()>>(&message).unwrap();
+                    let connection = self.connections.get_by_right(endpoint).unwrap().clone();
+                    let packet = serde_yaml::from_slice::<Packet<()>>(message).unwrap();
                     NetworkStateEvent::Message(connection, packet)
                 }
                 message_io::network::NetEvent::Disconnected(endpoint) => {
                     println!("Client Disconnected!");
-                    let connection = self.connections.get_by_right(&endpoint).unwrap().clone();
-                    self.remove_endpoint(&endpoint);
+                    let connection = self.connections.get_by_right(endpoint).unwrap().clone();
+                    self.remove_endpoint(endpoint);
                     NetworkStateEvent::Disconnected(connection)
                 }
             };
-            return network_state_event;
+            network_state_event
         } else {
             unimplemented!();
         }
     }
 }
 pub type ConcurrentNetworkState = Arc<Mutex<NetworkStateImpl>>;
-pub type NetworkStateEventHandler = Box<dyn FnMut(&NetworkStateEvent, &mut MutexGuard<NetworkStateImpl>) + Send>;
+pub type NetworkStateEventHandler =
+    Box<dyn FnMut(&NetworkStateEvent, &mut MutexGuard<NetworkStateImpl>) + Send>;
 
 pub enum NetworkStateEvent {
     Connected(Connection),
@@ -105,15 +106,16 @@ pub enum NetworkStateEvent {
     Message(Connection, Packet<()>),
 }
 
-pub struct NodeEventHandler
-{
+pub struct NodeEventHandler {
     pub network_state: ConcurrentNetworkState,
     pub network_state_publisher: Vec<NetworkStateEventHandler>,
 }
 
-impl NodeEventHandler
-{
-    pub fn new(network_state: ConcurrentNetworkState, network_state_publisher: Vec<NetworkStateEventHandler>) -> Self {
+impl NodeEventHandler {
+    pub fn new(
+        network_state: ConcurrentNetworkState,
+        network_state_publisher: Vec<NetworkStateEventHandler>,
+    ) -> Self {
         Self {
             network_state,
             network_state_publisher,
