@@ -23,9 +23,6 @@ pub async fn run_renderer<I>(state_iterator: I, input_event_handler: InputEventH
 where
     I: Iterator<Item = Vec<Drawable>> + 'static,
 {
-    env::set_var("RUST_LOG", "info");
-    //env_logger::init();
-
     let (gui_renderer, gui_event_handler, dispatcher) = gui::new();
     let mut camera_moved_callbacks: Vec<Box<dyn FnMut(&CameraMovedEvent)>> = vec![];
     camera_moved_callbacks.push(Box::new(print_camera_move_event));
@@ -35,7 +32,11 @@ where
     let world_renderer = {
         let mut texture_atlas_builder = TextureAtlasBuilder::default();
 
-        let assets_dir = env::current_exe().unwrap().parent().unwrap().join("assets");
+        let assets_dir = env::current_exe()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("assets/dark");
 
         let assets = FileAssetLoader::new(assets_dir)
             .load(&mut texture_atlas_builder)

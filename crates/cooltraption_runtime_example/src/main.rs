@@ -1,7 +1,6 @@
 #![feature(closure_lifetime_binder)]
 use std::sync::mpsc::channel;
-use std::iter;
-
+use std::{env, iter};
 
 use cooltraption_runtime::configurators::common_configurators::add_renderer;
 use cooltraption_runtime::configurators::{
@@ -13,9 +12,11 @@ use cooltraption_runtime::{Runtime, RuntimeConfigurationBuilder};
 pub mod factories;
 
 fn main() {
+    env::set_var("RUST_LOG", "info");
+    env_logger::init();
+
     runtime_example();
 }
-
 
 fn runtime_example() {
     let (input_action_sender, input_action_receiver) = channel();
