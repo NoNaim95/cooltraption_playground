@@ -7,6 +7,7 @@ use cooltraption_runtime::configurators::{
 };
 use cooltraption_runtime::factories::create_schedule;
 use cooltraption_runtime::{Runtime, RuntimeConfigurationBuilder};
+use cooltraption_simulation::action::Action;
 
 pub mod factories;
 
@@ -18,7 +19,7 @@ fn main() {
 }
 
 fn runtime_example() {
-    let (input_action_sender, input_action_receiver) = channel();
+    let (input_action_sender, input_action_receiver) = channel::<Action>();
 
     let mut runtime_config_builder = RuntimeConfigurationBuilder::default();
     let mut configurator_pipeline = ConfiguratorPipeline::default();
@@ -42,11 +43,13 @@ fn runtime_example() {
         add_renderer(config, input_action_sender.clone());
     };
 
-    configurator_pipeline.add_configurator(add_schedule_configurator);
-    configurator_pipeline.add_configurator(render_configurator);
+    configurator_pipeline
+        .add_configurator(add_schedule_configurator)
+        .add_configurator(render_configurator);
 
-    configurator_once_pipeline.add_configurator_once(configurator_pipeline);
-    configurator_once_pipeline.add_configurator_once(input_action_configurator);
+    configurator_once_pipeline
+        .add_configurator_once(configurator_pipeline)
+        .add_configurator_once(input_action_configurator);
 
     configurator_once_pipeline
         .boxed()
