@@ -1,5 +1,6 @@
-pub mod network_state;
-pub mod client;
-pub mod packets;
-pub mod connection;
 pub mod builder;
+pub mod client;
+pub mod connection;
+pub mod director;
+pub mod network_state;
+pub mod packets;

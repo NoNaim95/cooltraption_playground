@@ -6,7 +6,7 @@ use bimap::BiMap;
 
 use message_io::{
     network::Endpoint,
-    node::{NodeEvent, NodeHandler},
+    node::{NodeEvent, NodeHandler, NodeListener},
 };
 
 pub enum Signal {}
@@ -109,24 +109,38 @@ pub enum NetworkStateEvent {
 pub struct NodeEventHandler {
     pub network_state: ConcurrentNetworkState,
     pub network_state_publisher: Vec<NetworkStateEventHandler>,
+    pub node_listener: NodeListener<Signal>,
 }
 
 impl NodeEventHandler {
     pub fn new(
         network_state: ConcurrentNetworkState,
         network_state_publisher: Vec<NetworkStateEventHandler>,
+        node_listener: NodeListener<Signal>,
     ) -> Self {
         Self {
             network_state,
             network_state_publisher,
+            node_listener,
         }
     }
 
-    pub fn handle_node_event(&mut self, event: NodeEvent<'_, Signal>) {
-        let mut network_state_lock = self.network_state.lock().unwrap();
-        let network_state_event = network_state_lock.apply_node_event(&event);
-        for f in self.network_state_publisher.iter_mut() {
-            f(&network_state_event, &mut network_state_lock);
-        }
+    pub fn handle_event_loop(mut self) {
+        self.node_listener
+            .for_each(move |event: NodeEvent<'_, Signal>| {
+                let mut network_state_lock = self.network_state.lock().unwrap();
+                let network_state_event = network_state_lock.apply_node_event(&event);
+                for f in self.network_state_publisher.iter_mut() {
+                    f(&network_state_event, &mut network_state_lock);
+                }
+            });
+    }
+
+    pub fn concurrent_network_state(&self) -> ConcurrentNetworkState {
+        Arc::clone(&self.network_state)
+    }
+
+    pub fn node_handler(&self) -> NodeHandler<Signal> {
+        self.network_state.lock().unwrap().node_handler.clone()
     }
 }
