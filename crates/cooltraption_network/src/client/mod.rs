@@ -1,8 +1,14 @@
 use std::net::ToSocketAddrs;
 
+use serde::de::DeserializeOwned;
+
 use crate::network_state::NodeEventHandler;
 
-pub fn connect(server: impl ToSocketAddrs, node_event_handler: NodeEventHandler) {
+pub fn connect<T>(server: impl ToSocketAddrs, node_event_handler: NodeEventHandler<T>)
+where
+    T: DeserializeOwned,
+{
+    println!("Connecting");
     node_event_handler
         .node_handler()
         .network()
@@ -15,7 +21,10 @@ pub fn connect(server: impl ToSocketAddrs, node_event_handler: NodeEventHandler)
     node_event_handler.handle_event_loop();
 }
 
-pub fn listen(addr: impl ToSocketAddrs, node_event_handler: NodeEventHandler) {
+pub fn listen<T>(addr: impl ToSocketAddrs, node_event_handler: NodeEventHandler<T>)
+where
+    T: DeserializeOwned
+{
     node_event_handler
         .node_handler()
         .network()

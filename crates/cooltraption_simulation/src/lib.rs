@@ -111,8 +111,9 @@ impl SimulationImpl {
         action_packets: &mut BoxedIt<ActionPacket>,
         local_action_packet_handlers: &mut [LocalActionPacketHandler],
     ) {
-        for local_action_packet in
-            actions.map(|action| ActionPacket::new(self.simulation_state.current_tick(), action))
+        for local_action_packet in actions
+            .map(|action| ActionPacket::new(self.simulation_state.current_tick() + Tick(30), action))
+        //TODO +30 ticks as buffer for latency
         {
             for handler in local_action_packet_handlers.iter_mut() {
                 handler(&local_action_packet);

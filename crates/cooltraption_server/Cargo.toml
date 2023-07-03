@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 cooltraption_network = { path = "../cooltraption_network" }
+cooltraption_simulation = { path = "../cooltraption_simulation" }

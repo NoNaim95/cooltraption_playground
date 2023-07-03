@@ -6,5 +6,5 @@ pub enum Packet<T> {
     ClientPacket(T),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ChatMessage(pub String);

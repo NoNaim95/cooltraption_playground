@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::{
+    marker::PhantomData,
+    sync::{Arc, Mutex, MutexGuard},
+};
 
 use crate::connection::Connection;
 use crate::packets::Packet;
@@ -8,24 +11,30 @@ use message_io::{
     network::Endpoint,
     node::{NodeEvent, NodeHandler, NodeListener},
 };
+use serde::{de::DeserializeOwned, Serialize};
 
 pub enum Signal {}
 
 #[derive(Clone)]
-pub struct NetworkStateImpl {
+pub struct NetworkStateImpl<T> {
     connections: BiMap<Connection, Endpoint>,
     node_handler: NodeHandler<Signal>,
+    _phantom: PhantomData<T>,
 }
 
-impl NetworkStateImpl {
+impl<T> NetworkStateImpl<T> {
     pub fn new(node_handler: NodeHandler<Signal>) -> Self {
         Self {
             connections: Default::default(),
             node_handler,
+            _phantom: PhantomData,
         }
     }
 
-    pub fn send_packet(&self, packet: Packet<()>, connection: &Connection) {
+    pub fn send_packet(&self, packet: Packet<T>, connection: &Connection)
+    where
+        T: Serialize,
+    {
         let endpoint = self.connections.get_by_left(connection).unwrap();
         self.node_handler.network().send(
             *endpoint,
@@ -56,9 +65,12 @@ impl NetworkStateImpl {
         self.connections.remove_by_right(endpoint);
     }
 
-    fn apply_node_event(&mut self, message: &NodeEvent<'_, Signal>) -> NetworkStateEvent {
+    fn apply_node_event(&mut self, message: &NodeEvent<'_, Signal>) -> NetworkStateEvent<T>
+    where
+        T: DeserializeOwned,
+    {
         if let NodeEvent::Network(net_event) = message {
-            let network_state_event: NetworkStateEvent = match net_event {
+            let network_state_event: NetworkStateEvent<T> = match net_event {
                 message_io::network::NetEvent::Connected(endpoint, established) => {
                     if !established {
                         panic!("connection failed");
@@ -79,7 +91,7 @@ impl NetworkStateImpl {
                 message_io::network::NetEvent::Message(endpoint, message) => {
                     println!("Message received!");
                     let connection = self.connections.get_by_right(endpoint).unwrap().clone();
-                    let packet = serde_yaml::from_slice::<Packet<()>>(message).unwrap();
+                    let packet = serde_yaml::from_slice::<Packet<T>>(message).unwrap();
                     NetworkStateEvent::Message(connection, packet)
                 }
                 message_io::network::NetEvent::Disconnected(endpoint) => {
@@ -95,27 +107,27 @@ impl NetworkStateImpl {
         }
     }
 }
-pub type ConcurrentNetworkState = Arc<Mutex<NetworkStateImpl>>;
-pub type NetworkStateEventHandler =
-    Box<dyn FnMut(&NetworkStateEvent, &mut MutexGuard<NetworkStateImpl>) + Send>;
+pub type ConcurrentNetworkState<T> = Arc<Mutex<NetworkStateImpl<T>>>;
+pub type NetworkStateEventHandler<T> =
+    Box<dyn FnMut(&NetworkStateEvent<T>, &mut MutexGuard<NetworkStateImpl<T>>) + Send>;
 
-pub enum NetworkStateEvent {
+pub enum NetworkStateEvent<T> {
     Connected(Connection),
     Accepted(Connection),
     Disconnected(Connection),
-    Message(Connection, Packet<()>),
+    Message(Connection, Packet<T>),
 }
 
-pub struct NodeEventHandler {
-    pub network_state: ConcurrentNetworkState,
-    pub network_state_publisher: Vec<NetworkStateEventHandler>,
+pub struct NodeEventHandler<T> {
+    pub network_state: ConcurrentNetworkState<T>,
+    pub network_state_publisher: Vec<NetworkStateEventHandler<T>>,
     pub node_listener: NodeListener<Signal>,
 }
 
-impl NodeEventHandler {
+impl<T> NodeEventHandler<T> {
     pub fn new(
-        network_state: ConcurrentNetworkState,
-        network_state_publisher: Vec<NetworkStateEventHandler>,
+        network_state: ConcurrentNetworkState<T>,
+        network_state_publisher: Vec<NetworkStateEventHandler<T>>,
         node_listener: NodeListener<Signal>,
     ) -> Self {
         Self {
@@ -125,7 +137,10 @@ impl NodeEventHandler {
         }
     }
 
-    pub fn handle_event_loop(mut self) {
+    pub fn handle_event_loop(mut self)
+    where
+        T: DeserializeOwned,
+    {
         self.node_listener
             .for_each(move |event: NodeEvent<'_, Signal>| {
                 let mut network_state_lock = self.network_state.lock().unwrap();
@@ -136,7 +151,7 @@ impl NodeEventHandler {
             });
     }
 
-    pub fn concurrent_network_state(&self) -> ConcurrentNetworkState {
+    pub fn concurrent_network_state(&self) -> ConcurrentNetworkState<T> {
         Arc::clone(&self.network_state)
     }
 

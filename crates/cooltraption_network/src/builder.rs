@@ -10,13 +10,13 @@ use crate::network_state::NetworkStateImpl;
 use crate::network_state::NodeEventHandler;
 use crate::network_state::Signal;
 
-pub struct NodeEventHandlerBuilder {
-    pub network_state: ConcurrentNetworkState,
-    pub network_state_publisher: Vec<NetworkStateEventHandler>,
+pub struct NodeEventHandlerBuilder<T> {
+    pub network_state: ConcurrentNetworkState<T>,
+    pub network_state_publisher: Vec<NetworkStateEventHandler<T>>,
     pub node_listener: NodeListener<Signal>,
 }
 
-impl Default for NodeEventHandlerBuilder {
+impl<T> Default for NodeEventHandlerBuilder<T> {
     fn default() -> Self {
         let (node_handler, node_listener) = node::split::<Signal>();
         Self {
@@ -27,12 +27,12 @@ impl Default for NodeEventHandlerBuilder {
     }
 }
 
-impl NodeEventHandlerBuilder {
-    pub fn add_network_state_event_handler(&mut self, handler: NetworkStateEventHandler) {
+impl<T> NodeEventHandlerBuilder<T> {
+    pub fn add_network_state_event_handler(&mut self, handler: NetworkStateEventHandler<T>) {
         self.network_state_publisher.push(handler);
     }
 
-    pub fn build(self) -> NodeEventHandler {
+    pub fn build(self) -> NodeEventHandler<T> {
         NodeEventHandler::new(
             self.network_state,
             self.network_state_publisher,

@@ -1,7 +1,9 @@
 use std::sync::mpsc::channel;
 use std::{env, iter};
 
-use cooltraption_runtime::configurators::common_configurators::add_renderer;
+use cooltraption_runtime::configurators::common_configurators::{
+    add_networking_client, add_renderer,
+};
 use cooltraption_runtime::configurators::{
     ConfiguratorOnce, ConfiguratorOncePipeline, ConfiguratorPipeline,
 };
@@ -45,7 +47,8 @@ fn runtime_example() {
 
     configurator_pipeline
         .add_configurator(add_schedule_configurator)
-        .add_configurator(render_configurator);
+        .add_configurator(render_configurator)
+        .add_configurator(add_networking_client);
 
     configurator_once_pipeline
         .add_configurator_once(configurator_pipeline)

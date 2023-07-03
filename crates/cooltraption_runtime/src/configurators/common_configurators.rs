@@ -6,8 +6,10 @@ use std::sync::MutexGuard;
 
 use cooltraption_input::input::{InputEvent, InputEventHandler, InputState};
 use cooltraption_network::builder::NodeEventHandlerBuilder;
+use cooltraption_network::client::connect;
 use cooltraption_network::network_state::NetworkStateEvent;
 use cooltraption_network::network_state::NetworkStateImpl;
+use cooltraption_network::packets::Packet;
 use cooltraption_render::world_renderer::interpolator::Drawable;
 use cooltraption_simulation::action::Action;
 use cooltraption_simulation::action::ActionPacket;
@@ -48,9 +50,38 @@ pub fn add_networking_client(runtime_config_builder: &mut RuntimeConfigurationBu
     let (action_sender, action_receiver) = channel::<ActionPacket>();
 
     let handler =
-        |event: &NetworkStateEvent, locked_network_state: &mut MutexGuard<NetworkStateImpl>| {};
+        move |event: &NetworkStateEvent<ActionPacket>,
+              _locked_network_state: &mut MutexGuard<NetworkStateImpl<ActionPacket>>| {
+            if let NetworkStateEvent::Message(_connection, Packet::ChatMessage(msg)) = event {
+                println!("Received Chat Message!: {}", msg.0);
+            }
+            if let NetworkStateEvent::Message(_connection, Packet::ClientPacket(action_packet)) =
+                event
+            {
+                action_sender.send(*action_packet).unwrap();
+            }
+        };
+    node_event_handler_builder.add_network_state_event_handler(Box::new(handler));
 
-    node_event_handler_builder.add_network_state_event_handler(Box::new(handler))
+    runtime_config_builder
+        .simulation_run_options_builder()
+        .set_action_packets(Box::new(iter::from_fn(move || {
+            action_receiver.try_recv().ok()
+        })));
 
-    //runtime_config_builder.simulation_run_options_builder().set_action_packets()
+    let node_event_handler = node_event_handler_builder.build();
+    let concurrent_network_state = node_event_handler.concurrent_network_state();
+
+    let task = Box::new(|| connect("0.0.0.0:5001", node_event_handler));
+    runtime_config_builder.add_task(task);
+
+    runtime_config_builder
+        .simulation_run_options_builder()
+        .add_local_action_packet_callback(Box::new(move |local_action_packet| {
+            let locked_network_state = concurrent_network_state.lock().unwrap();
+            locked_network_state.send_packet(
+                Packet::<ActionPacket>::ClientPacket(*local_action_packet),
+                locked_network_state.connections()[0],
+            )
+        }));
 }
