@@ -12,13 +12,19 @@ log = "0.4"
 env_logger = "0.10"
 bevy_ecs = "0.10"
 bevy_reflect = "0.9"
-nalgebra = { version = "0.32", features = ["serde-serialize"]}
-simba = { version = "0.8.1", features = ["default", "fixed", "partial_fixed_point_support", "serde_serialize", "serde"]}
+nalgebra = { version = "0.32", features = ["serde-serialize"] }
+simba = { version = "0.8.1", features = [
+    "default",
+    "fixed",
+    "partial_fixed_point_support",
+    "serde_serialize",
+    "serde",
+] }
 fixed = { version = "1.23.1", features = ["serde"] }
 fixed-macro = "1.1"
 num-traits = "0.2"
 serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.9"
+serde_json = "1.0"
 anyhow = "1.0.71"
 
 derive_more = "0.99.17"

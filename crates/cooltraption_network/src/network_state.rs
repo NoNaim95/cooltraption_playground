@@ -38,7 +38,7 @@ impl<T> NetworkStateImpl<T> {
         let endpoint = self.connections.get_by_left(connection).unwrap();
         self.node_handler.network().send(
             *endpoint,
-            serde_yaml::to_string(&packet).unwrap().as_bytes(),
+            serde_json::to_string(&packet).unwrap().as_bytes(),
         );
     }
 
@@ -75,27 +75,23 @@ impl<T> NetworkStateImpl<T> {
                     if !established {
                         panic!("connection failed");
                     }
-                    println!("Connected to Server!");
                     self.add_endpoint(*endpoint);
                     NetworkStateEvent::Connected(
                         self.connections.get_by_right(endpoint).unwrap().clone(),
                     )
                 }
                 message_io::network::NetEvent::Accepted(endpoint, _) => {
-                    println!("Client Connected!");
                     self.add_endpoint(*endpoint);
                     NetworkStateEvent::Accepted(
                         self.connections.get_by_right(endpoint).unwrap().clone(),
                     )
                 }
                 message_io::network::NetEvent::Message(endpoint, message) => {
-                    println!("Message received!");
                     let connection = self.connections.get_by_right(endpoint).unwrap().clone();
-                    let packet = serde_yaml::from_slice::<Packet<T>>(message).unwrap();
+                    let packet = serde_json::from_slice::<Packet<T>>(message).unwrap();
                     NetworkStateEvent::Message(connection, packet)
                 }
                 message_io::network::NetEvent::Disconnected(endpoint) => {
-                    println!("Client Disconnected!");
                     let connection = self.connections.get_by_right(endpoint).unwrap().clone();
                     self.remove_endpoint(endpoint);
                     NetworkStateEvent::Disconnected(connection)

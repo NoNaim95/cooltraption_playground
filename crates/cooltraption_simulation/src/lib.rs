@@ -3,7 +3,7 @@ extern crate derive_more;
 use std::collections::HashMap;
 use std::iter;
 use std::thread::sleep;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 pub use bevy_ecs::entity::*;
 pub use bevy_ecs::prelude::*;
@@ -15,6 +15,7 @@ pub use bevy_ecs::world::*;
 
 use action::{Action, ActionPacket};
 pub use components::{Acceleration, PhysicsBundle, Position, Velocity};
+use cooltraption_common::types::TimePoint;
 use simulation_state::SimulationState;
 use system_sets::physics_set;
 
@@ -37,12 +38,42 @@ pub struct Tick(pub u64);
 pub struct Actions(Vec<Action>);
 
 type BoxedIt<T> = Box<dyn Iterator<Item = T> + Send>;
+type BoxedGenerator<T> = Box<dyn FnMut() -> T + Send>;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub enum SimulationPacket {
+    ActionPacket(ActionPacket),
+    ResetRequest(ResetRequest),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub enum ResetRequest {
+    Now,
+    AtTime(TimePoint),
+}
+
+impl ResetRequest {
+    pub fn sleep_until(&self) {
+        match self {
+            ResetRequest::Now => (),
+            ResetRequest::AtTime(time_point) => {
+                let sleep_millis = time_point.millis()
+                    - SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_millis();
+                sleep(Duration::from_millis(sleep_millis as u64))
+            }
+        }
+    }
+}
 
 pub struct SimulationRunConfig {
     actions: BoxedIt<Action>,
     action_packets: BoxedIt<ActionPacket>,
     state_complete_handler: Vec<SimulationStateHandler>,
     local_action_packet_callbacks: Vec<LocalActionPacketHandler>,
+    should_reset_generator: BoxedGenerator<Option<ResetRequest>>,
 }
 
 impl Default for SimulationRunConfig {
@@ -52,6 +83,7 @@ impl Default for SimulationRunConfig {
             action_packets: Box::new(iter::from_fn(|| None)),
             state_complete_handler: Default::default(),
             local_action_packet_callbacks: Default::default(),
+            should_reset_generator: Box::new(|| None),
         }
     }
 }
@@ -92,6 +124,12 @@ impl SimulationImpl {
             );
             self.step_simulation(frame_time);
 
+            if let Some(reset_request) = (run_options.should_reset_generator)() {
+                self.simulation_state.reset();
+                self.action_table.clear();
+                reset_request.sleep_until();
+            }
+
             for handler in &mut run_options.state_complete_handler {
                 handler(&mut self.simulation_state)
             }
@@ -111,8 +149,9 @@ impl SimulationImpl {
         action_packets: &mut BoxedIt<ActionPacket>,
         local_action_packet_handlers: &mut [LocalActionPacketHandler],
     ) {
-        for local_action_packet in actions
-            .map(|action| ActionPacket::new(self.simulation_state.current_tick() + Tick(30), action))
+        for local_action_packet in actions.map(|action| {
+            ActionPacket::new(self.simulation_state.current_tick() + Tick(30), action)
+        })
         //TODO +30 ticks as buffer for latency
         {
             for handler in local_action_packet_handlers.iter_mut() {

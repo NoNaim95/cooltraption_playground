@@ -19,6 +19,11 @@ impl SimulationRunOptionsBuilder {
         self
     }
 
+    pub fn set_resetter(&mut self, resetter: BoxedGenerator<Option<ResetRequest>>) -> &mut Self {
+        self.run_opts.should_reset_generator = resetter;
+        self
+    }
+
     pub fn add_state_complete_callback(&mut self, handler: SimulationStateHandler) -> &mut Self {
         self.run_opts.state_complete_handler.push(handler);
         self

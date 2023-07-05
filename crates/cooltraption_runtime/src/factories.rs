@@ -4,6 +4,7 @@ use cooltraption_input::input::{InputEvent, InputState, KeyboardInputEvent};
 //use cooltraption_network::client;
 use cooltraption_render::world_renderer::interpolator::Transform;
 use cooltraption_render::world_renderer::interpolator::{Drawable, Id, Scale};
+use cooltraption_simulation::ResetRequest;
 use cooltraption_simulation::{
     action::{Action, CircularForceAction, SpawnBallAction},
     system_sets::physics_set::{Float, FromNum2, Vec2f},
@@ -19,6 +20,7 @@ use cooltraption_simulation::{
 
 pub fn create_input_handler(
     input_action_sender: Sender<Action>,
+    reset_request_sender: Sender<ResetRequest>,
 ) -> impl for<'a> FnMut(&InputEvent, &InputState) + Send {
     move |input_event: &InputEvent, _input_state: &InputState| {
         if let InputEvent::KeyboardInputEvent(KeyboardInputEvent::KeyPressed(key_code, ..)) =
@@ -27,7 +29,7 @@ pub fn create_input_handler(
             match key_code {
                 VirtualKeyCode::Space => {
                     let circular_force_action = CircularForceAction {
-                        position: Position(Vec2f::from_num(0, 0)),
+                        position: Position(Vec2f::from_num(100, 100)),
                         strength: Float::from_num(30),
                     };
                     input_action_sender
@@ -36,12 +38,14 @@ pub fn create_input_handler(
                 }
                 VirtualKeyCode::E => {
                     let spawn_ball_action = SpawnBallAction {
-                        position: Position(Vec2f::from_num(10, 10)),
+                        position: Position(Vec2f::from_num(0, 0)),
                     };
                     input_action_sender
                         .send(Action::SpawnBall(spawn_ball_action))
                         .unwrap();
                 }
+
+                VirtualKeyCode::Back => reset_request_sender.send(ResetRequest::Now).unwrap(),
                 _ => (),
             }
         }

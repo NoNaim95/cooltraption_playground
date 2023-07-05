@@ -59,4 +59,9 @@ impl SimulationState {
     pub fn current_tick(&self) -> Tick {
         *self.world.get_resource::<Tick>().unwrap()
     }
+
+    pub fn reset(&mut self) {
+        self.world.clear_all();
+        self.load_current_tick(Tick(0));
+    }
 }

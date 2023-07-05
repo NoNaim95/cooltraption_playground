@@ -14,6 +14,8 @@ use cooltraption_render::world_renderer::interpolator::Drawable;
 use cooltraption_simulation::action::Action;
 use cooltraption_simulation::action::ActionPacket;
 use cooltraption_simulation::simulation_state::SimulationState;
+use cooltraption_simulation::ResetRequest;
+use cooltraption_simulation::SimulationPacket;
 
 use crate::factories;
 use crate::factories::create_input_handler;
@@ -25,6 +27,7 @@ pub type InputEventCallback = Box<dyn FnMut(&InputEvent, &InputState) + 'static 
 pub fn add_renderer(
     runtime_config_builder: &mut RuntimeConfigurationBuilder,
     input_action_sender: Sender<Action>,
+    reset_sender: Sender<ResetRequest>,
 ) {
     let (world_state_sender, world_state_receiver) = mpsc::sync_channel::<Vec<Drawable>>(20);
     let mut sim_state_sender = factories::sim_state_sender(world_state_sender);
@@ -36,8 +39,11 @@ pub fn add_renderer(
 
     let world_state_iterator = iter::from_fn(move || world_state_receiver.try_recv().ok());
 
-    let input_event_callbacks: Vec<InputEventCallback> =
-        vec![Box::new(create_input_handler(input_action_sender))];
+    let input_event_callbacks: Vec<InputEventCallback> = vec![Box::new(create_input_handler(
+        input_action_sender,
+        reset_sender,
+    ))];
+
     let input_event_handler = InputEventHandler::new(input_event_callbacks);
 
     runtime_config_builder.set_last_task(Box::new(move || {
@@ -45,20 +51,30 @@ pub fn add_renderer(
     }));
 }
 
-pub fn add_networking_client(runtime_config_builder: &mut RuntimeConfigurationBuilder) {
+pub fn add_networking_client(
+    runtime_config_builder: &mut RuntimeConfigurationBuilder,
+    reset_sender: Sender<ResetRequest>,
+) {
     let mut node_event_handler_builder = NodeEventHandlerBuilder::default();
     let (action_sender, action_receiver) = channel::<ActionPacket>();
 
     let handler =
-        move |event: &NetworkStateEvent<ActionPacket>,
-              _locked_network_state: &mut MutexGuard<NetworkStateImpl<ActionPacket>>| {
-            if let NetworkStateEvent::Message(_connection, Packet::ChatMessage(msg)) = event {
-                println!("Received Chat Message!: {}", msg.0);
-            }
-            if let NetworkStateEvent::Message(_connection, Packet::ClientPacket(action_packet)) =
-                event
-            {
-                action_sender.send(*action_packet).unwrap();
+        move |event: &NetworkStateEvent<SimulationPacket>,
+              _locked_network_state: &mut MutexGuard<NetworkStateImpl<SimulationPacket>>| {
+            if let NetworkStateEvent::Message(_connection, packet) = event {
+                match packet {
+                    Packet::ChatMessage(msg) => {
+                        println!("Received Chat Message!: {}", msg.0);
+                    }
+                    Packet::ClientPacket(simulation_packet) => match simulation_packet {
+                        SimulationPacket::ActionPacket(action_packet) => {
+                            action_sender.send(*action_packet).unwrap()
+                        }
+                        SimulationPacket::ResetRequest(reset_request) => {
+                            reset_sender.send(*reset_request).unwrap()
+                        }
+                    },
+                }
             }
         };
     node_event_handler_builder.add_network_state_event_handler(Box::new(handler));
@@ -80,7 +96,9 @@ pub fn add_networking_client(runtime_config_builder: &mut RuntimeConfigurationBu
         .add_local_action_packet_callback(Box::new(move |local_action_packet| {
             let locked_network_state = concurrent_network_state.lock().unwrap();
             locked_network_state.send_packet(
-                Packet::<ActionPacket>::ClientPacket(*local_action_packet),
+                Packet::<SimulationPacket>::ClientPacket(SimulationPacket::ActionPacket(
+                    *local_action_packet,
+                )),
                 locked_network_state.connections()[0],
             )
         }));
