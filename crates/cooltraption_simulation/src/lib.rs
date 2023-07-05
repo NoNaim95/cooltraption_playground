@@ -113,9 +113,11 @@ impl SimulationImpl {
     }
 
     pub fn run(&mut self, mut run_options: SimulationRunConfig) -> ! {
+        let target_dt_ms = 50;
         let mut start_time = Instant::now();
         loop {
             let frame_time = Instant::now() - start_time;
+            //println!("{}", frame_time.as_millis());
 
             self.handle_actions(
                 &mut run_options.actions,
@@ -134,8 +136,23 @@ impl SimulationImpl {
                 handler(&mut self.simulation_state)
             }
 
+            if self.simulation_state.current_tick().0 % 100 == 0 {
+                println!(
+                    "{}",
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_millis()
+                );
+            }
+
+            let sleep_target = start_time + Duration::from_millis(target_dt_ms);
             start_time = Instant::now();
-            sleep(Duration::from_millis(10));
+            println!(
+                "sleeping for {}",
+                (sleep_target - Instant::now()).as_millis()
+            );
+            sleep(sleep_target - Instant::now());
         }
     }
 

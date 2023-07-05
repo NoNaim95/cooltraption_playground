@@ -88,7 +88,7 @@ pub fn add_networking_client(
     let node_event_handler = node_event_handler_builder.build();
     let concurrent_network_state = node_event_handler.concurrent_network_state();
 
-    let task = Box::new(|| connect("0.0.0.0:5001", node_event_handler));
+    let task = Box::new(|| connect("deni-ismailov.de:5001", node_event_handler));
     runtime_config_builder.add_task(task);
 
     runtime_config_builder
