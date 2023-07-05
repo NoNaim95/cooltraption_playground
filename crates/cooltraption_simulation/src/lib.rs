@@ -16,6 +16,7 @@ pub use bevy_ecs::world::*;
 use action::{Action, ActionPacket};
 pub use components::{Acceleration, PhysicsBundle, Position, Velocity};
 use cooltraption_common::types::TimePoint;
+use log::debug;
 use simulation_state::SimulationState;
 use system_sets::physics_set;
 

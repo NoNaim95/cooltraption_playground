@@ -1,5 +1,6 @@
 use std::net::ToSocketAddrs;
 
+use log::debug;
 use serde::de::DeserializeOwned;
 
 use crate::network_state::NodeEventHandler;
@@ -8,7 +9,7 @@ pub fn connect<T>(server: impl ToSocketAddrs, node_event_handler: NodeEventHandl
 where
     T: DeserializeOwned,
 {
-    println!("Connecting");
+    debug!("Connecting");
     node_event_handler
         .node_handler()
         .network()
@@ -23,7 +24,7 @@ where
 
 pub fn listen<T>(addr: impl ToSocketAddrs, node_event_handler: NodeEventHandler<T>)
 where
-    T: DeserializeOwned
+    T: DeserializeOwned,
 {
     node_event_handler
         .node_handler()

@@ -22,6 +22,8 @@ use crate::factories::create_input_handler;
 use crate::render_component;
 use crate::RuntimeConfigurationBuilder;
 
+use log::debug;
+
 pub type InputEventCallback = Box<dyn FnMut(&InputEvent, &InputState) + 'static + Send>;
 
 pub fn add_renderer(
@@ -64,7 +66,7 @@ pub fn add_networking_client(
             if let NetworkStateEvent::Message(_connection, packet) = event {
                 match packet {
                     Packet::ChatMessage(msg) => {
-                        println!("Received Chat Message!: {}", msg.0);
+                        debug!("Received Chat Message!: {}", msg.0);
                     }
                     Packet::ClientPacket(simulation_packet) => match simulation_packet {
                         SimulationPacket::ActionPacket(action_packet) => {

@@ -8,7 +8,7 @@ use cooltraption_render::world_renderer::camera::controls::*;
 use cooltraption_window::events::EventHandler;
 use cooltraption_window::window::winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode};
 use cooltraption_window::window::{winit, WindowContext, WindowEvent, WinitEvent};
-use std::println;
+use log::debug;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 
@@ -59,7 +59,7 @@ impl CameraController for Controller {
 }
 
 pub fn print_camera_move_event(event: &CameraMovedEvent) {
-    println!("Camera moved to: {:?}", event);
+    debug!("Camera moved to: {:?}", event);
 }
 
 #[allow(dead_code)]
