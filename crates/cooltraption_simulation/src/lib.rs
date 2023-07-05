@@ -20,6 +20,7 @@ use simulation_state::SimulationState;
 use system_sets::physics_set;
 
 use derive_more::{Add, AddAssign, Deref, Div, From, Into, Mul, Sub};
+use rsntp::SntpClient;
 use serde::{Deserialize, Serialize};
 
 use builders::*;
@@ -57,9 +58,13 @@ impl ResetRequest {
         match self {
             ResetRequest::Now => (),
             ResetRequest::AtTime(time_point) => {
+                let client = SntpClient::new();
                 let sleep_millis = time_point.millis()
-                    - SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
+                    - client
+                        .synchronize("time.google.com")
+                        .unwrap()
+                        .datetime()
+                        .unix_timestamp()
                         .unwrap()
                         .as_millis();
                 sleep(Duration::from_millis(sleep_millis as u64))
@@ -113,7 +118,7 @@ impl SimulationImpl {
     }
 
     pub fn run(&mut self, mut run_options: SimulationRunConfig) -> ! {
-        let target_dt_ms = 50;
+        let target_dt_ms = 16;
         let mut start_time = Instant::now();
         let mut root_time = start_time;
         loop {
