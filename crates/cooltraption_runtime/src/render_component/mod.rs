@@ -46,7 +46,7 @@ where
         Box::new(WorldRendererInitializer {
             controller,
             texture_atlas_builder,
-            fixed_delta_time: Duration::from_secs_f32(1.0 / 50.0),
+            fixed_delta_time: Duration::from_millis(16),
             assets,
             state_recv: state_iterator,
         })

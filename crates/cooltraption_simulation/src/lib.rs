@@ -115,10 +115,9 @@ impl SimulationImpl {
     pub fn run(&mut self, mut run_options: SimulationRunConfig) -> ! {
         let target_dt_ms = 50;
         let mut start_time = Instant::now();
+        let mut root_time = start_time;
         loop {
             let frame_time = Instant::now() - start_time;
-            //println!("{}", frame_time.as_millis());
-
             self.handle_actions(
                 &mut run_options.actions,
                 &mut run_options.action_packets,
@@ -130,28 +129,17 @@ impl SimulationImpl {
                 self.simulation_state.reset();
                 self.action_table.clear();
                 reset_request.sleep_until();
+                root_time = Instant::now();
             }
 
             for handler in &mut run_options.state_complete_handler {
                 handler(&mut self.simulation_state)
             }
 
-            if self.simulation_state.current_tick().0 % 100 == 0 {
-                println!(
-                    "{}",
-                    SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_millis()
-                );
-            }
-
-            let sleep_target = start_time + Duration::from_millis(target_dt_ms);
             start_time = Instant::now();
-            println!(
-                "sleeping for {}",
-                (sleep_target - Instant::now()).as_millis()
-            );
+            let sleep_target = root_time
+                + Duration::from_millis(target_dt_ms)
+                    * self.simulation_state.current_tick().0 as u32;
             sleep(sleep_target - Instant::now());
         }
     }
