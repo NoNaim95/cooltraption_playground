@@ -2,27 +2,27 @@
 use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 
-struct OverwriteChannelWriter<T> {
+pub struct OverwriteChannelWriter<T> {
     rc: Rc<RefCell<T>>,
 }
 
-struct OverwriteChannelReader<T> {
+pub struct OverwriteChannelReader<T> {
     rc: Rc<RefCell<T>>,
 }
 
 impl<T> OverwriteChannelReader<T> {
-    fn read(&self) -> Ref<T> {
+    pub fn read(&self) -> Ref<T> {
         self.rc.borrow()
     }
 }
 
 impl<T> OverwriteChannelWriter<T> {
-    fn write(&self, value: T) {
+    pub fn write(&self, value: T) {
         self.rc.replace(value);
     }
 }
 
-fn overwrite_channel<T>(value: T) -> (OverwriteChannelWriter<T>, OverwriteChannelReader<T>) {
+pub fn overwrite_channel<T>(value: T) -> (OverwriteChannelWriter<T>, OverwriteChannelReader<T>) {
     let reader = OverwriteChannelReader {
         rc: Rc::new(RefCell::new(value)),
     };
