@@ -9,8 +9,9 @@ use cooltraption_window::window::winit::event::{
     ElementState, KeyboardInput, ModifiersState, MouseButton, VirtualKeyCode,
 };
 use cooltraption_window::window::{winit, WindowContext, WinitEvent};
+use winit::dpi::PhysicalSize;
 
-type InputEventCallback = Box<dyn FnMut(&InputEvent, &InputState) + Send>;
+type InputEventCallback = Box<dyn FnMut(&InputEvent, &InputState)>;
 
 #[derive(Default)]
 pub struct InputEventHandler {
@@ -23,6 +24,7 @@ pub struct InputState {
     pub keyboard_state: KeyboardState,
     pub mouse_state: MouseState,
     pub modifier_state: ModifiersState,
+    pub window_size: PhysicalSize<u32>,
 }
 
 #[derive(Debug)]
@@ -86,8 +88,9 @@ impl InputEventHandler {
         }
     }
 
-    fn mouse_moved(&mut self, pos: &mut PhysicalPosition<f64>) {
+    fn mouse_moved(&mut self, pos: &mut PhysicalPosition<f64>, dimensions: PhysicalSize<u32>) {
         self.input_state.mouse_state.set_mouse_position(*pos);
+        self.input_state.window_size = dimensions;
         let event = InputEvent::MouseMoved(*pos);
         for callback in &mut self.callbacks {
             callback(&event, &self.input_state);
@@ -96,7 +99,7 @@ impl InputEventHandler {
 }
 
 impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputEventHandler {
-    fn handle_event(&mut self, event: &mut WinitEvent, _context: &mut WindowContext) {
+    fn handle_event(&mut self, event: &mut WinitEvent, context: &mut WindowContext) {
         if let winit::event::Event::WindowEvent { event, .. } = event.0 {
             match event {
                 winit::event::WindowEvent::KeyboardInput { input, .. } => {
@@ -109,7 +112,7 @@ impl EventHandler<WinitEvent<'_, '_>, WindowContext<'_>> for InputEventHandler {
                     self.input_state.modifier_state = *modifiers_state;
                 }
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
-                    self.mouse_moved(position)
+                    self.mouse_moved(position, context.window.inner_size())
                 }
                 _ => {}
             }

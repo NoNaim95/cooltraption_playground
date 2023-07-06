@@ -1,33 +1,33 @@
 #![allow(dead_code)]
 use std::cell::{Ref, RefCell};
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub struct OverwriteChannelWriter<T> {
-    rc: Rc<RefCell<T>>,
+    arc: Arc<RefCell<T>>,
 }
 
 pub struct OverwriteChannelReader<T> {
-    rc: Rc<RefCell<T>>,
+    arc: Arc<RefCell<T>>,
 }
 
 impl<T> OverwriteChannelReader<T> {
     pub fn read(&self) -> Ref<T> {
-        self.rc.borrow()
+        self.arc.borrow()
     }
 }
 
 impl<T> OverwriteChannelWriter<T> {
     pub fn write(&self, value: T) {
-        self.rc.replace(value);
+        self.arc.replace(value);
     }
 }
 
 pub fn overwrite_channel<T>(value: T) -> (OverwriteChannelWriter<T>, OverwriteChannelReader<T>) {
     let reader = OverwriteChannelReader {
-        rc: Rc::new(RefCell::new(value)),
+        arc: Arc::new(RefCell::new(value)),
     };
     let writer = OverwriteChannelWriter {
-        rc: Rc::clone(&reader.rc),
+        arc: Arc::clone(&reader.arc),
     };
     (writer, reader)
 }

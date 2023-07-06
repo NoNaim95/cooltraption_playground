@@ -1,6 +1,6 @@
 use super::controls::{ButtonMap, KeyboardState, MouseState};
 use super::debug_widget::DebugWidget;
-use super::CameraMovedEventHandler;
+use super::CameraViewHandler;
 use cgmath::num_traits::*;
 use cgmath::*;
 use cooltraption_render::gui::{GuiActionDispatcher, WidgetId};
@@ -8,7 +8,6 @@ use cooltraption_render::world_renderer::camera::controls::*;
 use cooltraption_window::events::EventHandler;
 use cooltraption_window::window::winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode};
 use cooltraption_window::window::{winit, WindowContext, WindowEvent, WinitEvent};
-use log::debug;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 
@@ -25,13 +24,13 @@ pub struct InputStateEventHandler {
     target_zoom: f32,
     view: CameraView,
     send: Sender<CameraView>,
-    camera_moved_callbacks: Vec<CameraMovedEventHandler>,
+    camera_moved_callbacks: Vec<CameraViewHandler>,
 }
 
 impl Controller {
     pub fn new(
         gui: GuiActionDispatcher,
-        camera_moved_event_publisher: Vec<CameraMovedEventHandler>,
+        camera_moved_event_publisher: Vec<CameraViewHandler>,
     ) -> (Self, InputStateEventHandler) {
         let (send, recv) = std::sync::mpsc::channel();
 
@@ -58,16 +57,6 @@ impl CameraController for Controller {
     }
 }
 
-pub fn print_camera_move_event(event: &CameraMovedEvent) {
-    debug!("Camera moved to: {:?}", event);
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
-pub struct CameraMovedEvent {
-    camera_pos: Point2<f32>,
-}
-
 impl InputStateEventHandler {
     fn send_controls(&mut self, delta_time: &Duration) {
         let mut move_vec = Vector2::zero();
@@ -89,28 +78,24 @@ impl InputStateEventHandler {
         if self.keyboard_state.is_down(&VirtualKeyCode::D) {
             move_vec.x += 1.0;
         }
-
         if move_vec.magnitude() > 0.0 {
             move_vec = move_vec.normalize_to(move_speed / self.view.zoom);
         }
-
+        let old_view = self.view;
         self.target_pos += move_vec;
         self.view.position =
             self.view.position + (self.target_pos - self.view.position) * move_hardness;
-
-        if move_vec.magnitude() > 0.0 {
-            let camera_moved_event = CameraMovedEvent {
-                camera_pos: self.view.position,
-            };
-            for callback in &mut self.camera_moved_callbacks {
-                callback(&camera_moved_event);
-            }
-        }
 
         self.target_zoom *= 2.0_f32.pow(self.mouse_state.scroll() * zoom_speed);
         self.view.zoom = (self.view.zoom.ln()
             + (self.target_zoom.ln() - self.view.zoom.ln()) * zoom_hardness)
             .exp();
+
+        if old_view != self.view {
+            for callback in &mut self.camera_moved_callbacks {
+                callback(&self.view);
+            }
+        }
 
         self.send.send(self.view).expect("Send controls");
     }

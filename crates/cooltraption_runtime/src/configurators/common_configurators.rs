@@ -1,3 +1,4 @@
+use cgmath::Point2;
 use std::iter;
 use std::sync::mpsc;
 use std::sync::mpsc::channel;
@@ -18,13 +19,15 @@ use cooltraption_simulation::ResetRequest;
 use cooltraption_simulation::SimulationPacket;
 
 use crate::factories;
-use crate::factories::create_input_handler;
+use crate::factories::{create_input_handler, create_world_input_handler};
 use crate::render_component;
 use crate::RuntimeConfigurationBuilder;
 
+use cooltraption_common::overwritechannel::overwrite_channel;
+use cooltraption_render::world_renderer::camera::controls::CameraView;
 use log::debug;
 
-pub type InputEventCallback = Box<dyn FnMut(&InputEvent, &InputState) + 'static + Send>;
+pub type InputEventCallback = Box<dyn FnMut(&InputEvent, &InputState) + 'static>;
 
 pub fn add_renderer(
     runtime_config_builder: &mut RuntimeConfigurationBuilder,
@@ -41,15 +44,23 @@ pub fn add_renderer(
 
     let world_state_iterator = iter::from_fn(move || world_state_receiver.try_recv().ok());
 
-    let input_event_callbacks: Vec<InputEventCallback> = vec![Box::new(create_input_handler(
-        input_action_sender,
-        reset_sender,
-    ))];
+    let (sender, receiver) = overwrite_channel::<CameraView>(CameraView {
+        position: Point2 { x: 0.0, y: 0.0 },
+        zoom: 1.0,
+    });
+
+    let input_event_callbacks: Vec<InputEventCallback> = vec![
+        Box::new(create_input_handler(
+            input_action_sender.clone(),
+            reset_sender,
+        )),
+        Box::new(create_world_input_handler(receiver, input_action_sender)),
+    ];
 
     let input_event_handler = InputEventHandler::new(input_event_callbacks);
 
     runtime_config_builder.set_last_task(Box::new(move || {
-        render_component::run_renderer(world_state_iterator, input_event_handler)
+        render_component::run_renderer(world_state_iterator, input_event_handler, sender)
     }));
 }
 

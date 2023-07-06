@@ -3,6 +3,7 @@ mod controls;
 mod debug_widget;
 
 use controller::Controller;
+use cooltraption_common::overwritechannel::OverwriteChannelWriter;
 use cooltraption_render::gui;
 use cooltraption_render::renderer::WgpuInitializer;
 use cooltraption_render::world_renderer::asset_bundle::{FileAssetLoader, LoadAssetBundle};
@@ -13,22 +14,26 @@ use std::env;
 use std::time::Duration;
 
 use cooltraption_input::input::InputEventHandler;
+use cooltraption_render::world_renderer::camera::controls::CameraView;
 use cooltraption_render::world_renderer::interpolator::Drawable;
 
-use self::controller::{print_camera_move_event, CameraMovedEvent};
-
-type CameraMovedEventHandler = Box<dyn FnMut(&CameraMovedEvent)>;
+type CameraViewHandler = Box<dyn FnMut(&CameraView)>;
 
 #[tokio::main]
-pub async fn run_renderer<I>(state_iterator: I, input_event_handler: InputEventHandler)
-where
+pub async fn run_renderer<I>(
+    state_iterator: I,
+    input_event_handler: InputEventHandler,
+    overwrite_channel_writer: OverwriteChannelWriter<CameraView>,
+) where
     I: Iterator<Item = Vec<Drawable>> + 'static,
 {
     let (gui_renderer, gui_event_handler, dispatcher) = gui::new();
-    let camera_moved_callbacks: Vec<CameraMovedEventHandler> =
-        vec![Box::new(print_camera_move_event)];
+    let camera_state_callbacks: Vec<CameraViewHandler> =
+        vec![Box::new(move |event: &CameraView| {
+            overwrite_channel_writer.write(*event);
+        })];
     let (controller, controller_event_handler) =
-        Controller::new(dispatcher, camera_moved_callbacks);
+        Controller::new(dispatcher, camera_state_callbacks);
 
     let world_renderer = {
         let mut texture_atlas_builder = TextureAtlasBuilder::default();

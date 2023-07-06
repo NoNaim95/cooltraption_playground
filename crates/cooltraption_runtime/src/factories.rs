@@ -1,4 +1,4 @@
-use cgmath::Vector2;
+use cgmath::{Point2, Vector2};
 use cooltraption_input::input::{InputEvent, InputState, KeyboardInputEvent};
 //use cooltraption_network as networking;
 //use cooltraption_network::client;
@@ -17,6 +17,9 @@ use cooltraption_simulation::{
     system_sets::{action_set, physics_set},
     IntoSystemConfig, IntoSystemConfigs, Schedule,
 };
+
+use cooltraption_common::overwritechannel::OverwriteChannelReader;
+use cooltraption_render::world_renderer::camera::controls::CameraView;
 
 pub fn create_input_handler(
     input_action_sender: Sender<Action>,
@@ -52,6 +55,40 @@ pub fn create_input_handler(
     }
 }
 
+pub fn create_world_input_handler(
+    camera_state: OverwriteChannelReader<CameraView>,
+    input_action_sender: Sender<Action>,
+) -> impl for<'a> FnMut(&InputEvent, &InputState) {
+    move |input_event: &InputEvent, input_state: &InputState| {
+        if let InputEvent::KeyboardInputEvent(KeyboardInputEvent::KeyPressed(key_code, ..)) =
+            input_event
+        {
+            if key_code == &VirtualKeyCode::F {
+                let state = camera_state.read();
+
+                let window_size = Vector2 {
+                    x: input_state.window_size.width as f32,
+                    y: input_state.window_size.height as f32,
+                };
+                let mouse_pos = Point2 {
+                    x: input_state.mouse_state.mouse_position().x as f32,
+                    y: input_state.mouse_state.mouse_position().y as f32,
+                };
+
+                let world_pos = state.world_pos(mouse_pos, window_size);
+                //println!("{:?},{:?},{:?}", mouse_pos, window_size, world_pos);
+
+                let spawn_ball_action = SpawnBallAction {
+                    position: Position(Vec2f::from_num(world_pos.x, world_pos.y)),
+                };
+                input_action_sender
+                    .send(Action::SpawnBall(spawn_ball_action))
+                    .unwrap();
+            }
+        }
+    }
+}
+
 pub fn sim_state_sender(
     world_state_sender: SyncSender<Vec<Drawable>>,
 ) -> impl FnMut(QueryIter<'_, '_, (Entity, &Position), ()>) {
@@ -59,8 +96,8 @@ pub fn sim_state_sender(
         let mut drawables = vec![];
         for (entity, pos) in comp_iter {
             let rpos = pos.0;
-            let mut pos: Vector2<f32> = Vector2::new(rpos.x.0.to_num(), rpos.y.0.to_num());
-            pos /= 100.0;
+            let pos: Vector2<f32> = Vector2::new(rpos.x.0.to_num(), rpos.y.0.to_num());
+            //pos /= 100.0;
             let drawable = Drawable {
                 id: Id(entity.index() as u64),
                 asset_name: String::from("dude"),
