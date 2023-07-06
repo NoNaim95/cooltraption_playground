@@ -15,7 +15,7 @@ pub struct RuntimeConfiguration {
     pub sim_builder: SimulationImplBuilder,
     pub sim_run_options_builder: SimulationRunOptionsBuilder,
     pub tasks: VecDeque<Task>,
-    pub last_task: Option<Task>,
+    pub last_task: Option<LastTask>,
 }
 
 #[derive(Default)]
@@ -29,7 +29,7 @@ impl RuntimeConfigurationBuilder {
         self
     }
 
-    pub fn set_last_task(&mut self, task: Task) -> &mut Self {
+    pub fn set_last_task(&mut self, task: LastTask) -> &mut Self {
         if self.runtime_config.last_task.is_some() {
             panic!("Last task on RuntimeConfiguration was set twice !!!");
         }
@@ -51,6 +51,7 @@ impl RuntimeConfigurationBuilder {
 }
 
 pub type Task = Box<dyn FnOnce() + Send + 'static>;
+pub type LastTask = Box<dyn FnOnce() + 'static>;
 
 #[derive(Default)]
 pub struct Runtime {}
