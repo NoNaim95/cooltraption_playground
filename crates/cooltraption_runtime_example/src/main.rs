@@ -15,9 +15,19 @@ use cooltraption_simulation::ResetRequest;
 pub mod factories;
 
 fn main() {
-    env::set_var("RUST_LOG", "info");
-    env_logger::init();
+    //logger_env =
+    env::set_var(
+        "RUST_LOG",
+        vec![
+            "cooltraption_simulation=debug",
+            "cooltraption_runtime=debug",
+            "cooltraption_runtime_example=debug",
+            "cooltraption_network=debug",
+        ]
+        .join(","),
+    );
 
+    env_logger::init();
     runtime_example();
 }
 
