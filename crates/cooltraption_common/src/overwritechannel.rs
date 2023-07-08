@@ -1,11 +1,12 @@
-#![allow(dead_code)]
 use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 
+#[derive(Clone, Debug)]
 pub struct OverwriteChannelWriter<T> {
     rc: Rc<RefCell<T>>,
 }
 
+#[derive(Clone, Debug)]
 pub struct OverwriteChannelReader<T> {
     rc: Rc<RefCell<T>>,
 }
