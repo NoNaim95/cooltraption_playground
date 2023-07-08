@@ -20,6 +20,7 @@ use simulation_state::SimulationState;
 use system_sets::physics_set;
 
 use derive_more::{Add, AddAssign, Deref, Div, From, Into, Mul, Sub};
+use log::error;
 use rsntp::SntpClient;
 use serde::{Deserialize, Serialize};
 
@@ -32,7 +33,7 @@ pub mod simulation_state;
 pub mod system_sets;
 
 #[rustfmt::skip]
-#[derive( Debug, Resource, Clone, Default, Eq, Hash, PartialEq, Copy, Serialize, Deserialize, Deref, Add, Mul, Sub, Div, From, Into, AddAssign,)]
+#[derive(Debug, Resource, Clone, Default, Eq, Hash, PartialEq, Copy, Serialize, Deserialize, Deref, Add, Mul, Sub, Div, From, Into, AddAssign, PartialOrd, Ord)]
 pub struct Tick(pub u64);
 
 #[derive(Resource, Clone, Default)]
@@ -79,6 +80,7 @@ pub struct SimulationRunConfig {
     state_complete_handler: Vec<SimulationStateHandler>,
     local_action_packet_callbacks: Vec<LocalActionPacketHandler>,
     should_reset_generator: BoxedGenerator<Option<ResetRequest>>,
+    action_cache: HashMap<Tick, Vec<Action>>,
 }
 
 impl Default for SimulationRunConfig {
@@ -89,31 +91,26 @@ impl Default for SimulationRunConfig {
             state_complete_handler: Default::default(),
             local_action_packet_callbacks: Default::default(),
             should_reset_generator: Box::new(|| None),
+            action_cache: Default::default(),
         }
     }
 }
 
 pub trait Simulation {
-    fn step_simulation(&mut self, dt: Duration);
+    fn step_simulation(&mut self, dt: Duration, actions: Vec<Action>);
 }
 
 #[derive(Default)]
 pub struct SimulationImpl {
     simulation_state: SimulationState,
     schedule: Schedule,
-    action_table: HashMap<Tick, Vec<Action>>,
 }
 
 impl SimulationImpl {
-    pub fn new(
-        simulation_state: SimulationState,
-        schedule: Schedule,
-        action_table: HashMap<Tick, Vec<Action>>,
-    ) -> Self {
+    pub fn new(simulation_state: SimulationState, schedule: Schedule) -> Self {
         Self {
             simulation_state,
             schedule,
-            action_table,
         }
     }
 
@@ -123,16 +120,17 @@ impl SimulationImpl {
         let mut root_time = start_time;
         loop {
             let frame_time = Instant::now() - start_time;
-            self.handle_actions(
+            let actions = self.handle_actions(
                 &mut run_options.actions,
                 &mut run_options.action_packets,
                 &mut run_options.local_action_packet_callbacks,
+                &mut run_options.action_cache,
             );
-            self.step_simulation(frame_time);
+            self.step_simulation(frame_time, actions);
 
             if let Some(reset_request) = (run_options.should_reset_generator)() {
                 self.simulation_state.reset();
-                self.action_table.clear();
+                run_options.action_cache.clear();
                 reset_request.sleep_until();
                 root_time = Instant::now();
             }
@@ -158,37 +156,39 @@ impl SimulationImpl {
         actions: &mut BoxedIt<Action>,
         action_packets: &mut BoxedIt<ActionPacket>,
         local_action_packet_handlers: &mut [LocalActionPacketHandler],
-    ) {
+        action_cache: &mut HashMap<Tick, Vec<Action>>,
+    ) -> Vec<Action> {
         for local_action_packet in actions
-            .map(|action| ActionPacket::new(self.simulation_state.current_tick() + Tick(5), action))
-        //TODO +30 ticks as buffer for latency
+            .map(|action| ActionPacket::new(self.simulation_state.current_tick() + Tick(0), action))
         {
             for handler in local_action_packet_handlers.iter_mut() {
                 handler(&local_action_packet);
             }
 
-            let actions_for_tick = self
-                .action_table
-                .entry(local_action_packet.tick)
-                .or_default();
+            let actions_for_tick = action_cache.entry(local_action_packet.tick).or_default();
             actions_for_tick.push(local_action_packet.action);
         }
         for action_packet in action_packets {
-            let actions_for_tick = self.action_table.entry(action_packet.tick).or_default();
+            if action_packet.tick < self.simulation_state.current_tick() {
+                error!(
+                    "ActionPacket lies in the past!\nCurrent Tick: {}\n{:?}",
+                    self.simulation_state.current_tick().0,
+                    action_packet
+                );
+            }
+            let actions_for_tick = action_cache.entry(action_packet.tick).or_default();
             actions_for_tick.push(action_packet.action);
         }
-
-        let actions_in_table = self
-            .action_table
+        let actions_in_table = action_cache
             .entry(self.simulation_state.current_tick())
             .or_default();
-        let actions = std::mem::take(actions_in_table);
-        self.simulation_state.load_actions(Actions(actions));
+        std::mem::take(actions_in_table)
     }
 }
 
 impl Simulation for SimulationImpl {
-    fn step_simulation(&mut self, dt: Duration) {
+    fn step_simulation(&mut self, dt: Duration, actions: Vec<Action>) {
+        self.simulation_state.load_actions(Actions(actions));
         self.simulation_state.load_delta_time(dt.into());
         self.schedule.run(self.simulation_state.world_mut());
         self.simulation_state.advance_tick();
