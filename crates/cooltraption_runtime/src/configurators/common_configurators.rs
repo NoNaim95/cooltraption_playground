@@ -44,7 +44,9 @@ pub fn add_renderer(
 
     let world_state_iterator = iter::from_fn(move || world_state_receiver.try_recv().ok());
 
-    let (sender, receiver) = overwrite_channel::<CameraView>(CameraView {
+
+    runtime_config_builder.set_last_task(Box::new(move || {
+    let (camera_view_writer, camera_view_reader) = overwrite_channel::<CameraView>(CameraView {
         position: Point2 { x: 0.0, y: 0.0 },
         zoom: 1.0,
     });
@@ -54,13 +56,11 @@ pub fn add_renderer(
             input_action_sender.clone(),
             reset_sender,
         )),
-        Box::new(create_world_input_handler(receiver, input_action_sender)),
+        Box::new(create_world_input_handler(camera_view_reader, input_action_sender)),
     ];
 
     let input_event_handler = InputEventHandler::new(input_event_callbacks);
-
-    runtime_config_builder.set_last_task(Box::new(move || {
-        render_component::run_renderer(world_state_iterator, input_event_handler, sender)
+        render_component::run_renderer(world_state_iterator, input_event_handler, camera_view_writer)
     }));
 }
 
