@@ -39,7 +39,7 @@ pub fn add_renderer(
     runtime_config_builder
         .simulation_run_options_builder()
         .add_state_complete_callback(Box::new(move |s: &mut SimulationState| {
-            s.query(|i| sim_state_sender(i))
+            s.query(&mut sim_state_sender)
         }));
 
     let world_state_iterator = iter::from_fn(move || world_state_receiver.try_recv().ok());
