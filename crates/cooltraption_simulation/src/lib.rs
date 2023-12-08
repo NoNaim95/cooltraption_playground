@@ -48,6 +48,7 @@ pub enum SimulationPacket {
     ResetRequest(ResetRequest),
 }
 
+/// Represents a request to restart the Simulation
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum ResetRequest {
     Now,
@@ -74,6 +75,7 @@ impl ResetRequest {
     }
 }
 
+/// Contains the data flow components for the Simulation
 pub struct SimulationRunConfig {
     actions: BoxedIt<Action>,
     action_packets: BoxedIt<ActionPacket>,
@@ -100,6 +102,7 @@ pub trait Simulation {
     fn step_simulation(&mut self, dt: Duration, actions: Vec<Action>);
 }
 
+/// This is the Simlation, the core of Cooltraption
 #[derive(Default)]
 pub struct SimulationImpl {
     simulation_state: SimulationState,
@@ -139,6 +142,7 @@ impl SimulationImpl {
                 handler(&mut self.simulation_state)
             }
 
+            //Sleeping duration orients at global time instead of offset to last tick
             start_time = Instant::now();
             let sleep_target = root_time
                 + Duration::from_millis(target_dt_ms)

@@ -15,6 +15,9 @@ use serde::{de::DeserializeOwned, Serialize};
 
 pub enum Signal {}
 
+/// This is the primary networking interface facing to the engines side
+/// It also purposes as an Adapter to Message-io
+/// Right now it's kinda a leaky abstraction, but at least, Message-io is not accessible
 #[derive(Clone)]
 pub struct NetworkStateImpl<T> {
     connections: BiMap<Connection, Endpoint>,
@@ -114,6 +117,8 @@ pub enum NetworkStateEvent<T> {
     Message(Connection, Packet<T>),
 }
 
+/// Responsible for passing each Message-io message to the Networkstate
+/// and publishing the NetworkState after that
 pub struct NodeEventHandler<T> {
     pub network_state: ConcurrentNetworkState<T>,
     pub network_state_publisher: Vec<NetworkStateEventHandler<T>>,
