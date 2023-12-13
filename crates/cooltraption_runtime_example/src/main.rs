@@ -18,10 +18,12 @@ fn main() {
     //logger_env =
     env::set_var(
         "RUST_LOG",
-        ["cooltraption_simulation=debug",
+        [
+            "cooltraption_simulation=debug",
             "cooltraption_runtime=debug",
             "cooltraption_runtime_example=debug",
-            "cooltraption_network=debug"]
+            "cooltraption_network=debug",
+        ]
         .join(","),
     );
 
