@@ -2,6 +2,7 @@ use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
 use cooltraption_common::types::TimePoint;
+use cooltraption_network::network_interface::bootstrapper::NetworkInterfaceBootstrapper;
 use cooltraption_network::builder::MessageIoInterfaceBootstrapperBuilder;
 use cooltraption_network::network_interface::*;
 use cooltraption_network::packets::*;

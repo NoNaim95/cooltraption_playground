@@ -7,6 +7,7 @@ use std::sync::mpsc::Sender;
 
 use cooltraption_input::input::{InputEvent, InputEventHandler, InputState};
 use cooltraption_network::builder::MessageIoInterfaceBootstrapperBuilder;
+use cooltraption_network::network_interface::bootstrapper::NetworkInterfaceBootstrapper;
 use cooltraption_network::network_interface::NetworkInterfaceEvent;
 use cooltraption_network::packets::Packet;
 use cooltraption_render::world_renderer::interpolator::Drawable;

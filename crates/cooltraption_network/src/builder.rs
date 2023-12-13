@@ -3,8 +3,8 @@ use message_io::node::NodeListener;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use crate::network_interface::MessageIoAdapter;
-use crate::network_interface::MessageIoInterfaceBootstrapper;
+use crate::network_interface::bootstrapper::MessageIoInterfaceBootstrapper;
+use crate::network_interface::messageio_adapter::MessageIoAdapter;
 use crate::network_interface::NetworkInterfaceEventHandler;
 use crate::network_interface::NetworkInterfaceWrapper;
 use crate::network_interface::Signal;
