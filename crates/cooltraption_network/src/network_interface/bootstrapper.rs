@@ -3,11 +3,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use super::*;
+use super::messageio_adapter::MessageIoAdapter;
+use super::{messageio_adapter::ConcurrentMessageIoAdapter, *};
 use log::debug;
 use message_io::node::{NodeEvent, NodeListener};
 use serde::{de::DeserializeOwned, Serialize};
-use super::messageio_adapter::MessageIoAdapter;
 
 pub trait NetworkInterfaceBootstrapper {
     fn connect(self, dst_addr: impl ToSocketAddrs);
@@ -19,7 +19,7 @@ where
     P: Serialize + DeserializeOwned,
 {
     concurrent_network_interface: ConcurrentNetworkInterface<P>,
-    message_io_adapter: Arc<Mutex<MessageIoAdapter<P>>>,
+    message_io_adapter: ConcurrentMessageIoAdapter<P>,
     network_interface_publisher: Vec<NetworkInterfaceEventHandler<P>>,
     node_listener: NodeListener<Signal>,
 }

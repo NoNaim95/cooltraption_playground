@@ -110,6 +110,6 @@ impl<T> MessageIoAdapter<T> {
         }
     }
 }
-pub type ConcurrentNetworkState<T> = Arc<Mutex<MessageIoAdapter<T>>>;
+pub type ConcurrentMessageIoAdapter<T> = Arc<Mutex<MessageIoAdapter<T>>>;
 pub type NetworkStateEventHandler<T> =
     Box<dyn FnMut(&NetworkInterfaceEvent<T>, &mut MutexGuard<MessageIoAdapter<T>>) + Send>;
