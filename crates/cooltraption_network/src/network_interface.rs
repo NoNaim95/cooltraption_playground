@@ -1,7 +1,7 @@
 use std::{
     marker::PhantomData,
     net::ToSocketAddrs,
-    sync::{atomic::AtomicPtr, Arc, Mutex, MutexGuard},
+    sync::{Arc, Mutex, MutexGuard},
 };
 
 use crate::connection::Connection;

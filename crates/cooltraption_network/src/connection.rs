@@ -1,4 +1,3 @@
-use message_io::network::Endpoint;
 use std::net::SocketAddr;
 use uuid::Uuid;
 
@@ -6,7 +5,7 @@ use uuid::Uuid;
 pub struct ConnectionId(Uuid);
 
 #[allow(dead_code)]
-#[derive(Clone,Copy, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct Connection {
     id: ConnectionId,
     socket_addr: SocketAddr,
@@ -19,10 +18,4 @@ impl Connection {
             socket_addr,
         }
     }
-}
-
-#[allow(dead_code)]
-pub struct EndpointConnection {
-    id: ConnectionId,
-    endpoint: Endpoint,
 }

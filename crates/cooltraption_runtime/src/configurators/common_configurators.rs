@@ -1,15 +1,13 @@
 use cgmath::Point2;
-use cooltraption_network::network_state::ConcurrentNetworkInterface;
+use cooltraption_network::network_interface::ConcurrentNetworkInterface;
 use std::iter;
 use std::sync::mpsc;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::Sender;
-use std::sync::MutexGuard;
 
 use cooltraption_input::input::{InputEvent, InputEventHandler, InputState};
 use cooltraption_network::builder::MessageIoInterfaceBootstrapperBuilder;
-use cooltraption_network::network_state::MessageIoAdapter;
-use cooltraption_network::network_state::NetworkInterfaceEvent;
+use cooltraption_network::network_interface::NetworkInterfaceEvent;
 use cooltraption_network::packets::Packet;
 use cooltraption_render::world_renderer::interpolator::Drawable;
 use cooltraption_simulation::action::Action;

@@ -162,9 +162,10 @@ impl SimulationImpl {
         local_action_packet_handlers: &mut [LocalActionPacketHandler],
         action_cache: &mut HashMap<Tick, Vec<Action>>,
     ) -> Vec<Action> {
-        for local_action_packet in actions
-            .map(|action| ActionPacket::new(self.simulation_state.current_tick() + Tick(0), action))
-        {
+        //Ping Predictiond
+        for local_action_packet in actions.map(|action| {
+            ActionPacket::new(self.simulation_state.current_tick() + Tick(20), action)
+        }) {
             for handler in local_action_packet_handlers.iter_mut() {
                 handler(&local_action_packet);
             }

@@ -3,11 +3,11 @@ use message_io::node::NodeListener;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use crate::network_state::MessageIoAdapter;
-use crate::network_state::MessageIoInterfaceBootstrapper;
-use crate::network_state::NetworkInterfaceEventHandler;
-use crate::network_state::NetworkInterfaceWrapper;
-use crate::network_state::Signal;
+use crate::network_interface::MessageIoAdapter;
+use crate::network_interface::MessageIoInterfaceBootstrapper;
+use crate::network_interface::NetworkInterfaceEventHandler;
+use crate::network_interface::NetworkInterfaceWrapper;
+use crate::network_interface::Signal;
 
 pub struct MessageIoInterfaceBootstrapperBuilder<P>
 where

@@ -3,7 +3,7 @@ use std::time::UNIX_EPOCH;
 
 use cooltraption_common::types::TimePoint;
 use cooltraption_network::builder::MessageIoInterfaceBootstrapperBuilder;
-use cooltraption_network::network_state::*;
+use cooltraption_network::network_interface::*;
 use cooltraption_network::packets::*;
 use cooltraption_simulation::ResetRequest;
 use cooltraption_simulation::SimulationPacket;
