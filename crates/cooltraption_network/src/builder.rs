@@ -1,40 +1,53 @@
-use std::sync::Arc;
-use std::sync::Mutex;
-
 use message_io::node;
 use message_io::node::NodeListener;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
-use crate::network_state::ConcurrentNetworkState;
-use crate::network_state::NetworkStateEventHandler;
-use crate::network_state::NetworkStateImpl;
-use crate::network_state::NodeEventHandler;
+use crate::network_state::MessageIoAdapter;
+use crate::network_state::MessageIoInterfaceBootstrapper;
+use crate::network_state::NetworkInterfaceEventHandler;
+use crate::network_state::NetworkInterfaceWrapper;
 use crate::network_state::Signal;
 
-pub struct NodeEventHandlerBuilder<T> {
-    pub network_state: ConcurrentNetworkState<T>,
-    pub network_state_publisher: Vec<NetworkStateEventHandler<T>>,
+pub struct MessageIoInterfaceBootstrapperBuilder<P>
+where
+    P: Serialize + DeserializeOwned,
+{
+    pub message_io_adapter_wrapper: NetworkInterfaceWrapper<MessageIoAdapter<P>, P>,
+    pub network_state_publisher: Vec<NetworkInterfaceEventHandler<P>>,
     pub node_listener: NodeListener<Signal>,
 }
 
-impl<T> Default for NodeEventHandlerBuilder<T> {
+impl<P> Default for MessageIoInterfaceBootstrapperBuilder<P>
+where
+    P: Serialize + DeserializeOwned,
+{
     fn default() -> Self {
         let (node_handler, node_listener) = node::split::<Signal>();
         Self {
-            network_state: Arc::new(Mutex::new(NetworkStateImpl::new(node_handler))),
+            message_io_adapter_wrapper: NetworkInterfaceWrapper::new(MessageIoAdapter::new(
+                node_handler,
+            )),
             network_state_publisher: vec![],
             node_listener,
         }
     }
 }
 
-impl<T> NodeEventHandlerBuilder<T> {
-    pub fn add_network_state_event_handler(&mut self, handler: NetworkStateEventHandler<T>) {
+impl<P> MessageIoInterfaceBootstrapperBuilder<P>
+where
+    P: Serialize + DeserializeOwned + 'static,
+{
+    pub fn add_network_interface_event_handler(
+        &mut self,
+        handler: NetworkInterfaceEventHandler<P>,
+    ) {
         self.network_state_publisher.push(handler);
     }
 
-    pub fn build(self) -> NodeEventHandler<T> {
-        NodeEventHandler::new(
-            self.network_state,
+    pub fn build(self) -> MessageIoInterfaceBootstrapper<P> {
+        MessageIoInterfaceBootstrapper::new(
+            self.message_io_adapter_wrapper,
             self.network_state_publisher,
             self.node_listener,
         )

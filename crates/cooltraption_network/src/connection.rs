@@ -6,7 +6,7 @@ use uuid::Uuid;
 pub struct ConnectionId(Uuid);
 
 #[allow(dead_code)]
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone,Copy, Debug, Hash, PartialEq, Eq)]
 pub struct Connection {
     id: ConnectionId,
     socket_addr: SocketAddr,
